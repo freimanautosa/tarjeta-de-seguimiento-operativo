@@ -468,6 +468,7 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
       </div>
       <div class="novedad-motivo">${n.motivo||'—'}</div>
       <div class="novedad-resp">Resp: ${n.responsable||'—'}</div>
+      ${n.valor ? '<div style="font-size:12px;font-weight:600;color:var(--rojo);margin-top:3px">💰 Valor adicional: ' + new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n.valor) + '</div>' : ''}
     </div>`).join('')
     : '<div style="font-size:12px;color:var(--gris-mid);padding:4px 0">Sin novedades.</div>';
 
@@ -549,6 +550,7 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
               <textarea id="nmot-${eid}" placeholder="Describe la novedad..." style="min-height:52px"></textarea>
             </div>
           </div>
+          <div class="field" style="margin-top:8px"><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--gris-mid)">Valor adicional COP</label><input id="nvalor-${eid}" type="number" step="1000" min="0" placeholder="0 (opcional)"></div>
           <div class="btn-row" style="margin-top:8px">
             <button class="btn btn-danger btn-sm" onclick="guardarNovedad(${eid})">Guardar novedad</button>
           </div>
@@ -639,7 +641,7 @@ async function asignarMecanico(eid, k) {
 // NUEVA ORDEN
 // ============================================================
 function resetNuevaOrden() {
-  const fields = ['n-placa', 'n-marca', 'n-linea', 'n-modelo', 'n-color', 'n-propietario', 'n-telefono', 'n-km', 'n-fecha1', 'n-fecha2', 'n-inv-obs', 'n-cedula-cliente'];
+  const fields = ['n-placa', 'n-marca', 'n-linea', 'n-modelo', 'n-color', 'n-propietario', 'n-telefono', 'n-km', 'n-fecha1', 'n-fecha2', 'n-inv-obs', 'n-cedula-cliente', 'n-vin', 'n-correo-cliente'];
   fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const aseguradora = document.getElementById('n-aseguradora');
   const dano = document.getElementById('n-dano');
@@ -744,6 +746,13 @@ async function crearOrden() {
   const placa = document.getElementById('n-placa')?.value.trim().toUpperCase();
   if (!placa) { toast('La placa es obligatoria', 'err'); return; }
   const cedulaCliente = document.getElementById('n-cedula-cliente')?.value.trim() || '';
+  const vin = document.getElementById('n-vin')?.value.trim().toUpperCase() || null;
+  const correoCliente = document.getElementById('n-correo-cliente')?.value.trim() || null;
+
+  // Validar VIN si fue ingresado
+  if (vin && vin.length !== 17) { toast('El VIN debe tener exactamente 17 caracteres', 'err'); return; }
+  if (vin && !/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)) { toast('VIN inválido — solo mayúsculas y números (sin I, O, Q)', 'err'); return; }
+  if (correoCliente && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoCliente)) { toast('Correo electrónico inválido', 'err'); return; }
 
   const invItems = {};
   document.querySelectorAll('.inv-item input[type=checkbox]').forEach(chk => { invItems[chk.value] = chk.checked; });
@@ -779,7 +788,9 @@ async function crearOrden() {
     fecha_entrega_2: document.getElementById('n-fecha2')?.value || null,
     inventario: JSON.stringify({ items: invItems, observaciones: document.getElementById('n-inv-obs')?.value.trim() || null }),
     estado: 'Activa',
-    cliente_id: clienteId
+    cliente_id: clienteId,
+    vin: vin || null,
+    correo_cliente: correoCliente || null
   };
 
   try {
@@ -924,8 +935,8 @@ function buildChecklist(containerId, servicios, existentes) {
           <div style="display:grid;grid-template-columns:1fr 80px 110px;gap:8px">
             <div><label style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris-mid);display:block;margin-bottom:3px">Descripción</label>
               <input id="desc-et-${et.key}" type="text" placeholder="Detalle..." style="width:100%;padding:7px 9px;border:1.5px solid var(--gris-borde);border-radius:5px;font-size:12px" value="${ex?.descripcion||''}"></div>
-            <div><label style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris-mid);display:block;margin-bottom:3px"># Piezas</label>
-              <input id="piezas-et-${et.key}" type="number" min="0" placeholder="0" style="width:100%;padding:7px 9px;border:1.5px solid var(--gris-borde);border-radius:5px;font-size:12px" value="${ex?.num_piezas||''}"></div>
+            <div><label style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris-mid);display:block;margin-bottom:3px"># Horas</label>
+              <input id="piezas-et-${et.key}" type="number" min="0" step="0.5" placeholder="0" style="width:100%;padding:7px 9px;border:1.5px solid var(--gris-borde);border-radius:5px;font-size:12px" value="${ex?.horas_estimadas||''}"></div>
             <div><label style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris-mid);display:block;margin-bottom:3px">Valor COP</label>
               <input id="valor-et-${et.key}" type="number" min="0" step="1000" placeholder="0" style="width:100%;padding:7px 9px;border:1.5px solid var(--gris-borde);border-radius:5px;font-size:12px" value="${ex?.valor||''}"></div>
           </div>
@@ -991,7 +1002,7 @@ function recogerChecklist(containerId) {
       tercero:     inp?.value?.trim() || null, 
       mecanico_id: mecSel?.value ? parseInt(mecSel.value) : null,
       descripcion: descEl?.value?.trim() || null,
-      num_piezas:  piezasEl?.value ? parseInt(piezasEl.value) : null,
+      horas_estimadas: piezasEl?.value ? parseFloat(piezasEl.value) : null,
       valor:       valorEl?.value ? parseFloat(valorEl.value) : null
     });
   });
@@ -1018,7 +1029,7 @@ async function guardarEtapasNueva() {
         orden_id: modalOrdenId, servicio: et.servicio, etapa_key: et.key, etapa: et.nombre, 
         tercero: et.tercero || null, mecanico_id: et.mecanico_id || null, tecnico: mec?.nombre || null, 
         descripcion: et.descripcion || descripciones[et.servicio] || null,
-        num_piezas: et.num_piezas || null,
+        horas_estimadas: et.horas_estimadas || null,
         valor: et.valor || null
       }, { Prefer: 'return=minimal' });
     }
@@ -1093,7 +1104,7 @@ async function confirmarAgregarEtapas() {
         orden_id: ordenActual.id, servicio: et.servicio, etapa_key: et.key, etapa: et.nombre, 
         tercero: et.tercero || null, mecanico_id: et.mecanico_id || null, tecnico: mec?.nombre || null,
         descripcion: et.descripcion || null,
-        num_piezas: et.num_piezas || null,
+        horas_estimadas: et.horas_estimadas || null,
         valor: et.valor || null
       }, { Prefer: 'return=minimal' });
     }
@@ -1149,11 +1160,14 @@ async function guardarNovedad(eid) {
       orden_id: ordenActual.id, etapa_id: eid, 
       tipo: document.getElementById(`ntype-${eid}`).value, 
       responsable: document.getElementById(`nresp-${eid}`).value, 
-      motivo, desde: new Date().toISOString() 
+      motivo, desde: new Date().toISOString(),
+      valor: parseFloat(document.getElementById(`nvalor-${eid}`)?.value) || null
     }, { Prefer: 'return=minimal' });
     toast('Novedad registrada ✓');
     const input = document.getElementById(`nmot-${eid}`);
     if (input) input.value = '';
+    const vinput = document.getElementById(`nvalor-${eid}`);
+    if (vinput) vinput.value = '';
     if (ordenActual) abrirOrden(ordenActual.id);
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
@@ -1283,7 +1297,9 @@ async function subirCotizacion(input) {
 // ============================================================
 async function cambiarEstado(v) {
   try { 
-    await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', { estado: v }); 
+    const patch = { estado: v };
+    if (v === 'Entregada') patch.entregada_en = new Date().toISOString();
+    await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', patch); 
     ordenActual.estado = v; 
     toast(`Estado: ${v} ✓`); 
     cargarOrdenes(); 
@@ -1366,6 +1382,9 @@ function montarJefe() {
   api('/ordenes?estado=eq.Activa&pulmon=eq.false&select=id,pulmon').then(data => {
     actualizarCapacidad((data || []).length);
   }).catch(() => {});
+
+  // Activar Realtime
+  iniciarRealtime();
 }
 
 function navJefe(pag) {
@@ -1501,7 +1520,7 @@ function renderCalendario(cont, ordenes, mesDate) {
       const urgente = !o.esFecha2 && new Date(o.fecha_entrega_1) <= hoy;
       const color = urgente ? '#DC2626' : o.esFecha2 ? '#D97706' : '#2A5298';
       const bg    = urgente ? '#FEE2E2' : o.esFecha2 ? '#FEF3C7' : '#EBF2FF';
-      return `<div class="cal-orden" style="background:${bg};color:${color}" onclick="abrirOrden(${o.id})" title="${o.placa} — ${o.propietario||''}">
+      return `<div class="cal-orden" style="background:${bg};color:${color}" onclick="abrirCalModal(${o.id})" style="cursor:pointer">
         <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:10px">${o.placa}</span>
         ${o.esFecha2 ? '<span style="font-size:9px;opacity:0.7"> F2</span>' : ''}
       </div>`;
@@ -1709,4 +1728,244 @@ function etapaDragEnd(e) {
 async function patchValor(eid, k) {
   const val = parseFloat(document.getElementById(`val-${k}`)?.value) || null;
   await api(`/etapas?id=eq.${eid}`, 'PATCH', { valor: val }).catch(() => {});
+}
+// ═══════════════════════════════════════════════════════════
+// MODAL CALENDARIO — info de orden al hacer click
+// ═══════════════════════════════════════════════════════════
+async function abrirCalModal(ordenId) {
+  let modal = document.getElementById('modal-cal-orden');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-cal-orden';
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `<div class="modal" style="max-width:480px">
+      <div class="modal-header">
+        <h2 id="mcal-titulo">Orden</h2>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-cal-orden').classList.remove('show')">✕</button>
+      </div>
+      <div class="modal-body" id="mcal-body"><div class="loading-state">Cargando...</div></div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-cal-orden').classList.remove('show')">Cerrar</button>
+        <button class="btn btn-primary" id="mcal-btn-abrir">Ver orden completa</button>
+      </div>
+    </div>`;
+    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+    document.body.appendChild(modal);
+  }
+  modal.classList.add('show');
+  document.getElementById('mcal-body').innerHTML = '<div class="loading-state">Cargando...</div>';
+  try {
+    const [orden, etapas] = await Promise.all([
+      api(`/ordenes?id=eq.${ordenId}`).then(d => d[0]),
+      api(`/etapas?orden_id=eq.${ordenId}&order=creado_en.asc`).catch(()=>[]) || []
+    ]);
+    const total = etapas.length;
+    const comp  = etapas.filter(e => e.fin).length;
+    const pct   = total ? Math.round((comp/total)*100) : 0;
+    const activa = etapas.find(e => e.inicio && !e.fin);
+    const fmt = n => n != null ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : '—';
+    const totalVal = etapas.reduce((s,e) => s+(e.valor||0), 0);
+    const srvColor = { latoneria:'#DC2626', pintura:'#D97706', mecanica:'#2563EB', adicionales:'#059669' };
+    const srvs = [...new Set(etapas.map(e=>e.servicio).filter(Boolean))];
+
+    document.getElementById('mcal-titulo').textContent = orden.placa;
+    document.getElementById('mcal-btn-abrir').onclick = () => {
+      modal.classList.remove('show');
+      abrirOrden(ordenId);
+    };
+    document.getElementById('mcal-body').innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="flex:1">
+          <div style="font-size:13px;color:var(--gris-mid)">${[orden.marca,orden.linea,orden.modelo].filter(Boolean).join(' ')||'—'}</div>
+          <div style="font-size:12px;color:var(--gris-mid);margin-top:2px">${orden.aseguradora?'🏢 '+orden.aseguradora:''}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:28px;font-weight:700;font-family:'DM Mono',monospace;color:${pct===100?'var(--verde)':'var(--azul)'}">${pct}%</div>
+          <div style="font-size:11px;color:var(--gris-mid)">${comp}/${total} etapas</div>
+        </div>
+      </div>
+      <div style="height:6px;background:var(--gris-borde);border-radius:99px;overflow:hidden;margin-bottom:16px">
+        <div style="height:100%;width:${pct}%;background:${pct===100?'var(--verde)':'var(--azul-mid)'};border-radius:99px;transition:width 0.4s"></div>
+      </div>
+      <div class="info-chips" style="margin-bottom:14px">
+        <div class="info-chip"><div class="info-chip-label">Estado</div><div class="info-chip-val">${orden.pulmon?'En Pulmón':orden.estado||'Activa'}</div></div>
+        <div class="info-chip"><div class="info-chip-label">Ingreso</div><div class="info-chip-val">${formatFecha(orden.creado_en)}</div></div>
+        <div class="info-chip"><div class="info-chip-label">Entrega 1</div><div class="info-chip-val">${formatFecha(orden.fecha_entrega_1)||'—'}</div></div>
+        <div class="info-chip"><div class="info-chip-label">Entrega 2</div><div class="info-chip-val">${formatFecha(orden.fecha_entrega_2)||'—'}</div></div>
+        ${totalVal ? `<div class="info-chip"><div class="info-chip-label">Valor MO</div><div class="info-chip-val" style="color:var(--verde);font-weight:700">${fmt(totalVal)}</div></div>` : ''}
+      </div>
+      ${activa ? `<div style="padding:10px 14px;background:var(--azul-light);border-radius:6px;margin-bottom:10px;font-size:13px">
+        <span style="color:var(--gris-mid)">Etapa actual:</span> <strong>${activa.etapa}</strong>${activa.tecnico?` · 👤 ${activa.tecnico}`:''}
+      </div>` : ''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${srvs.map(s=>`<span style="background:${srvColor[s]||'#6B7280'}15;color:${srvColor[s]||'#6B7280'};border:1px solid ${srvColor[s]||'#6B7280'}30;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">${CATALOGO[s]?.nombre||s}</span>`).join('')}
+      </div>`;
+  } catch(e) {
+    document.getElementById('mcal-body').innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// VISTA DE ORDEN PARA MECÁNICO (filtrada)
+// ═══════════════════════════════════════════════════════════
+async function abrirOrdenMecanico(id) {
+  mostrarPagina('pag-mec-orden');
+  document.getElementById('topbar-title').textContent = 'Detalle de Orden';
+  const cont = document.getElementById('mec-orden-contenido');
+  if (!cont) return;
+  cont.innerHTML = '<div class="loading-state">Cargando...</div>';
+  try {
+    const [orden, todasEtapas, fotosEt, novedades] = await Promise.all([
+      api(`/ordenes?id=eq.${id}`).then(d => d[0]),
+      api(`/etapas?orden_id=eq.${id}&order=creado_en.asc`).catch(()=>[]) || [],
+      api(`/fotos_etapas?orden_id=eq.${id}&order=creado_en.desc`).catch(()=>[]) || [],
+      api(`/novedades?orden_id=eq.${id}&order=creado_en.desc`).catch(()=>[]) || []
+    ]);
+
+    // Solo etapas del mecánico actual
+    const misEtapas = todasEtapas.filter(e => e.mecanico_id === sesion.id);
+    const total = todasEtapas.length;
+    const comp  = todasEtapas.filter(e => e.fin).length;
+    const pct   = total ? Math.round((comp/total)*100) : 0;
+    const circ  = 2 * Math.PI * 22;
+
+    const tlHtml = todasEtapas.map((e,i) => {
+      const done = !!e.fin, active = !!e.inicio && !e.fin;
+      const cls = done ? 'done' : active ? 'active' : 'pending';
+      return `<div class="timeline-step ${done?'done':''}">
+        <div class="timeline-dot ${cls}">${done?'✓':active?'●':(i+1)}</div>
+        <div class="timeline-label ${cls}">${e.etapa||'—'}</div>
+      </div>`;
+    }).join('');
+
+    // Render solo mis etapas
+    const etapasHtml = misEtapas.map(e => {
+      const k = kid(e.id);
+      const badge = !e.inicio ? 'Pendiente' : e.fin ? 'Completada' : 'En proceso';
+      const bCls  = !e.inicio ? 'pendiente' : e.fin ? 'completada' : 'iniciada';
+      const eFotos = fotosEt.filter(f => f.etapa_id === e.id);
+      const eNovs  = novedades.filter(n => n.etapa_id === e.id);
+      let acc = '';
+      if (!e.inicio) acc = `<button class="btn btn-success btn-sm" onclick="mecIniciarEtapa(${e.id},'${e.etapa||''}',${id})">▶ Iniciar</button>`;
+      else if (!e.fin) acc = `<button class="btn btn-danger btn-sm" onclick="mecFinalizarEtapaDetalle(${e.id},'${e.etapa||''}','${e.servicio||''}',${id})">■ Finalizar</button>`;
+
+      const fotosHtml = eFotos.map(f=>`<div class="foto-thumb" onclick="abrirLightbox('${f.url}')"><img src="${f.url}" alt="" loading="lazy"></div>`).join('');
+      const novsHtml = eNovs.length ? eNovs.map(n=>`<div class="novedad-item">
+        <div class="novedad-item-top"><span class="novedad-tipo ${(n.tipo||'').toLowerCase()}">${n.tipo}</span><span class="novedad-fecha">${formatTS(n.creado_en)}</span></div>
+        <div class="novedad-motivo">${n.motivo||'—'}</div>
+        ${n.valor?`<div style="font-size:12px;font-weight:600;color:var(--rojo);margin-top:2px">💰 ${new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n.valor)}</div>`:''}
+      </div>`).join('') : '<div style="font-size:12px;color:var(--gris-mid)">Sin novedades.</div>';
+
+      return `<div class="etapa-card" style="margin-bottom:12px">
+        <div class="etapa-header" onclick="toggleEtapa('meb-${k}')">
+          <div style="flex:1"><div class="etapa-nombre">${e.etapa||'—'}</div></div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="badge badge-${bCls}">${badge}</span>
+            ${acc}
+          </div>
+        </div>
+        <div class="etapa-body" id="meb-${k}">
+          <div class="timestamps" style="margin-bottom:12px">
+            <div class="ts-chip">Inicio: <strong>${e.inicio?formatTS(e.inicio):'—'}</strong></div>
+            <div class="ts-chip">Fin: <strong>${e.fin?formatTS(e.fin):'—'}</strong></div>
+          </div>
+          <div class="fotos-section">
+            <label style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris-mid)">Fotos (${eFotos.length})</label>
+            <div class="fotos-grid" style="margin-top:6px">${fotosHtml}</div>
+            <div class="upload-zone" onclick="document.getElementById('mec-fi2-${k}').click()" style="margin-top:8px">
+              <input type="file" id="mec-fi2-${k}" accept="image/*" multiple onchange="mecSubirFotos(this,${e.id},'${e.etapa||''}',${id})">
+              <div style="font-size:18px">📷</div><p>Subir fotos</p>
+              <div class="upload-prog" id="mec-prog2-${k}"></div>
+            </div>
+          </div>
+          <div class="novedad-section" style="margin-top:14px">
+            <div class="novedad-section-titulo">Novedades</div>
+            <div>${novsHtml}</div>
+            <div class="grid-2" style="margin-top:10px">
+              <div class="field"><label>Tipo</label>
+                <select id="mec2-ntype-${e.id}">
+                  <option value="Detenido">Detenido</option>
+                  <option value="Reproceso">Reproceso</option>
+                  <option value="Garantia">Garantía</option>
+                </select>
+              </div>
+              <div class="field"><label>Valor adicional COP</label>
+                <input id="mec2-nvalor-${e.id}" type="number" step="1000" min="0" placeholder="0 (opcional)">
+              </div>
+              <div class="field full"><label>Motivo</label>
+                <textarea id="mec2-nmot-${e.id}" placeholder="Describe la novedad..." style="min-height:52px"></textarea>
+              </div>
+            </div>
+            <div class="btn-row" style="margin-top:8px">
+              <button class="btn btn-danger btn-sm" onclick="mecGuardarNovedadDetalle(${e.id},${id})">Guardar novedad</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    cont.innerHTML = `
+      <button class="back-btn" onclick="navMec('ordenes')">← Volver</button>
+      <div class="detalle-header-card" style="margin-bottom:16px">
+        <div class="detalle-placa-row">
+          <div>
+            <div class="detalle-placa">${orden.placa}</div>
+            <div class="detalle-vehiculo">${[orden.marca,orden.linea,orden.modelo,orden.color].filter(Boolean).join(' · ')||'—'}</div>
+          </div>
+          <span class="badge badge-${orden.pulmon?'pulmon':(orden.estado||'activa').toLowerCase()}">${orden.pulmon?'En Pulmón':orden.estado||'Activa'}</span>
+        </div>
+        <div class="donut-section">
+          <svg width="56" height="56" viewBox="0 0 56 56">
+            <circle class="donut-track" cx="28" cy="28" r="22"/>
+            <circle class="donut-fill ${pct===100?'completa':'proceso'}" cx="28" cy="28" r="22" style="stroke-dasharray:${(pct/100)*circ} ${circ}"/>
+            <text class="donut-pct" x="28" y="32" text-anchor="middle">${pct}%</text>
+          </svg>
+          <div class="donut-info">
+            <div class="donut-label">Progreso general</div>
+            <div class="donut-val">${comp} / ${total} etapas</div>
+            <div class="donut-label" style="margin-top:4px">Fechas de entrega</div>
+            <div style="font-size:13px;font-weight:600">${formatFecha(orden.fecha_entrega_1)||'—'}${orden.fecha_entrega_2?' / '+formatFecha(orden.fecha_entrega_2):''}</div>
+          </div>
+        </div>
+        <div class="timeline-wrap"><div class="etapas-timeline">${tlHtml}</div></div>
+      </div>
+      <div class="seccion-titulo" style="margin-bottom:12px">Mis etapas en esta orden</div>
+      ${misEtapas.length ? etapasHtml : '<div class="empty-state"><p>No tenés etapas asignadas en esta orden.</p></div>'}`;
+  } catch(e) {
+    cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
+  }
+}
+
+async function mecFinalizarEtapaDetalle(eid, nombre, servicio, oid) {
+  try {
+    await api(`/etapas?id=eq.${eid}`, 'PATCH', { fin: new Date().toISOString() });
+    toast(`${nombre} finalizada ✓`);
+    const etapasOrden = await api(`/etapas?orden_id=eq.${oid}&order=creado_en.asc`);
+    const etapaActual = etapasOrden.find(e => e.id === eid);
+    const todasComp   = etapasOrden.every(e => e.fin || e.id === eid);
+    const orden = await api(`/ordenes?id=eq.${oid}`).then(d=>d[0]).catch(()=>({}));
+    fetch(N8N_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ evento: todasComp?'orden_completada':'etapa_finalizada',
+        orden: {id:oid,placa:orden.placa,propietario:orden.propietario,marca:orden.marca,linea:orden.linea},
+        etapa_finalizada: {id:eid,nombre,servicio:etapaActual?.servicio||servicio,tecnico:etapaActual?.tecnico||null},
+        todas_completadas:todasComp, link:`${window.location.origin}${window.location.pathname}`})
+    }).catch(()=>{});
+    abrirOrdenMecanico(oid);
+  } catch(e) { toast('Error: '+e.message, 'err'); }
+}
+
+async function mecGuardarNovedadDetalle(eid, oid) {
+  const motivo = document.getElementById(`mec2-nmot-${eid}`)?.value?.trim();
+  if (!motivo) { toast('El motivo es obligatorio', 'err'); return; }
+  try {
+    await api('/novedades', 'POST', {
+      orden_id: oid, etapa_id: eid,
+      tipo: document.getElementById(`mec2-ntype-${eid}`).value,
+      responsable: sesion.nombre,
+      motivo, desde: new Date().toISOString(),
+      valor: parseFloat(document.getElementById(`mec2-nvalor-${eid}`)?.value) || null
+    }, { Prefer: 'return=minimal' });
+    toast('Novedad registrada ✓');
+    abrirOrdenMecanico(oid);
+  } catch(e) { toast('Error: '+e.message, 'err'); }
 }

@@ -277,15 +277,20 @@ async function cargarDashboard() {
 
       <div class="dash-row-2">
         <div class="dash-panel">
-          <div class="dash-panel-titulo">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            Órdenes — últimas 8 semanas
+          <div class="dash-panel-titulo" style="justify-content:space-between">
+            <span style="display:flex;align-items:center;gap:7px"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Órdenes</span>
+            <select id="dash-periodo-sel" onchange="cargarGraficoPeriodo()" style="font-size:11px;font-weight:600;border:1px solid var(--gris-borde);border-radius:4px;padding:3px 8px;color:var(--gris-mid);background:white">
+              <option value="semana">Por semana</option>
+              <option value="mes">Por mes</option>
+              <option value="ano">Por año</option>
+            </select>
           </div>
           <div class="dash-legend">
             <span class="dash-legend-dot" style="background:var(--azul-mid)"></span><span>Iniciadas</span>
             <span class="dash-legend-dot" style="background:var(--verde);margin-left:12px"></span><span>Finalizadas</span>
           </div>
-          <div class="dash-bars">${semanasHtml}</div>
+          <div id="dash-grafico-bars" class="dash-bars">${semanasHtml}</div>
         </div>
         <div class="dash-panel">
           <div class="dash-panel-titulo">
@@ -303,5 +308,298 @@ async function cargarDashboard() {
   } catch(e) {
     const c = document.getElementById('dash-contenido');
     if (c) c.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
+  }
+}
+// ═══════════════════════════════════════════════════════════
+// GRÁFICO DINÁMICO POR PERÍODO
+// ═══════════════════════════════════════════════════════════
+async function cargarGraficoPeriodo() {
+  const sel = document.getElementById('dash-periodo-sel');
+  const periodo = sel?.value || 'semana';
+  const cont = document.getElementById('dash-grafico-bars');
+  if (!cont) return;
+  cont.innerHTML = '<div style="font-size:12px;color:var(--gris-mid)">Cargando...</div>';
+
+  try {
+    const ordenes = await api(
+      `/ordenes?select=id,creado_en,entregada_en,estado&order=creado_en.asc`
+    ).catch(()=>[]) || [];
+
+    const ahora = new Date();
+    let buckets = {};
+
+    if (periodo === 'semana') {
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(ahora);
+        d.setDate(d.getDate() - i * 7);
+        const key = `${d.getFullYear()}-S${String(semanaNum(d)).padStart(2,'0')}`;
+        buckets[key] = { label: `S${semanaNum(d)}`, iniciadas: 0, finalizadas: 0 };
+      }
+      ordenes.forEach(o => {
+        if (!o.creado_en) return;
+        const key = `${new Date(o.creado_en).getFullYear()}-S${String(semanaNum(o.creado_en)).padStart(2,'0')}`;
+        if (buckets[key]) buckets[key].iniciadas++;
+      });
+      ordenes.filter(o=>o.estado==='Entregada'&&o.entregada_en).forEach(o => {
+        const key = `${new Date(o.entregada_en).getFullYear()}-S${String(semanaNum(o.entregada_en)).padStart(2,'0')}`;
+        if (buckets[key]) buckets[key].finalizadas++;
+      });
+
+    } else if (periodo === 'mes') {
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        const label = d.toLocaleDateString('es-CO',{month:'short'});
+        buckets[key] = { label, iniciadas: 0, finalizadas: 0 };
+      }
+      ordenes.forEach(o => {
+        if (!o.creado_en) return;
+        const d = new Date(o.creado_en);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        if (buckets[key]) buckets[key].iniciadas++;
+      });
+      ordenes.filter(o=>o.estado==='Entregada'&&o.entregada_en).forEach(o => {
+        const d = new Date(o.entregada_en);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        if (buckets[key]) buckets[key].finalizadas++;
+      });
+
+    } else { // año
+      const minYear = ordenes.length ? new Date(ordenes[0].creado_en).getFullYear() : ahora.getFullYear();
+      for (let y = minYear; y <= ahora.getFullYear(); y++) {
+        buckets[y] = { label: String(y), iniciadas: 0, finalizadas: 0 };
+      }
+      ordenes.forEach(o => {
+        if (!o.creado_en) return;
+        const y = new Date(o.creado_en).getFullYear();
+        if (buckets[y]) buckets[y].iniciadas++;
+      });
+      ordenes.filter(o=>o.estado==='Entregada'&&o.entregada_en).forEach(o => {
+        const y = new Date(o.entregada_en).getFullYear();
+        if (buckets[y]) buckets[y].finalizadas++;
+      });
+    }
+
+    const arr = Object.values(buckets);
+    const maxV = Math.max(...arr.map(b=>Math.max(b.iniciadas,b.finalizadas)), 1);
+
+    cont.innerHTML = arr.map(b => {
+      const hI = Math.round((b.iniciadas/maxV)*72);
+      const hF = Math.round((b.finalizadas/maxV)*72);
+      return `<div class="dash-bar-col">
+        <div class="dash-bar-group">
+          <div class="dash-bar" style="height:${hI}px;background:var(--azul-mid)" title="Iniciadas: ${b.iniciadas}"></div>
+          <div class="dash-bar" style="height:${hF}px;background:var(--verde)" title="Finalizadas: ${b.finalizadas}"></div>
+        </div>
+        <div class="dash-bar-label">${b.label}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    const cont2 = document.getElementById('dash-grafico-bars');
+    if (cont2) cont2.innerHTML = `<div style="font-size:12px;color:var(--rojo)">Error: ${e.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// DASHBOARD FINANCIERO
+// ═══════════════════════════════════════════════════════════
+async function cargarDashboardFinanciero() {
+  const cont = document.getElementById('dash-financiero-contenido');
+  if (!cont) return;
+  cont.innerHTML = '<div class="loading-state">Cargando datos financieros...</div>';
+
+  try {
+    const [ordenes, etapas, repItems, solicitudes] = await Promise.all([
+      api(`/ordenes?select=id,placa,marca,linea,propietario,estado,pulmon,creado_en,entregada_en`).catch(()=>[]) || [],
+      api(`/etapas?select=id,orden_id,servicio,etapa,mecanico_id,tecnico,valor,inicio,fin,horas_estimadas`).catch(()=>[]) || [],
+      api(`/repuestos_items?select=id,solicitud_id,precio_lista,cantidad`).catch(()=>[]) || [],
+      api(`/repuestos_solicitud?select=id,orden_id,estado`).catch(()=>[]) || []
+    ]);
+
+    const fmt = n => n!=null ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : '—';
+    const srvColor = { latoneria:'#DC2626', pintura:'#D97706', mecanica:'#2563EB', adicionales:'#059669' };
+
+    // Valores por orden (mano de obra)
+    const valorMOPorOrden = {};
+    etapas.forEach(e => {
+      if (e.valor) valorMOPorOrden[e.orden_id] = (valorMOPorOrden[e.orden_id]||0) + e.valor;
+    });
+
+    // Valor repuestos por orden
+    const repPorSolicitud = {};
+    repItems.forEach(i => {
+      repPorSolicitud[i.solicitud_id] = (repPorSolicitud[i.solicitud_id]||0) + ((i.precio_lista||0)*(i.cantidad||1));
+    });
+    const valorRepPorOrden = {};
+    solicitudes.filter(s=>s.estado==='conseguido'||s.estado==='aprobado').forEach(s => {
+      valorRepPorOrden[s.orden_id] = (valorRepPorOrden[s.orden_id]||0) + (repPorSolicitud[s.id]||0);
+    });
+
+    // WIP — órdenes activas
+    const ordenesActivas = ordenes.filter(o=>o.estado==='Activa'&&!o.pulmon);
+    const wipMO  = ordenesActivas.reduce((s,o)=>(valorMOPorOrden[o.id]||0)+s, 0);
+    const wipRep = ordenesActivas.reduce((s,o)=>(valorRepPorOrden[o.id]||0)+s, 0);
+    const wipTotal = wipMO + wipRep;
+
+    // Entregadas — facturación
+    const ordenesEntregadas = ordenes.filter(o=>o.estado==='Entregada');
+    const totalFacturado = ordenesEntregadas.reduce((s,o)=>(valorMOPorOrden[o.id]||0)+(valorRepPorOrden[o.id]||0)+s, 0);
+    const ticketProm = ordenesEntregadas.length ? Math.round(totalFacturado/ordenesEntregadas.length) : 0;
+
+    // Tiempo real vs estimado por servicio
+    const tiempoSrv = {};
+    etapas.filter(e=>e.inicio&&e.fin&&e.servicio).forEach(e => {
+      if (!tiempoSrv[e.servicio]) tiempoSrv[e.servicio] = { realMins:[], estHoras:[] };
+      const mins = Math.round((new Date(e.fin)-new Date(e.inicio))/60000);
+      tiempoSrv[e.servicio].realMins.push(mins);
+      if (e.horas_estimadas) tiempoSrv[e.servicio].estHoras.push(e.horas_estimadas*60);
+    });
+
+    const tiempoSrvHtml = Object.entries(tiempoSrv).map(([srv, data]) => {
+      const promReal = Math.round(data.realMins.reduce((a,b)=>a+b,0)/data.realMins.length);
+      const promEst  = data.estHoras.length ? Math.round(data.estHoras.reduce((a,b)=>a+b,0)/data.estHoras.length) : null;
+      const hR = Math.floor(promReal/60), mR = promReal%60;
+      const color = srvColor[srv]||'#6B7280';
+      const diff = promEst ? Math.round(((promReal-promEst)/promEst)*100) : null;
+      const diffBadge = diff!=null ? `<span style="font-size:11px;font-weight:700;color:${diff>20?'var(--rojo)':diff>0?'#D97706':'var(--verde)'}">
+        ${diff>0?'+':''}${diff}% vs estimado</span>` : '';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gris-borde)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:3px;height:28px;background:${color};border-radius:99px"></div>
+          <div><div style="font-size:13px;font-weight:600;color:${color}">${CATALOGO[srv]?.nombre||srv}</div>
+            <div style="font-size:11px;color:var(--gris-mid)">${data.realMins.length} etapas completadas</div></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:14px;font-weight:700">${hR>0?hR+'h ':''} ${mR}m prom.</div>
+          ${diffBadge}
+        </div>
+      </div>`;
+    }).join('') || '<div style="font-size:13px;color:var(--gris-mid)">Sin datos aún.</div>';
+
+    // Productividad por técnico
+    const porTecnico = {};
+    etapas.filter(e=>e.tecnico&&e.fin).forEach(e => {
+      if (!porTecnico[e.tecnico]) porTecnico[e.tecnico] = { etapas:0, mins:0, valor:0 };
+      porTecnico[e.tecnico].etapas++;
+      if (e.inicio&&e.fin) porTecnico[e.tecnico].mins += Math.round((new Date(e.fin)-new Date(e.inicio))/60000);
+      if (e.valor) porTecnico[e.tecnico].valor += e.valor;
+    });
+    const tecnicoHtml = Object.entries(porTecnico).sort((a,b)=>b[1].valor-a[1].valor).map(([tec, data]) => {
+      const h = Math.floor(data.mins/60), m = data.mins%60;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gris-borde)">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--azul-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--azul);flex-shrink:0">${tec.charAt(0).toUpperCase()}</div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:13px">${tec}</div>
+          <div style="font-size:11px;color:var(--gris-mid)">${data.etapas} etapas · ${h>0?h+'h ':''}${m}m trabajadas</div>
+        </div>
+        <div style="text-align:right;font-size:13px;font-weight:700;color:var(--verde)">${fmt(data.valor)}</div>
+      </div>`;
+    }).join('') || '<div style="font-size:13px;color:var(--gris-mid)">Sin datos aún.</div>';
+
+    // Órdenes demoradas (>30% sobre promedio histórico del servicio)
+    const promedioSrv = {};
+    Object.entries(tiempoSrv).forEach(([srv, data]) => {
+      promedioSrv[srv] = Math.round(data.realMins.reduce((a,b)=>a+b,0)/data.realMins.length);
+    });
+    const demoradas = [];
+    ordenes.filter(o=>o.estado==='Activa'&&!o.pulmon).forEach(o => {
+      const etsO = etapas.filter(e=>e.orden_id===o.id&&e.inicio&&!e.fin);
+      etsO.forEach(e => {
+        const minsTrans = Math.round((new Date()-new Date(e.inicio))/60000);
+        const prom = promedioSrv[e.servicio];
+        if (prom && minsTrans > prom * 1.3) {
+          const pctDem = Math.round(((minsTrans-prom)/prom)*100);
+          demoradas.push({ o, e, minsTrans, prom, pctDem });
+        }
+      });
+    });
+    demoradas.sort((a,b)=>b.pctDem-a.pctDem);
+    const demoradasHtml = demoradas.length ? demoradas.slice(0,8).map(({o,e,minsTrans,prom,pctDem}) => {
+      const hT = Math.floor(minsTrans/60), mT = minsTrans%60;
+      const hP = Math.floor(prom/60), mP = prom%60;
+      const color = pctDem>60?'var(--rojo)':pctDem>30?'#D97706':'#F59E0B';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gris-borde)">
+        <div style="flex:1">
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px">${o.placa}</div>
+          <div style="font-size:11px;color:var(--gris-mid)">${e.etapa} · ${CATALOGO[e.servicio]?.nombre||e.servicio}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px"><span style="color:var(--gris-mid)">Actual:</span> ${hT>0?hT+'h ':''} ${mT}m</div>
+          <div style="font-size:12px"><span style="color:var(--gris-mid)">Prom:</span> ${hP>0?hP+'h ':''} ${mP}m</div>
+          <span style="font-size:11px;font-weight:700;color:${color}">+${pctDem}% demorada</span>
+        </div>
+      </div>`;
+    }).join('') : '<div style="font-size:13px;color:var(--verde);padding:8px 0">✓ Sin órdenes demoradas.</div>';
+
+    cont.innerHTML = `
+      <!-- KPIs financieros -->
+      <div class="dash-grid" style="margin-bottom:16px">
+        <div class="dash-card">
+          <div class="dash-card-icon" style="background:#E6F5EF;color:#059669">💰</div>
+          <div class="dash-card-val" style="color:var(--verde);font-size:20px">${fmt(wipTotal)}</div>
+          <div class="dash-card-label">WIP — trabajo en proceso</div>
+          <div class="dash-card-sub">MO: ${fmt(wipMO)} · Rep: ${fmt(wipRep)}</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-icon" style="background:#EBF2FF;color:#2563EB">📊</div>
+          <div class="dash-card-val" style="color:var(--azul);font-size:20px">${fmt(totalFacturado)}</div>
+          <div class="dash-card-label">Total facturado (entregadas)</div>
+          <div class="dash-card-sub">${ordenesEntregadas.length} órdenes entregadas</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-icon" style="background:#FEF3C7;color:#D97706">🎫</div>
+          <div class="dash-card-val" style="color:#D97706;font-size:20px">${fmt(ticketProm)}</div>
+          <div class="dash-card-label">Ticket promedio por orden</div>
+          <div class="dash-card-sub">Mano de obra + repuestos</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-icon" style="background:#FEE2E2;color:#DC2626">⚠️</div>
+          <div class="dash-card-val" style="color:var(--rojo)">${demoradas.length}</div>
+          <div class="dash-card-label">Órdenes demoradas</div>
+          <div class="dash-card-sub">>30% sobre promedio histórico</div>
+        </div>
+      </div>
+
+      <div class="dash-row-2" style="margin-bottom:16px">
+        <div class="dash-panel">
+          <div class="dash-panel-titulo">⏱ Tiempo real vs estimado por servicio</div>
+          ${tiempoSrvHtml}
+        </div>
+        <div class="dash-panel">
+          <div class="dash-panel-titulo">⚠️ Órdenes demoradas</div>
+          ${demoradasHtml}
+        </div>
+      </div>
+
+      <div class="dash-panel">
+        <div class="dash-panel-titulo">👤 Productividad por técnico</div>
+        ${tecnicoHtml}
+      </div>`;
+  } catch(e) {
+    cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// TABS DEL DASHBOARD
+// ═══════════════════════════════════════════════════════════
+function switchDashTab(tab) {
+  const opCont = document.getElementById('dash-contenido');
+  const finCont = document.getElementById('dash-financiero-contenido');
+  const btnOp  = document.getElementById('dash-tab-operativo');
+  const btnFin = document.getElementById('dash-tab-financiero');
+
+  if (tab === 'operativo') {
+    if (opCont)  opCont.style.display  = '';
+    if (finCont) finCont.style.display = 'none';
+    if (btnOp)  btnOp.classList.add('active');
+    if (btnFin) btnFin.classList.remove('active');
+    if (!opCont?.innerHTML?.trim() || opCont.innerHTML.includes('loading')) cargarDashboard();
+  } else {
+    if (opCont)  opCont.style.display  = 'none';
+    if (finCont) finCont.style.display = '';
+    if (btnOp)  btnOp.classList.remove('active');
+    if (btnFin) btnFin.classList.add('active');
+    cargarDashboardFinanciero();
   }
 }

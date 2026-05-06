@@ -1,4 +1,3 @@
-
 /* ═══════════════════════════════════════════════════════════
    VARIABLES Y RESET
 ═══════════════════════════════════════════════════════════ */
@@ -1076,6 +1075,8 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   border-radius: 4px;
   margin-bottom: 10px;
 }
+
+
 .check-item {
   display: flex;
   align-items: flex-start;
@@ -1390,3 +1391,105 @@ font-family: 'DM Sans', sans-serif;
   .cal-cell { min-height: 56px; }
   .cal-orden { font-size: 9px; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   PANTALLA TALLER
+═══════════════════════════════════════════════════════════ */
+.taller-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  height: calc(100vh - 56px);
+}
+@media (max-width: 700px) { .taller-grid { grid-template-columns: 1fr; } }
+
+.taller-col {
+  background: white;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: var(--radio);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.taller-col-header {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 700;
+}
+.taller-count {
+  font-family: 'DM Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+}
+.taller-col-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.taller-orden-card {
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: var(--gris-bg);
+}
+.taller-orden-placa {
+  font-family: 'DM Mono', monospace;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  color: var(--texto);
+  margin-bottom: 4px;
+}
+.taller-empty {
+  text-align: center;
+  color: var(--gris-mid);
+  font-size: 13px;
+  padding: 40px 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REPUESTOS
+═══════════════════════════════════════════════════════════ */
+.rep-card {
+  background: white;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: var(--radio);
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  transition: box-shadow 0.15s;
+}
+.rep-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.rep-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--gris-borde);
+}
+.repuesto-item-row {
+  padding: 12px;
+
+  background: var(--gris-bg);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+/* DRAG CSS para servicios y etapas */
+.srv-panel.dragging { opacity: 0.5; transform: scale(0.98); }
+.srv-panel.srv-drag-over { border: 2px dashed var(--azul-mid); background: var(--azul-light); }
+.srv-drag-handle { font-size: 14px; color: var(--gris-mid); cursor: grab; margin-right: 8px; user-select: none; padding: 2px 4px; }
+.srv-drag-handle:hover { color: var(--azul); }
+#srv-drag-container { display: flex; flex-direction: column; gap: 0; }
+.etapa-card.etapa-drag-over { border: 2px dashed var(--azul-mid); background: var(--azul-light); }
+.etapa-card.dragging { opacity: 0.5; }
+
+
+

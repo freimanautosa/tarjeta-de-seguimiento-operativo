@@ -11,6 +11,14 @@ function montarMecanico() {
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
         Mis órdenes
       </button>
+      <button class="nav-item" id="nav-mec-historial" onclick="navMec('historial')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Mi historial
+      </button>
+      <button class="nav-item" id="nav-mec-repuestos" onclick="navMec('repuestos')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83"/></svg>
+        Solicitar repuestos
+      </button>
     `;
   }
   
@@ -21,16 +29,34 @@ function montarMecanico() {
         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
         <span>Mis órdenes</span>
       </button>
+      <button class="bnav-item" id="bnav-mec-historial" onclick="navMec('historial')">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>Historial</span>
+      </button>
+      <button class="bnav-item" id="bnav-mec-repuestos" onclick="navMec('repuestos')">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4"/></svg>
+        <span>Repuestos</span>
+      </button>
     `;
   }
   navMec('ordenes');
 }
 
 function navMec(pag) {
-  mostrarPagina(pag === 'ordenes' ? 'pag-mecanico' : 'pag-mec-detalle');
+  ['ordenes','historial','repuestos'].forEach(p => {
+    const nb = document.getElementById('nav-mec-'+p);
+    const bb = document.getElementById('bnav-mec-'+p);
+    if (nb) nb.classList.toggle('active', p===pag);
+    if (bb) bb.classList.toggle('active', p===pag);
+  });
+  const titles = { ordenes:'Mis Órdenes', historial:'Mi Historial', repuestos:'Solicitar Repuestos' };
+  const pages  = { ordenes:'pag-mecanico', historial:'pag-mec-historial', repuestos:'pag-mec-repuestos' };
+  mostrarPagina(pages[pag]||'pag-mecanico');
   const title = document.getElementById('topbar-title');
-  if (title) title.textContent = pag === 'ordenes' ? 'Mis Órdenes' : 'Detalle';
-  if (pag === 'ordenes') cargarEtapasMecanico();
+  if (title) title.textContent = titles[pag]||'Mis Órdenes';
+  if (pag==='ordenes') cargarEtapasMecanico();
+  if (pag==='historial') cargarHistorialMecanico();
+  if (pag==='repuestos') cargarRepuestosMecanico();
   closeSidebar();
 }
 
@@ -87,7 +113,7 @@ async function cargarEtapasMecanico() {
         </div>`;
       }).join('');
 
-      return `<div class="mec-orden-card">
+      return `<div class="mec-orden-card" onclick="abrirOrdenMecanico(${oid})" style="cursor:pointer">
         <div class="mec-orden-header">
           <div>
             <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:500;letter-spacing:2px">${orden.placa || '—'}</div>
@@ -267,4 +293,173 @@ async function mecGuardarNovedad(eid, oid) {
     if (input) input.value = '';
     abrirMecDetalle(eid, oid);
   } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+// ═══════════════════════════════════════════════════════════
+// HISTORIAL DEL MECÁNICO
+// ═══════════════════════════════════════════════════════════
+async function cargarHistorialMecanico() {
+  const cont = document.getElementById('mec-historial-contenido');
+  if (!cont) return;
+  cont.innerHTML = '<div class="loading-state">Cargando historial...</div>';
+  try {
+    const etapas = await api(`/etapas?mecanico_id=eq.${sesion.id}&fin=not.is.null&order=fin.desc&limit=100`) || [];
+    if (!etapas.length) {
+      cont.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><p style="font-size:15px;font-weight:600;margin-bottom:6px">Sin historial aún</p><p>Cuando finalices etapas aparecerán aquí.</p></div>`;
+      return;
+    }
+    const oids = [...new Set(etapas.map(e => e.orden_id))];
+    const ordenes = await api(`/ordenes?id=in.(${oids.join(',')})&select=id,placa,marca,linea`).catch(()=>[]) || [];
+    const totalMins = etapas.reduce((acc, e) => e.inicio && e.fin ? acc + Math.round((new Date(e.fin)-new Date(e.inicio))/60000) : acc, 0);
+    const hTot = Math.floor(totalMins/60), mTot = totalMins%60;
+    const promMin = etapas.length ? Math.round(totalMins/etapas.length) : 0;
+    const hProm = Math.floor(promMin/60), mProm = promMin%60;
+    const srvConteo = {};
+    etapas.forEach(e => { const s = e.servicio||'otro'; srvConteo[s]=(srvConteo[s]||0)+1; });
+    const srvTop = Object.entries(srvConteo).sort((a,b)=>b[1]-a[1])[0];
+    const srvColor = { latoneria:'#DC2626', pintura:'#D97706', mecanica:'#2563EB', adicionales:'#059669' };
+
+    cont.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+        <div style="background:white;border:1.5px solid var(--gris-borde);border-radius:var(--radio);padding:16px;text-align:center">
+          <div style="font-size:26px;font-weight:700;color:var(--azul);font-family:'DM Mono',monospace">${etapas.length}</div>
+          <div style="font-size:11px;color:var(--gris-mid);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px">Etapas hechas</div>
+        </div>
+        <div style="background:white;border:1.5px solid var(--gris-borde);border-radius:var(--radio);padding:16px;text-align:center">
+          <div style="font-size:26px;font-weight:700;color:var(--verde);font-family:'DM Mono',monospace">${hTot}h ${mTot}m</div>
+          <div style="font-size:11px;color:var(--gris-mid);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px">Tiempo total</div>
+        </div>
+        <div style="background:white;border:1.5px solid var(--gris-borde);border-radius:var(--radio);padding:16px;text-align:center">
+          <div style="font-size:26px;font-weight:700;color:#D97706;font-family:'DM Mono',monospace">${hProm>0?hProm+'h ':''}${mProm}m</div>
+          <div style="font-size:11px;color:var(--gris-mid);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px">Prom. por etapa</div>
+        </div>
+      </div>
+      ${srvTop ? `<div style="background:white;border:1.5px solid var(--gris-borde);border-radius:var(--radio);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+        <div style="width:10px;height:10px;border-radius:50%;background:${srvColor[srvTop[0]]||'#6B7280'};flex-shrink:0"></div>
+        <div><div style="font-size:12px;color:var(--gris-mid)">Especialidad más frecuente</div>
+          <div style="font-size:15px;font-weight:600">${CATALOGO[srvTop[0]]?.nombre||srvTop[0]} · ${srvTop[1]} etapa${srvTop[1]>1?'s':''}</div></div>
+      </div>` : ''}
+      <div style="display:grid;grid-template-columns:100px 1fr 80px 70px;gap:12px;padding:6px 0;border-bottom:2px solid var(--gris-borde);margin-bottom:4px">
+        <div style="font-size:10px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:1px">Placa</div>
+        <div style="font-size:10px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:1px">Etapa</div>
+        <div style="font-size:10px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:1px">Fecha</div>
+        <div style="font-size:10px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:1px;text-align:right">Duración</div>
+      </div>
+      ${etapas.map(e => {
+        const o = ordenes.find(ord => ord.id === e.orden_id)||{};
+        const mins = e.inicio&&e.fin ? Math.round((new Date(e.fin)-new Date(e.inicio))/60000) : 0;
+        const dur = mins<60?`${mins}m`:`${Math.floor(mins/60)}h ${mins%60}m`;
+        const color = srvColor[e.servicio]||'#6B7280';
+        return `<div style="display:grid;grid-template-columns:100px 1fr 80px 70px;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gris-borde)">
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;letter-spacing:1px">${o.placa||'—'}</div>
+          <div><div style="font-weight:600;font-size:13px">${e.etapa||'—'}</div>
+            <div style="font-size:11px;color:${color}">${CATALOGO[e.servicio]?.nombre||e.servicio||'—'}</div></div>
+          <div style="font-size:12px;color:var(--gris-mid)">${formatFecha(e.fin)}</div>
+          <div style="font-size:13px;font-weight:600;color:var(--azul);text-align:right">${dur}</div>
+        </div>`;
+      }).join('')}`;
+  } catch(e) { cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`; }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SOLICITAR REPUESTOS (MECÁNICO)
+// ═══════════════════════════════════════════════════════════
+let _mecRepItems = [0];
+
+async function cargarRepuestosMecanico() {
+  const cont = document.getElementById('mec-repuestos-contenido');
+  if (!cont) return;
+  cont.innerHTML = '<div class="loading-state">Cargando...</div>';
+  try {
+    const etapas = await api(`/etapas?mecanico_id=eq.${sesion.id}&fin=is.null&select=orden_id`).catch(()=>[]) || [];
+    const oids = [...new Set(etapas.map(e=>e.orden_id))];
+    const ordenes = oids.length ? await api(`/ordenes?id=in.(${oids.join(',')})&select=id,placa,propietario`).catch(()=>[]) || [] : [];
+    const solicitudes = await api(`/repuestos_solicitud?solicitado_por=eq.${encodeURIComponent(sesion.nombre)}&order=creado_en.desc&limit=20`).catch(()=>[]) || [];
+    const estadoColor = { pendiente:'#D97706', aprobado:'#2563EB', conseguido:'#059669', rechazado:'#DC2626' };
+    const estadoBg   = { pendiente:'#FEF3C7', aprobado:'#EBF2FF', conseguido:'#E6F5EF', rechazado:'#FEE2E2' };
+
+    _mecRepItems = [0];
+    cont.innerHTML = `
+      ${solicitudes.length ? `<div style="margin-bottom:20px">
+        <div class="seccion-titulo" style="margin-bottom:10px">Mis solicitudes recientes</div>
+        ${solicitudes.map(s => {
+          const o = ordenes.find(ord=>ord.id===s.orden_id)||{};
+          const color = estadoColor[s.estado]||'#6B7280';
+          const bg = estadoBg[s.estado]||'#F3F4F6';
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;border:1px solid var(--gris-borde);border-radius:6px;margin-bottom:6px">
+            <div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px">${o.placa||'—'}</div>
+              <div style="font-size:11px;color:var(--gris-mid)">${formatTS(s.creado_en)}</div></div>
+            <span style="font-size:11px;font-weight:700;color:${color};background:${bg};padding:3px 10px;border-radius:99px;text-transform:uppercase">${s.estado}</span>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+      <div class="seccion-titulo" style="margin-bottom:10px">Nueva solicitud</div>
+      ${!oids.length ? '<div style="font-size:13px;color:var(--gris-mid);padding:12px 0">No tenés órdenes activas asignadas.</div>' : `
+        <div class="field" style="margin-bottom:12px"><label>Orden de trabajo *</label>
+          <select id="mec-rep-orden">
+            <option value="">— Seleccioná la orden —</option>
+            ${ordenes.map(o=>`<option value="${o.id}">${o.placa} · ${o.propietario||'—'}</option>`).join('')}
+          </select>
+        </div>
+        <div id="mec-rep-items">${renderMecRepItem(0)}</div>
+        <button class="btn btn-ghost btn-sm" onclick="agregarMecRepItem()" style="margin-top:4px;margin-bottom:16px">+ Agregar pieza</button>
+        <div class="btn-row"><button class="btn btn-primary" onclick="enviarMecRepuestos()">Enviar solicitud</button></div>
+      `}`;
+  } catch(e) { cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`; }
+}
+
+function renderMecRepItem(idx) {
+  return `<div style="background:var(--gris-bg);border-radius:8px;padding:12px;margin-bottom:8px" id="mec-ri-${idx}">
+    ${_mecRepItems.length>1?`<div style="display:flex;justify-content:flex-end;margin-bottom:4px"><button class="btn btn-ghost btn-xs" onclick="quitarMecRepItem(${idx})" style="color:var(--rojo)">✕</button></div>`:''}
+    <div style="display:grid;grid-template-columns:1fr 70px;gap:8px;margin-bottom:8px">
+      <div class="field"><label>Descripción *</label><input id="mec-rdesc-${idx}" type="text" placeholder="Nombre de la pieza"></div>
+      <div class="field"><label>Cant.</label><input id="mec-rcant-${idx}" type="number" min="1" value="1"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="field"><label>N° Parte OEM</label><input id="mec-rpart-${idx}" type="text" placeholder="Opcional"></div>
+      <div class="field"><label>Operación</label>
+        <select id="mec-roper-${idx}">
+          <option value="reemplazar">Reemplazar</option>
+          <option value="reparar">Reparar</option>
+          <option value="pintar">Pintar</option>
+          <option value="calibrar">Calibrar</option>
+          <option value="programar">Programar</option>
+        </select>
+      </div>
+    </div>
+  </div>`;
+}
+
+function agregarMecRepItem() {
+  const idx = Date.now();
+  _mecRepItems.push(idx);
+  document.getElementById('mec-rep-items')?.insertAdjacentHTML('beforeend', renderMecRepItem(idx));
+}
+
+function quitarMecRepItem(idx) {
+  _mecRepItems = _mecRepItems.filter(i=>i!==idx);
+  document.getElementById(`mec-ri-${idx}`)?.remove();
+}
+
+async function enviarMecRepuestos() {
+  const ordenId = parseInt(document.getElementById('mec-rep-orden')?.value);
+  if (!ordenId) { toast('Seleccioná una orden', 'err'); return; }
+  const items = _mecRepItems.map(idx => ({
+    descripcion: document.getElementById(`mec-rdesc-${idx}`)?.value?.trim()||'',
+    cantidad: parseInt(document.getElementById(`mec-rcant-${idx}`)?.value)||1,
+    numero_parte_oem: document.getElementById(`mec-rpart-${idx}`)?.value?.trim()||null,
+    operacion: document.getElementById(`mec-roper-${idx}`)?.value||'reemplazar'
+  }));
+  if (items.some(i=>!i.descripcion)) { toast('Completá la descripción de cada pieza', 'err'); return; }
+  try {
+    const res = await api('/repuestos_solicitud?select=id', 'POST', {
+      orden_id: ordenId, solicitado_por: sesion?.nombre||'Mecánico', estado: 'pendiente'
+    }, { Prefer: 'return=representation' });
+    const sid = res[0].id;
+    for (const item of items) {
+      await api('/repuestos_items', 'POST', { solicitud_id: sid, ...item }, { Prefer: 'return=minimal' });
+    }
+    toast('Solicitud enviada ✓');
+    _mecRepItems = [0];
+    cargarRepuestosMecanico();
+  } catch(e) { toast('Error: '+e.message, 'err'); }
 }

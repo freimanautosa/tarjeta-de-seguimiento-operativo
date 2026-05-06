@@ -92,7 +92,12 @@
     <div class="content">
       <!-- PÁGINAS (contenedores vacíos, JS llena el contenido) -->
       <div class="pagina" id="pag-dashboard">
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <button class="filtro-btn active" id="dash-tab-operativo" onclick="switchDashTab('operativo')">Estado del taller</button>
+    <button class="filtro-btn" id="dash-tab-financiero" onclick="switchDashTab('financiero')">Financiero</button>
+  </div>
   <div id="dash-contenido"></div>
+  <div id="dash-financiero-contenido" style="display:none"></div>
 </div>
       <div class="pagina" id="pag-ordenes">
         <div class="filtros-bar" id="filtros-bar">
@@ -218,6 +223,10 @@
           <div class="loading-state">Cargando...</div>
         </div>
       </div>
+      <div class="pagina" id="pag-mec-historial"><div id="mec-historial-contenido"></div></div>
+      <div class="pagina" id="pag-mec-repuestos"><div id="mec-repuestos-contenido"></div></div>
+      <div class="pagina" id="pag-mec-orden"><div id="mec-orden-contenido"></div></div>
+      <div class="pagina" id="pag-financiero"><div id="dash-financiero-contenido"></div></div>
       <div class="pagina" id="pag-mec-detalle">
         <button class="back-btn" onclick="volverAMecOrdenes()">← Mis órdenes</button>
         <div id="mec-detalle-contenido"></div>

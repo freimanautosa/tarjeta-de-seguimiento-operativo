@@ -19,10 +19,12 @@ async function doLogin() {
       return;
     }
 
-    // 2. ¿Es mecánico/ejecutivo?
+    // 2. ¿Es mecánico/taller/repuestos?
     const mecs = await api(`/mecanicos?cedula=eq.${cedula}&activo=eq.true`);
     if (mecs?.length) {
-      iniciarSesion({ perfil: 'mecanico', nombre: mecs[0].nombre, cedula, id: mecs[0].id, datos: mecs[0] });
+      const rol = mecs[0].rol || '';
+      const perfil = rol === 'taller' ? 'taller' : rol === 'repuestos' ? 'repuestos' : 'mecanico';
+      iniciarSesion({ perfil, nombre: mecs[0].nombre, cedula, id: mecs[0].id, datos: mecs[0] });
       return;
     }
 
