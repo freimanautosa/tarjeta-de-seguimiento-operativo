@@ -344,7 +344,7 @@ async function abrirOrden(id) {
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <div class="seccion-titulo" style="margin-bottom:0">Servicios y Etapas</div>
-            <button class="btn btn-ghost btn-sm" onclick="abrirModalAgregar()">+ Agregar etapas</button>
+            ${sesion?.perfil === 'jefe' ? '<button class="btn btn-ghost btn-sm" onclick="abrirModalAgregar()">+ Agregar etapas</button>' : ''}
           </div>
           ${serviciosHtml}
         </div>

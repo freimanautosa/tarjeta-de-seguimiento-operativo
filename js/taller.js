@@ -1,39 +1,60 @@
 // ═══════════════════════════════════════════════════════════
-// PANTALLA TALLER — Tiempo real, sin sidebar
+// PANTALLA TALLER — Estilo tablero de aeropuerto
 // ═══════════════════════════════════════════════════════════
 
-let tallerSubscription = null;
-
 function montarTaller() {
-  // Ocultar sidebar y topbar hamburger — pantalla limpia
-  const sidebar  = document.getElementById('sidebar');
-  const overlay  = document.getElementById('sidebar-overlay');
+  const sidebar   = document.getElementById('sidebar');
+  const overlay   = document.getElementById('sidebar-overlay');
   const hamburger = document.querySelector('.hamburger');
   const bottomNav = document.getElementById('bottom-nav');
-  if (sidebar)   sidebar.style.display = 'none';
-  if (overlay)   overlay.style.display = 'none';
+  const topbar    = document.querySelector('.topbar');
+  const main      = document.querySelector('.main');
+  const content   = document.querySelector('.content');
+
+  if (sidebar)   sidebar.style.display   = 'none';
+  if (overlay)   overlay.style.display   = 'none';
   if (hamburger) hamburger.style.display = 'none';
   if (bottomNav) bottomNav.style.display = 'none';
+  if (topbar)    topbar.style.display    = 'none';
+  if (main)      main.style.marginLeft   = '0';
+  if (content)   { content.style.padding = '0'; content.style.maxWidth = '100%'; }
 
-  // Ajustar main para que ocupe todo
-  const main = document.querySelector('.main');
-  if (main) main.style.marginLeft = '0';
-
-  document.getElementById('topbar-title').textContent = 'Taller — Órdenes del día';
-  document.getElementById('topbar-actions').innerHTML = `
-    <span id="taller-reloj" style="font-family:'DM Mono',monospace;font-size:13px;color:var(--gris-mid)"></span>
-  `;
+  // Pantalla completa oscura
+  document.body.style.background = '#0A0F1A';
 
   mostrarPagina('pag-taller');
+  renderTallerShell();
   cargarPantallaTaller();
   iniciarRelojTaller();
-  suscribirTaller();
+  setInterval(() => { if (sesion?.perfil === 'taller') cargarPantallaTaller(); }, 30000);
+}
+
+function renderTallerShell() {
+  const cont = document.getElementById('taller-contenido');
+  if (!cont) return;
+
+  // Header
+  const header = document.createElement('div');
+  header.id = 'taller-header';
+  header.style.cssText = 'background:#060B14;border-bottom:1px solid #1E3A5F;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:10';
+  header.innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px">
+      <div style="width:8px;height:8px;border-radius:50%;background:#22C55E;box-shadow:0 0 8px #22C55E;animation:pulse 2s infinite"></div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px;color:#4A7C9E;text-transform:uppercase">Freimanautos · Sistema Operativo</div>
+    </div>
+    <div id="taller-reloj" style="font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:#E2E8F0;letter-spacing:4px"></div>
+    <div id="taller-fecha" style="font-family:'DM Mono',monospace;font-size:11px;color:#4A7C9E;letter-spacing:2px;text-align:right"></div>
+  `;
+  cont.parentElement.insertBefore(header, cont);
 }
 
 function iniciarRelojTaller() {
   function tick() {
-    const el = document.getElementById('taller-reloj');
-    if (el) el.textContent = new Date().toLocaleTimeString('es-CO');
+    const reloj = document.getElementById('taller-reloj');
+    const fecha = document.getElementById('taller-fecha');
+    const now = new Date();
+    if (reloj) reloj.textContent = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    if (fecha) fecha.innerHTML = now.toLocaleDateString('es-CO', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase();
   }
   tick();
   setInterval(tick, 1000);
@@ -49,88 +70,126 @@ async function cargarPantallaTaller() {
     const manana = new Date(hoy);
     manana.setDate(manana.getDate() + 1);
     const hoyISO = hoy.toISOString().split('T')[0];
-    const mananaISO = manana.toISOString().split('T')[0];
 
     const [todasOrdenes, etapasActivas] = await Promise.all([
-      api(`/ordenes?estado=eq.Activa&order=creado_en.desc`).catch(()=>[]) || [],
-      api(`/etapas?fin=is.null&inicio=not.is.null&select=id,orden_id,etapa,servicio,mecanico_id,tecnico`).catch(()=>[]) || []
+      api(`/ordenes?estado=eq.Activa&order=fecha_entrega_1.asc`).catch(() => []) || [],
+      api(`/etapas?fin=is.null&inicio=not.is.null&select=id,orden_id,etapa,servicio,mecanico_id,tecnico,inicio`).catch(() => []) || []
     ]);
 
-    // Órdenes creadas hoy
-    const creadasHoy = todasOrdenes.filter(o => {
-      const f = new Date(o.creado_en);
-      return f >= hoy && f < manana;
-    });
-
-    // Órdenes para entregar hoy
+    const creadasHoy  = todasOrdenes.filter(o => new Date(o.creado_en) >= hoy && new Date(o.creado_en) < manana);
     const entregarHoy = todasOrdenes.filter(o => {
-      const f1 = o.fecha_entrega_1 ? new Date(o.fecha_entrega_1).toISOString().split('T')[0] : null;
-      const f2 = o.fecha_entrega_2 ? new Date(o.fecha_entrega_2).toISOString().split('T')[0] : null;
+      const f1 = o.fecha_entrega_1?.split('T')[0];
+      const f2 = o.fecha_entrega_2?.split('T')[0];
       return f1 === hoyISO || f2 === hoyISO;
     });
+    const enProceso   = todasOrdenes.filter(o => etapasActivas.some(e => e.orden_id === o.id));
 
-    const srvColor = { latoneria:'#DC2626', pintura:'#D97706', mecanica:'#2563EB', adicionales:'#059669' };
-    const srvNombre = { latoneria:'Latonería', pintura:'Pintura', mecanica:'Mecánica', adicionales:'Adicionales' };
+    const srvColor  = { latoneria: '#EF4444', pintura: '#F59E0B', mecanica: '#3B82F6', adicionales: '#10B981' };
+    const srvLabel  = { latoneria: 'LAT', pintura: 'PIN', mecanica: 'MEC', adicionales: 'ADI' };
 
-    function renderOrdenTaller(o) {
-      const etapasO = etapasActivas.filter(e => e.orden_id === o.id);
-      const etapsHtml = etapasO.length
-        ? etapasO.map(e => {
-            const color = srvColor[e.servicio] || '#6B7280';
-            return `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--gris-borde)">
-              <div style="width:3px;height:20px;background:${color};border-radius:99px;flex-shrink:0"></div>
-              <div style="flex:1">
-                <div style="font-size:12px;font-weight:600">${e.etapa||'—'}</div>
-                ${e.tecnico ? `<div style="font-size:10px;color:var(--gris-mid)"> ${e.tecnico}</div>` : ''}
-              </div>
-              <div style="font-size:10px;color:${color};font-weight:700">${srvNombre[e.servicio]||''}</div>
-            </div>`;
-          }).join('')
-        : `<div style="font-size:12px;color:var(--gris-mid);padding:6px 0">Sin etapas activas</div>`;
+    function tiempoEnEtapa(e) {
+      if (!e.inicio) return '';
+      const mins = Math.round((new Date() - new Date(e.inicio)) / 60000);
+      if (mins < 60) return `${mins}m`;
+      return `${Math.floor(mins/60)}h ${mins%60}m`;
+    }
 
-      return `<div class="taller-orden-card">
-        <div class="taller-orden-placa">${o.placa}</div>
-        <div style="font-size:12px;color:var(--gris-mid);margin-bottom:8px">${[o.marca,o.linea].filter(Boolean).join(' ')||'—'} · ${o.propietario||'—'}</div>
-        ${etapsHtml}
+    function urgencyColor(o) {
+      if (!o.fecha_entrega_1) return '#4A7C9E';
+      const dias = Math.round((new Date(o.fecha_entrega_1) - new Date()) / 86400000);
+      if (dias < 0)  return '#EF4444';
+      if (dias === 0) return '#F59E0B';
+      if (dias <= 2)  return '#EAB308';
+      return '#22C55E';
+    }
+
+    function renderFila(o, tipo) {
+      const ets   = etapasActivas.filter(e => e.orden_id === o.id);
+      const color = urgencyColor(o);
+      const dias  = o.fecha_entrega_1 ? Math.round((new Date(o.fecha_entrega_1) - new Date()) / 86400000) : null;
+      const diasLabel = dias === null ? '—' : dias < 0 ? 'VENCIDA' : dias === 0 ? 'HOY' : `${dias}d`;
+      const etaLabel  = ets.length
+        ? ets.map(e => `<span style="background:${srvColor[e.servicio]||'#4A7C9E'}22;color:${srvColor[e.servicio]||'#4A7C9E'};border:1px solid ${srvColor[e.servicio]||'#4A7C9E'}44;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;margin-right:4px">${srvLabel[e.servicio]||'—'} ${e.etapa||''}</span>`).join('')
+        : '<span style="color:#4A7C9E;font-size:11px">Sin etapa activa</span>';
+      const tecLabel  = [...new Set(ets.filter(e=>e.tecnico).map(e=>e.tecnico))].join(', ') || '—';
+      const tiempoLabel = ets.length ? tiempoEnEtapa(ets[0]) : '—';
+
+      return `<div class="taller-fila" style="display:grid;grid-template-columns:130px 1fr 180px 120px 80px 90px;align-items:center;gap:0;padding:0 32px;height:60px;border-bottom:1px solid #0D1B2E;transition:background 0.2s" onmouseover="this.style.background='#0D1B2E'" onmouseout="this.style.background='transparent'">
+        <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;letter-spacing:3px;color:#E2E8F0">${o.placa}</div>
+        <div>
+          <div style="font-size:13px;font-weight:500;color:#94A3B8;margin-bottom:4px">${[o.marca,o.linea].filter(Boolean).join(' ')||'—'}</div>
+          <div>${etaLabel}</div>
+        </div>
+        <div style="font-size:12px;color:#64748B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${tecLabel}">👤 ${tecLabel}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:12px;color:#64748B">${tiempoLabel}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:${color}">${diasLabel}</div>
+        <div>
+          ${tipo === 'entrega' ? `<span style="background:#22C55E22;color:#22C55E;border:1px solid #22C55E44;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px">ENTREGA HOY</span>` : ''}
+          ${tipo === 'ingreso' ? `<span style="background:#3B82F622;color:#3B82F6;border:1px solid #3B82F644;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px">NUEVO HOY</span>` : ''}
+          ${tipo === 'activa' ? `<span style="background:#F59E0B22;color:#F59E0B;border:1px solid #F59E0B44;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px">EN PROCESO</span>` : ''}
+        </div>
       </div>`;
     }
 
+    function renderSeccion(titulo, color, icono, ordenes, tipo) {
+      if (!ordenes.length) return '';
+      return `
+        <div style="margin-bottom:2px">
+          <div style="display:grid;grid-template-columns:130px 1fr 180px 120px 80px 90px;align-items:center;gap:0;padding:0 32px;height:36px;background:${color}18;border-left:3px solid ${color}">
+            <div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;letter-spacing:3px;color:${color};grid-column:1/-1">${icono} ${titulo} <span style="opacity:0.6">(${ordenes.length})</span></div>
+          </div>
+          <div style="display:grid;grid-template-columns:130px 1fr 180px 120px 80px 90px;padding:4px 32px 4px;border-bottom:1px solid #0D1B2E">
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">PLACA</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">VEHÍCULO / ETAPA ACTUAL</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">TÉCNICO</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">TIEMPO ETAPA</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">ENTREGA</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">ESTADO</div>
+          </div>
+          ${ordenes.map(o => renderFila(o, tipo)).join('')}
+        </div>`;
+    }
+
+    // Stats bar
+    const statsHtml = `
+      <div style="display:flex;align-items:center;gap:40px;padding:12px 32px;background:#060B14;border-bottom:1px solid #0D1B2E">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:#3B82F6">${todasOrdenes.length}</div>
+          <div style="font-size:10px;color:#4A7C9E;letter-spacing:1px;text-transform:uppercase">Órdenes<br>activas</div>
+        </div>
+        <div style="width:1px;height:36px;background:#1E3A5F"></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:#22C55E">${entregarHoy.length}</div>
+          <div style="font-size:10px;color:#4A7C9E;letter-spacing:1px;text-transform:uppercase">Entregan<br>hoy</div>
+        </div>
+        <div style="width:1px;height:36px;background:#1E3A5F"></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:#3B82F6">${creadasHoy.length}</div>
+          <div style="font-size:10px;color:#4A7C9E;letter-spacing:1px;text-transform:uppercase">Ingresaron<br>hoy</div>
+        </div>
+        <div style="width:1px;height:36px;background:#1E3A5F"></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:#F59E0B">${enProceso.length}</div>
+          <div style="font-size:10px;color:#4A7C9E;letter-spacing:1px;text-transform:uppercase">En proceso<br>ahora</div>
+        </div>
+        <div style="flex:1"></div>
+        <div style="font-size:10px;color:#1E3A5F;font-family:'DM Mono',monospace">ACTUALIZA CADA 30s</div>
+      </div>`;
+
     cont.innerHTML = `
-      <div class="taller-grid">
-        <div class="taller-col">
-          <div class="taller-col-header" style="background:var(--azul);color:white">
-            <span> Ingresaron hoy</span>
-            <span class="taller-count">${creadasHoy.length}</span>
-          </div>
-          <div class="taller-col-body">
-            ${creadasHoy.length
-              ? creadasHoy.map(renderOrdenTaller).join('')
-              : '<div class="taller-empty">Sin ingresos hoy</div>'}
-          </div>
-        </div>
-        <div class="taller-col">
-          <div class="taller-col-header" style="background:var(--verde);color:white">
-            <span> Entregan hoy</span>
-            <span class="taller-count">${entregarHoy.length}</span>
-          </div>
-          <div class="taller-col-body">
-            ${entregarHoy.length
-              ? entregarHoy.map(renderOrdenTaller).join('')
-              : '<div class="taller-empty">Sin entregas programadas</div>'}
-          </div>
-        </div>
-      </div>
-    `;
+      <style>
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        #pag-taller { background:#0A0F1A; min-height:100vh; }
+      </style>
+      ${statsHtml}
+      ${renderSeccion('ENTREGAS DEL DÍA', '#22C55E', '✈', entregarHoy, 'entrega')}
+      ${renderSeccion('INGRESOS DE HOY', '#3B82F6', '🚗', creadasHoy, 'ingreso')}
+      ${renderSeccion('EN PROCESO', '#F59E0B', '🔧', enProceso.filter(o => !entregarHoy.includes(o) && !creadasHoy.includes(o)), 'activa')}
+      ${!entregarHoy.length && !creadasHoy.length && !enProceso.length
+        ? `<div style="text-align:center;padding:80px 0;color:#1E3A5F;font-family:'DM Mono',monospace;font-size:14px;letter-spacing:2px">SIN ACTIVIDAD HOY</div>`
+        : ''}`;
   } catch(e) {
     const cont2 = document.getElementById('taller-contenido');
-    if (cont2) cont2.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
+    if (cont2) cont2.innerHTML = `<div style="color:#EF4444;padding:40px;font-family:'DM Mono',monospace">ERROR: ${e.message}</div>`;
   }
-}
-
-function suscribirTaller() {
-  // Polling cada 30 segundos — Supabase Realtime requiere configuración adicional
-  // pero polling es suficiente para pantalla de taller
-  setInterval(() => {
-    if (sesion?.perfil === 'taller') cargarPantallaTaller();
-  }, 30000);
 }
