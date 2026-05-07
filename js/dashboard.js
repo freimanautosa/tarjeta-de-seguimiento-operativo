@@ -205,7 +205,7 @@ async function cargarDashboard() {
                 <div class="proceso-orden-vehiculo">${[o?.marca, o?.linea].filter(Boolean).join(' ')||'—'}</div>
               </div>
               <div style="text-align:right;margin-left:auto">
-                ${e.tecnico ? `<div style="font-size:10px;color:var(--gris-mid)">👤 ${e.tecnico}</div>` : ''}
+                ${e.tecnico ? `<div style="font-size:10px;color:var(--gris-mid)"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:inline-block;vertical-align:-1px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${e.tecnico}</div>` : ''}
                 <div style="font-size:10px;color:${dias >= 3 ? 'var(--rojo)' : 'var(--gris-mid)'};font-weight:${dias>=3?'700':'400'}">${dias}d</div>
               </div>
             </div>`;
@@ -219,7 +219,7 @@ async function cargarDashboard() {
             ${ets.length ? filasHtml + masHtml : '<div class="proceso-vacio">Sin carros</div>'}
           </div>`;
         }).join('')
-      : '<div class="empty-state"><div class="empty-state-icon">🔧</div><p>No hay etapas activas ahora.</p></div>';
+      : '<div class="empty-state"><div class="empty-state-icon"><svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div><p>No hay etapas activas ahora.</p></div>';
 
     // ── Render ────────────────────────────────────────────
     cont.innerHTML = `
@@ -535,25 +535,25 @@ async function cargarDashboardFinanciero() {
       <!-- KPIs financieros -->
       <div class="dash-grid" style="margin-bottom:16px">
         <div class="dash-card">
-          <div class="dash-card-icon" style="background:#E6F5EF;color:#059669">💰</div>
+          <div class="dash-card-icon" style="background:#E6F5EF;color:#059669"><svg width="22" height="22" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
           <div class="dash-card-val" style="color:var(--verde);font-size:20px">${fmt(wipTotal)}</div>
           <div class="dash-card-label">WIP — trabajo en proceso</div>
           <div class="dash-card-sub">MO: ${fmt(wipMO)} · Rep: ${fmt(wipRep)}</div>
         </div>
         <div class="dash-card">
-          <div class="dash-card-icon" style="background:#EBF2FF;color:#2563EB">📊</div>
+          <div class="dash-card-icon" style="background:#EBF2FF;color:#2563EB"><svg width="22" height="22" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg></div>
           <div class="dash-card-val" style="color:var(--azul);font-size:20px">${fmt(totalFacturado)}</div>
           <div class="dash-card-label">Total facturado (entregadas)</div>
           <div class="dash-card-sub">${ordenesEntregadas.length} órdenes entregadas</div>
         </div>
         <div class="dash-card">
-          <div class="dash-card-icon" style="background:#FEF3C7;color:#D97706">🎫</div>
+          <div class="dash-card-icon" style="background:#FEF3C7;color:#D97706"><svg width="22" height="22" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></div>
           <div class="dash-card-val" style="color:#D97706;font-size:20px">${fmt(ticketProm)}</div>
           <div class="dash-card-label">Ticket promedio por orden</div>
           <div class="dash-card-sub">Mano de obra + repuestos</div>
         </div>
         <div class="dash-card">
-          <div class="dash-card-icon" style="background:#FEE2E2;color:#DC2626">⚠️</div>
+          <div class="dash-card-icon" style="background:#FEE2E2;color:#DC2626"><svg width="22" height="22" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
           <div class="dash-card-val" style="color:var(--rojo)">${demoradas.length}</div>
           <div class="dash-card-label">Órdenes demoradas</div>
           <div class="dash-card-sub">>30% sobre promedio histórico</div>
@@ -562,17 +562,17 @@ async function cargarDashboardFinanciero() {
 
       <div class="dash-row-2" style="margin-bottom:16px">
         <div class="dash-panel">
-          <div class="dash-panel-titulo">⏱ Tiempo real vs estimado por servicio</div>
+          <div class="dash-panel-titulo"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Tiempo real vs estimado por servicio</div>
           ${tiempoSrvHtml}
         </div>
         <div class="dash-panel">
-          <div class="dash-panel-titulo">⚠️ Órdenes demoradas</div>
+          <div class="dash-panel-titulo"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Órdenes demoradas</div>
           ${demoradasHtml}
         </div>
       </div>
 
       <div class="dash-panel">
-        <div class="dash-panel-titulo">👤 Productividad por técnico</div>
+        <div class="dash-panel-titulo"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Productividad por técnico</div>
         ${tecnicoHtml}
       </div>`;
   } catch(e) {

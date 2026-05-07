@@ -130,6 +130,6 @@ async function crearOrdenDesdeCotizacion(cot) {
     estado: 'Activa'
   }, { Prefer: 'return=representation' });
   const ordenId = res[0].id;
-  await api(`/cotizaciones?id=eq.${cot.id}`, 'PATCH', { orden_id: ordenId }).catch(() => {});
+  await api(`/cotizaciones?id=eq.${cot.id}`, 'PATCH', { orden_id: ordenId });
   return ordenId;
 }

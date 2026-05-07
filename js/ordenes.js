@@ -1348,6 +1348,10 @@ function montarJefe() {
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
         Mecánicos
       </button>
+      <button class="nav-item" id="nav-repuestos" onclick="navJefe('repuestos')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+        Repuestos
+      </button>
     `;
   }
 
@@ -1370,6 +1374,10 @@ function montarJefe() {
         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
         <span>Cotizaciones</span>
       </button>
+      <button class="bnav-item" id="bnav-repuestos" onclick="navJefe('repuestos')">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+        <span>Repuestos</span>
+      </button>
     `;
   }
 
@@ -1389,7 +1397,7 @@ function montarJefe() {
 
 function navJefe(pag) {
   // Actualizar clases active en sidebar y bottom nav
-  const pages = ['ordenes', 'nueva', 'dashboard', 'cotizaciones', 'calendario', 'mecanicos'];
+  const pages = ['ordenes', 'nueva', 'dashboard', 'cotizaciones', 'calendario', 'mecanicos', 'repuestos'];
   pages.forEach(p => {
     const navBtn = document.getElementById('nav-' + p);
     const bnavBtn = document.getElementById('bnav-' + p);
@@ -1439,6 +1447,11 @@ function navJefe(pag) {
       pagId = 'pag-mecanicos';
       titulo = 'Mecánicos';
       cargarMecanicosVista();
+      break;
+    case 'repuestos':
+      pagId = 'pag-repuestos';
+      titulo = 'Repuestos';
+      navRepuestos('pendientes');
       break;
     default:
       pagId = 'pag-ordenes';

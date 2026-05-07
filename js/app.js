@@ -32,8 +32,8 @@ function montarApp() {
 
 document.addEventListener('DOMContentLoaded', function() {
   // Si la URL tiene ?view=monitor, montar el monitor sin login
-  if (esVistaMonitor()) {
-    montarMonitor();
+  if (typeof esVistaMonitor === 'function' && esVistaMonitor()) {
+    if (typeof montarMonitor === 'function') montarMonitor();
     return;
   }
 
