@@ -25,6 +25,10 @@ const CATALOGO = {
       { key: 'lat_tot',       nombre: 'T.O.T', tot: true },
     ]
   },
+
+
+
+
   pintura: {
     nombre: 'Pintura', clase: 'pintura',
     etapas: [
