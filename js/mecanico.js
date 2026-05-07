@@ -67,7 +67,7 @@ async function cargarEtapasMecanico() {
   try {
     const etapas = await api(`/etapas?mecanico_id=eq.${sesion.id}&order=creado_en.asc`) || [];
     if (!etapas.length) {
-      cont.innerHTML = `<div class="empty-state"><div class="empty-state-icon"><svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><p>No tienes etapas asignadas por el momento.</p></div>`;
+      cont.innerHTML = `<div class="empty-state"><div class="empty-state-icon">✅</div><p>No tienes etapas asignadas por el momento.</p></div>`;
       return;
     }
 
@@ -191,7 +191,7 @@ async function abrirMecDetalle(eid, oid) {
     const fotosHtml = fotos.map(f => `
       <div class="foto-thumb" onclick="abrirLightbox('${f.url}')">
         <img src="${f.url}" alt="">
-        <button class="foto-delete" onclick="event.stopPropagation();eliminarFotoMec(${f.id},'${f.url}',${eid},${oid})"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        <button class="foto-delete" onclick="event.stopPropagation();eliminarFotoMec(${f.id},'${f.url}',${eid},${oid})">✕</button>
       </div>`).join('');
 
     const novsHtml = novedades.length ? novedades.map(n => `
@@ -212,7 +212,7 @@ async function abrirMecDetalle(eid, oid) {
         <div class="fotos-grid" id="mec-fotos-grid">${fotosHtml}</div>
         <div class="upload-zone" onclick="document.getElementById('mec-fi-${k}').click()" style="margin-top:10px">
           <input type="file" id="mec-fi-${k}" accept="image/*" multiple onchange="mecSubirFotos(this,${eid},'${etapa.etapa || ''}',${oid})">
-          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 4px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <div style="font-size:20px">📷</div>
           <p>Subir fotos</p>
           <div class="upload-prog" id="mec-prog-${k}"></div>
         </div>
@@ -304,7 +304,7 @@ async function cargarHistorialMecanico() {
   try {
     const etapas = await api(`/etapas?mecanico_id=eq.${sesion.id}&fin=not.is.null&order=fin.desc&limit=100`) || [];
     if (!etapas.length) {
-      cont.innerHTML = `<div class="empty-state"><div class="empty-state-icon"><svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div><p style="font-size:15px;font-weight:600;margin-bottom:6px">Sin historial aún</p><p>Cuando finalices etapas aparecerán aquí.</p></div>`;
+      cont.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><p style="font-size:15px;font-weight:600;margin-bottom:6px">Sin historial aún</p><p>Cuando finalices etapas aparecerán aquí.</p></div>`;
       return;
     }
     const oids = [...new Set(etapas.map(e => e.orden_id))];
@@ -374,21 +374,30 @@ async function cargarRepuestosMecanico() {
     const oids = [...new Set(etapas.map(e=>e.orden_id))];
     const ordenes = oids.length ? await api(`/ordenes?id=in.(${oids.join(',')})&select=id,placa,propietario`).catch(()=>[]) || [] : [];
     const solicitudes = await api(`/repuestos_solicitud?solicitado_por=eq.${encodeURIComponent(sesion.nombre)}&order=creado_en.desc&limit=20`).catch(()=>[]) || [];
-    const estadoColor = { pendiente:'#D97706', aprobado:'#2563EB', conseguido:'#059669', rechazado:'#DC2626' };
-    const estadoBg   = { pendiente:'#FEF3C7', aprobado:'#EBF2FF', conseguido:'#E6F5EF', rechazado:'#FEE2E2' };
+    const estadoColor = { pendiente:'#D97706', aprobado:'#2563EB', enviado:'#7C3AED', recibido:'#059669', rechazado:'#DC2626' };
+    const estadoBg   = { pendiente:'#FEF3C7', aprobado:'#EBF2FF', enviado:'#EDE9FE', recibido:'#E6F5EF',  rechazado:'#FEE2E2' };
 
     _mecRepItems = [0];
     cont.innerHTML = `
       ${solicitudes.length ? `<div style="margin-bottom:20px">
-        <div class="seccion-titulo" style="margin-bottom:10px">Mis solicitudes recientes</div>
+        <div class="seccion-titulo" style="margin-bottom:10px">Mis solicitudes</div>
         ${solicitudes.map(s => {
           const o = ordenes.find(ord=>ord.id===s.orden_id)||{};
           const color = estadoColor[s.estado]||'#6B7280';
           const bg = estadoBg[s.estado]||'#F3F4F6';
-          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;border:1px solid var(--gris-borde);border-radius:6px;margin-bottom:6px">
-            <div><div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px">${o.placa||'—'}</div>
-              <div style="font-size:11px;color:var(--gris-mid)">${formatTS(s.creado_en)}</div></div>
-            <span style="font-size:11px;font-weight:700;color:${color};background:${bg};padding:3px 10px;border-radius:99px;text-transform:uppercase">${s.estado}</span>
+          const puedeRecibir = s.estado === 'enviado';
+          return `<div style="border:1px solid var(--gris-borde);border-radius:8px;padding:12px;margin-bottom:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${puedeRecibir?'10px':'0'}">
+              <div>
+                <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px">${o.placa||'—'}</div>
+                <div style="font-size:11px;color:var(--gris-mid);margin-top:2px">${formatTS(s.creado_en)}</div>
+              </div>
+              <span style="font-size:11px;font-weight:700;color:${color};background:${bg};padding:3px 12px;border-radius:99px;text-transform:uppercase">${s.estado}</span>
+            </div>
+            ${puedeRecibir ? `<button class="btn btn-success btn-sm" style="width:100%" onclick="marcarRepuestoRecibido(${s.id})">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+              Confirmar recibido
+            </button>` : ''}
           </div>`;
         }).join('')}
       </div>` : ''}
@@ -408,18 +417,14 @@ async function cargarRepuestosMecanico() {
 }
 
 function renderMecRepItem(idx) {
-  const svgX = '<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>';
-  return `<div style="background:white;border:1px solid var(--gris-borde);border-radius:8px;padding:14px;margin-bottom:8px" id="mec-ri-${idx}">
-    ${_mecRepItems.length>1?`<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button class="btn btn-ghost btn-xs" onclick="quitarMecRepItem(${idx})" style="color:var(--rojo);padding:4px 8px">${svgX} Quitar</button></div>`:''}
-    <div class="field" style="margin-bottom:8px">
-      <label>Descripción de la pieza *</label>
-      <input id="mec-rdesc-${idx}" type="text" placeholder="Ej: Parachoques delantero, faro izquierdo...">
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 80px;gap:8px;margin-bottom:8px">
-      <div class="field"><label>N° Parte OEM</label><input id="mec-rpart-${idx}" type="text" placeholder="Opcional"></div>
-      <div class="field"><label>Cantidad</label><input id="mec-rcant-${idx}" type="number" min="1" value="1"></div>
+  return `<div style="background:var(--gris-bg);border-radius:8px;padding:12px;margin-bottom:8px" id="mec-ri-${idx}">
+    ${_mecRepItems.length>1?`<div style="display:flex;justify-content:flex-end;margin-bottom:4px"><button class="btn btn-ghost btn-xs" onclick="quitarMecRepItem(${idx})" style="color:var(--rojo)">✕</button></div>`:''}
+    <div style="display:grid;grid-template-columns:1fr 70px;gap:8px;margin-bottom:8px">
+      <div class="field"><label>Descripción *</label><input id="mec-rdesc-${idx}" type="text" placeholder="Nombre de la pieza"></div>
+      <div class="field"><label>Cant.</label><input id="mec-rcant-${idx}" type="number" min="1" value="1"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="field"><label>N° Parte OEM</label><input id="mec-rpart-${idx}" type="text" placeholder="Opcional"></div>
       <div class="field"><label>Operación</label>
         <select id="mec-roper-${idx}">
           <option value="reemplazar">Reemplazar</option>
@@ -428,9 +433,6 @@ function renderMecRepItem(idx) {
           <option value="calibrar">Calibrar</option>
           <option value="programar">Programar</option>
         </select>
-      </div>
-      <div class="field"><label>Precio estimado (COP)</label>
-        <input id="mec-rprecio-${idx}" type="number" min="0" step="1000" placeholder="0 (opcional)">
       </div>
     </div>
   </div>`;
@@ -454,8 +456,7 @@ async function enviarMecRepuestos() {
     descripcion: document.getElementById(`mec-rdesc-${idx}`)?.value?.trim()||'',
     cantidad: parseInt(document.getElementById(`mec-rcant-${idx}`)?.value)||1,
     numero_parte_oem: document.getElementById(`mec-rpart-${idx}`)?.value?.trim()||null,
-    operacion: document.getElementById(`mec-roper-${idx}`)?.value||'reemplazar',
-    precio_lista: parseFloat(document.getElementById(`mec-rprecio-${idx}`)?.value)||null
+    operacion: document.getElementById(`mec-roper-${idx}`)?.value||'reemplazar'
   }));
   if (items.some(i=>!i.descripcion)) { toast('Completá la descripción de cada pieza', 'err'); return; }
   try {
@@ -470,4 +471,14 @@ async function enviarMecRepuestos() {
     _mecRepItems = [0];
     cargarRepuestosMecanico();
   } catch(e) { toast('Error: '+e.message, 'err'); }
+}
+async function marcarRepuestoRecibido(solicitudId) {
+  try {
+    await api(`/repuestos_solicitud?id=eq.${solicitudId}`, 'PATCH', {
+      estado: 'recibido',
+      recibido_en: new Date().toISOString()
+    });
+    toast('Repuestos confirmados como recibidos ✓');
+    cargarRepuestosMecanico();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
 }

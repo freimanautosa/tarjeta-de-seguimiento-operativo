@@ -1451,7 +1451,7 @@ function navJefe(pag) {
     case 'repuestos':
       pagId = 'pag-repuestos';
       titulo = 'Repuestos';
-      navRepuestos('pendientes');
+      mostrarRepuestosJefe();
       break;
     default:
       pagId = 'pag-ordenes';

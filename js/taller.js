@@ -120,7 +120,7 @@ async function cargarPantallaTaller() {
           <div style="font-size:13px;font-weight:500;color:#94A3B8;margin-bottom:4px">${[o.marca,o.linea].filter(Boolean).join(' ')||'—'}</div>
           <div>${etaLabel}</div>
         </div>
-        <div style="font-size:12px;color:#64748B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${tecLabel}">👤 ${tecLabel}</div>
+        <div style="font-size:12px;color:#64748B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${tecLabel}"> ${tecLabel}</div>
         <div style="font-family:'DM Mono',monospace;font-size:12px;color:#64748B">${tiempoLabel}</div>
         <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:${color}">${diasLabel}</div>
         <div>
@@ -173,7 +173,7 @@ async function cargarPantallaTaller() {
           <div style="font-size:10px;color:#4A7C9E;letter-spacing:1px;text-transform:uppercase">En proceso<br>ahora</div>
         </div>
         <div style="flex:1"></div>
-        <div style="font-size:10px;color:#1E3A5F;font-family:'DM Mono',monospace">ACTUALIZA CADA 30s</div>
+        <div style="font-size:10px;color:#1E3A5F;font-family:'DM Mono',monospace"></div>
       </div>`;
 
     cont.innerHTML = `
@@ -183,7 +183,7 @@ async function cargarPantallaTaller() {
       </style>
       ${statsHtml}
       ${renderSeccion('ENTREGAS DEL DÍA', '#22C55E', '✈', entregarHoy, 'entrega')}
-      ${renderSeccion('INGRESOS DE HOY', '#3B82F6', '🚗', creadasHoy, 'ingreso')}
+      ${renderSeccion('INGRESOS DE HOY', '#3B82F6', '', creadasHoy, 'ingreso')}
       ${renderSeccion('EN PROCESO', '#F59E0B', '🔧', enProceso.filter(o => !entregarHoy.includes(o) && !creadasHoy.includes(o)), 'activa')}
       ${!entregarHoy.length && !creadasHoy.length && !enProceso.length
         ? `<div style="text-align:center;padding:80px 0;color:#1E3A5F;font-family:'DM Mono',monospace;font-size:14px;letter-spacing:2px">SIN ACTIVIDAD HOY</div>`
