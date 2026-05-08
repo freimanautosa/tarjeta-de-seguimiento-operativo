@@ -2,6 +2,9 @@
 // PANTALLA TALLER — Estilo tablero de aeropuerto
 // ═══════════════════════════════════════════════════════════
 
+// IDs de órdenes completadas que ya sonaron — persiste en la sesión
+const _tallerOrdenesNotificadas = new Set();
+
 function montarTaller() {
   const sidebar   = document.getElementById('sidebar');
   const overlay   = document.getElementById('sidebar-overlay');
@@ -19,8 +22,16 @@ function montarTaller() {
   if (main)      main.style.marginLeft   = '0';
   if (content)   { content.style.padding = '0'; content.style.maxWidth = '100%'; }
 
-  // Pantalla completa oscura
   document.body.style.background = '#0A0F1A';
+
+  // Precargar audio
+  if (!document.getElementById('taller-audio')) {
+    const audio = document.createElement('audio');
+    audio.id  = 'taller-audio';
+    audio.src = 'motor.mp3';
+    audio.preload = 'auto';
+    document.body.appendChild(audio);
+  }
 
   mostrarPagina('pag-taller');
   renderTallerShell();
@@ -84,6 +95,29 @@ async function cargarPantallaTaller() {
     });
     const enProceso   = todasOrdenes.filter(o => etapasActivas.some(e => e.orden_id === o.id));
 
+    // ── Órdenes recién completadas ────────────────────────────────────────────
+    // Una orden está "recién completada" si tiene etapas pero ninguna activa en este momento.
+    // Consultamos etapas de todas las órdenes activas para detectarlo.
+    const todasEtapas = await api(
+      `/etapas?orden_id=in.(${todasOrdenes.map(o=>o.id).join(',')})&select=orden_id,fin`
+    ).catch(() => []) || [];
+
+    const recienCompletadas = todasOrdenes.filter(o => {
+      const ets = todasEtapas.filter(e => e.orden_id === o.id);
+      if (!ets.length) return false;                          // sin etapas → no aplica
+      const tieneActiva = etapasActivas.some(e => e.orden_id === o.id);
+      const todasFinalizadas = ets.every(e => e.fin);
+      return !tieneActiva && todasFinalizadas;
+    });
+
+    // Disparar audio + registrar para no repetir
+    const nuevasCompletadas = recienCompletadas.filter(o => !_tallerOrdenesNotificadas.has(o.id));
+    if (nuevasCompletadas.length) {
+      nuevasCompletadas.forEach(o => _tallerOrdenesNotificadas.add(o.id));
+      const audio = document.getElementById('taller-audio');
+      if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
+    }
+
     const srvColor  = { latoneria: '#EF4444', pintura: '#F59E0B', mecanica: '#3B82F6', adicionales: '#10B981' };
     const srvLabel  = { latoneria: 'LAT', pintura: 'PIN', mecanica: 'MEC', adicionales: 'ADI' };
 
@@ -101,6 +135,40 @@ async function cargarPantallaTaller() {
       if (dias === 0) return '#F59E0B';
       if (dias <= 2)  return '#EAB308';
       return '#22C55E';
+    }
+
+    function renderSeccionCompletadas(ordenes) {
+      return `
+        <div style="margin-bottom:2px">
+          <div style="display:grid;grid-template-columns:130px 1fr 180px 120px 80px 90px;align-items:center;gap:0;padding:0 32px;height:36px;background:#22C55E18;border-left:3px solid #22C55E">
+            <div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;letter-spacing:3px;color:#22C55E;grid-column:1/-1">
+              <svg width="12" height="12" fill="none" stroke="#22C55E" stroke-width="2.5" viewBox="0 0 24 24" style="display:inline-block;vertical-align:-1px;margin-right:6px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              COMPLETADAS — LISTAS PARA ENTREGAR <span style="opacity:0.6">(${ordenes.length})</span>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:130px 1fr 180px 120px 80px 90px;padding:4px 32px 4px;border-bottom:1px solid #0D1B2E">
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">PLACA</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">VEHÍCULO</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">PROPIETARIO</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase"></div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">ENTREGA</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">ESTADO</div>
+          </div>
+          ${ordenes.map(o => {
+            const color = urgencyColor(o);
+            const dias  = o.fecha_entrega_1 ? Math.round((new Date(o.fecha_entrega_1) - new Date()) / 86400000) : null;
+            const diasLabel = dias === null ? '—' : dias < 0 ? 'VENCIDA' : dias === 0 ? 'HOY' : `${dias}d`;
+            const esNueva = nuevasCompletadas.some(n => n.id === o.id);
+            return `<div class="${esNueva ? 'fila-completada' : ''}" style="display:grid;grid-template-columns:130px 1fr 180px 120px 80px 90px;align-items:center;gap:0;padding:0 32px;height:60px;border-bottom:1px solid #0D1B2E">
+              <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;letter-spacing:3px;color:#22C55E">${o.placa}</div>
+              <div style="font-size:13px;font-weight:500;color:#94A3B8">${[o.marca,o.linea].filter(Boolean).join(' ')||'—'}</div>
+              <div style="font-size:12px;color:#64748B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.propietario||'—'}</div>
+              <div></div>
+              <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:${color}">${diasLabel}</div>
+              <div><span style="background:#22C55E22;color:#22C55E;border:1px solid #22C55E44;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px">LISTA</span></div>
+            </div>`;
+          }).join('')}
+        </div>`;
     }
 
     function renderFila(o, tipo) {
@@ -178,14 +246,21 @@ async function cargarPantallaTaller() {
 
     cont.innerHTML = `
       <style>
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes flash  {
+          0%,100% { background: transparent; }
+          20%,60% { background: #22C55E18; box-shadow: inset 0 0 0 1px #22C55E44; }
+          40%,80% { background: #22C55E08; }
+        }
+        .fila-completada { animation: flash 1s ease-in-out 4; }
         #pag-taller { background:#0A0F1A; min-height:100vh; }
       </style>
       ${statsHtml}
-      ${renderSeccion('ENTREGAS DEL DÍA', '#22C55E', '✈', entregarHoy, 'entrega')}
+      ${recienCompletadas.length ? renderSeccionCompletadas(recienCompletadas) : ''}
+      ${renderSeccion('ENTREGAS DEL DÍA', '#22C55E', '', entregarHoy, 'entrega')}
       ${renderSeccion('INGRESOS DE HOY', '#3B82F6', '', creadasHoy, 'ingreso')}
-      ${renderSeccion('EN PROCESO', '#F59E0B', '🔧', enProceso.filter(o => !entregarHoy.includes(o) && !creadasHoy.includes(o)), 'activa')}
-      ${!entregarHoy.length && !creadasHoy.length && !enProceso.length
+      ${renderSeccion('EN PROCESO', '#F59E0B', '', enProceso.filter(o => !entregarHoy.includes(o) && !creadasHoy.includes(o)), 'activa')}
+      ${!recienCompletadas.length && !entregarHoy.length && !creadasHoy.length && !enProceso.length
         ? `<div style="text-align:center;padding:80px 0;color:#1E3A5F;font-family:'DM Mono',monospace;font-size:14px;letter-spacing:2px">SIN ACTIVIDAD HOY</div>`
         : ''}`;
   } catch(e) {
