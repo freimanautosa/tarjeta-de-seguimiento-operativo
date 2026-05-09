@@ -1240,7 +1240,8 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   }
   .sidebar-overlay.show { display: block; }
   .main { margin-left: 0; }
-  .hamburger { display: flex; align-items: center; }
+  /* Bottom nav reemplaza el sidebar en móvil — hamburger no necesario */
+  .hamburger { display: none !important; }
   .content { padding: 16px; }
   .detalle-grid { grid-template-columns: 1fr; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
