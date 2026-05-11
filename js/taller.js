@@ -264,8 +264,8 @@ async function cargarPantallaTaller() {
         ? `<div style="text-align:center;padding:80px 0;color:#1E3A5F;font-family:'DM Mono',monospace;font-size:14px;letter-spacing:2px">SIN ACTIVIDAD HOY</div>`
         : ''}
       <!-- Watermark logo -->
-      <div style="position:fixed;bottom:0;right:0;width:340px;height:340px;pointer-events:none;z-index:0;opacity:0.04;overflow:hidden">
-        <img src="logoFreimanpfp.png" style="width:100%;height:100%;object-fit:contain;filter:invert(1)" alt="">
+      <div style="position:fixed;bottom:32px;right:32px;width:280px;height:280px;pointer-events:none;z-index:0">
+        <img src="logoFreiman.png" style="width:100%;height:100%;object-fit:contain;opacity:0.07;filter:grayscale(1) brightness(2)" alt="">
       </div>
     `;
   } catch(e) {
