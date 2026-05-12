@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════
 const SUPABASE_URL = 'https://xjavnpwuhpmvpjdbjdeg.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqYXZucHd1aHBtdnBqZGJqZGVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4Njc5MDcsImV4cCI6MjA5MjQ0MzkwN30.07f6cGVrFhtm-B-I7iBLaHnPSuozFDpEf9vOHrliGRs';
-const BUCKET = 'fotos-etapas';
+const BUCKET = 'FreimanAutos SA';
 const N8N_WEBHOOK = 'https://automatizacionesfreimanautos-n8n.qs0sgf.easypanel.host/webhook/notificar-etapa';
 
 async function api(path, method = 'GET', body = null, extra = {}) {
