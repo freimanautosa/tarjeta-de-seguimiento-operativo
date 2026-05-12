@@ -47,14 +47,14 @@ function renderTallerShell() {
   // Header
   const header = document.createElement('div');
   header.id = 'taller-header';
-  header.style.cssText = 'background:#060B14;border-bottom:1px solid #1E3A5F;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:10';
+  header.style.cssText = 'background:#060B14;border-bottom:1px solid #94A3B8;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:10';
   header.innerHTML = `
     <div style="display:flex;align-items:center;gap:16px">
       <div style="width:8px;height:8px;border-radius:50%;background:#22C55E;box-shadow:0 0 8px #22C55E;animation:pulse 2s infinite"></div>
-      <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px;color:#4A7C9E;text-transform:uppercase">Freimanautos · Sistema Operativo</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px;color:#E2E8F0;text-transform:uppercase">Freimanautos · Sistema Operativo</div>
     </div>
     <div id="taller-reloj" style="font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:#E2E8F0;letter-spacing:4px"></div>
-    <div id="taller-fecha" style="font-family:'DM Mono',monospace;font-size:11px;color:#4A7C9E;letter-spacing:2px;text-align:right"></div>
+    <div id="taller-fecha" style="font-family:'DM Mono',monospace;font-size:11px;color:#E2E8F0;letter-spacing:2px;text-align:right"></div>
   `;
   cont.parentElement.insertBefore(header, cont);
 }
@@ -129,7 +129,7 @@ async function cargarPantallaTaller() {
     }
 
     function urgencyColor(o) {
-      if (!o.fecha_entrega_1) return '#4A7C9E';
+      if (!o.fecha_entrega_1) return '#E2E8F0';
       const dias = Math.round((new Date(o.fecha_entrega_1) - new Date()) / 86400000);
       if (dias < 0)  return '#EF4444';
       if (dias === 0) return '#F59E0B';
@@ -147,12 +147,12 @@ async function cargarPantallaTaller() {
             </div>
           </div>
           <div style="display:grid;grid-template-columns:130px 1fr 180px 120px 80px 90px;padding:4px 32px 4px;border-bottom:1px solid #0D1B2E">
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">PLACA</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">VEHÍCULO</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">PROPIETARIO</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase"></div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">ENTREGA</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">ESTADO</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">PLACA</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">VEHÍCULO</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">PROPIETARIO</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase"></div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">ENTREGA</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">ESTADO</div>
           </div>
           ${ordenes.map(o => {
             const color = urgencyColor(o);
@@ -177,8 +177,8 @@ async function cargarPantallaTaller() {
       const dias  = o.fecha_entrega_1 ? Math.round((new Date(o.fecha_entrega_1) - new Date()) / 86400000) : null;
       const diasLabel = dias === null ? '—' : dias < 0 ? 'VENCIDA' : dias === 0 ? 'HOY' : `${dias}d`;
       const etaLabel  = ets.length
-        ? ets.map(e => `<span style="background:${srvColor[e.servicio]||'#4A7C9E'}22;color:${srvColor[e.servicio]||'#4A7C9E'};border:1px solid ${srvColor[e.servicio]||'#4A7C9E'}44;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;margin-right:4px">${srvLabel[e.servicio]||'—'} ${e.etapa||''}</span>`).join('')
-        : '<span style="color:#4A7C9E;font-size:11px">Sin etapa activa</span>';
+        ? ets.map(e => `<span style="background:${srvColor[e.servicio]||'#E2E8F0'}22;color:${srvColor[e.servicio]||'#E2E8F0'};border:1px solid ${srvColor[e.servicio]||'#E2E8F0'}44;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;margin-right:4px">${srvLabel[e.servicio]||'—'} ${e.etapa||''}</span>`).join('')
+        : '<span style="color:#E2E8F0;font-size:11px">Sin etapa activa</span>';
       const tecLabel  = [...new Set(ets.filter(e=>e.tecnico).map(e=>e.tecnico))].join(', ') || '—';
       const tiempoLabel = ets.length ? tiempoEnEtapa(ets[0]) : '—';
 
@@ -207,12 +207,12 @@ async function cargarPantallaTaller() {
             <div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;letter-spacing:3px;color:${color};grid-column:1/-1">${icono} ${titulo} <span style="opacity:0.6">(${ordenes.length})</span></div>
           </div>
           <div style="display:grid;grid-template-columns:130px 1fr 180px 120px 80px 90px;padding:4px 32px 4px;border-bottom:1px solid #0D1B2E">
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">PLACA</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">VEHÍCULO / ETAPA ACTUAL</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">TÉCNICO</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">TIEMPO ETAPA</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">ENTREGA</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#1E3A5F;text-transform:uppercase">ESTADO</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">PLACA</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">VEHÍCULO / ETAPA ACTUAL</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">TÉCNICO</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">TIEMPO ETAPA</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">ENTREGA</div>
+            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">ESTADO</div>
           </div>
           ${ordenes.map(o => renderFila(o, tipo)).join('')}
         </div>`;
@@ -223,25 +223,25 @@ async function cargarPantallaTaller() {
       <div style="display:flex;align-items:center;gap:40px;padding:12px 32px;background:#060B14;border-bottom:1px solid #0D1B2E">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:#3B82F6">${todasOrdenes.length}</div>
-          <div style="font-size:10px;color:#4A7C9E;letter-spacing:1px;text-transform:uppercase">Órdenes<br>activas</div>
+          <div style="font-size:10px;color:#E2E8F0;letter-spacing:1px;text-transform:uppercase">Órdenes<br>activas</div>
         </div>
-        <div style="width:1px;height:36px;background:#1E3A5F"></div>
+        <div style="width:1px;height:36px;background:#94A3B8"></div>
         <div style="display:flex;align-items:center;gap:10px">
           <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:#22C55E">${entregarHoy.length}</div>
-          <div style="font-size:10px;color:#4A7C9E;letter-spacing:1px;text-transform:uppercase">Entregan<br>hoy</div>
+          <div style="font-size:10px;color:#E2E8F0;letter-spacing:1px;text-transform:uppercase">Entregan<br>hoy</div>
         </div>
-        <div style="width:1px;height:36px;background:#1E3A5F"></div>
+        <div style="width:1px;height:36px;background:#94A3B8"></div>
         <div style="display:flex;align-items:center;gap:10px">
           <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:#3B82F6">${creadasHoy.length}</div>
-          <div style="font-size:10px;color:#4A7C9E;letter-spacing:1px;text-transform:uppercase">Ingresaron<br>hoy</div>
+          <div style="font-size:10px;color:#E2E8F0;letter-spacing:1px;text-transform:uppercase">Ingresaron<br>hoy</div>
         </div>
-        <div style="width:1px;height:36px;background:#1E3A5F"></div>
+        <div style="width:1px;height:36px;background:#94A3B8"></div>
         <div style="display:flex;align-items:center;gap:10px">
           <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:#F59E0B">${enProceso.length}</div>
-          <div style="font-size:10px;color:#4A7C9E;letter-spacing:1px;text-transform:uppercase">En proceso<br>ahora</div>
+          <div style="font-size:10px;color:#E2E8F0;letter-spacing:1px;text-transform:uppercase">En proceso<br>ahora</div>
         </div>
         <div style="flex:1"></div>
-        <div style="font-size:10px;color:#1E3A5F;font-family:'DM Mono',monospace"></div>
+        <div style="font-size:10px;color:#94A3B8;font-family:'DM Mono',monospace"></div>
       </div>`;
 
     cont.innerHTML = `
@@ -261,11 +261,11 @@ async function cargarPantallaTaller() {
       ${renderSeccion('INGRESOS DE HOY', '#3B82F6', '', creadasHoy, 'ingreso')}
       ${renderSeccion('EN PROCESO', '#F59E0B', '', enProceso.filter(o => !entregarHoy.includes(o) && !creadasHoy.includes(o)), 'activa')}
       ${!recienCompletadas.length && !entregarHoy.length && !creadasHoy.length && !enProceso.length
-        ? `<div style="text-align:center;padding:80px 0;color:#1E3A5F;font-family:'DM Mono',monospace;font-size:14px;letter-spacing:2px">SIN ACTIVIDAD HOY</div>`
+        ? `<div style="text-align:center;padding:80px 0;color:#94A3B8;font-family:'DM Mono',monospace;font-size:14px;letter-spacing:2px">SIN ACTIVIDAD HOY</div>`
         : ''}
       <!-- Watermark logo -->
-      <div style="position:fixed;bottom:0;right:0;width:340px;height:340px;pointer-events:none;z-index:0;opacity:0.04;overflow:hidden">
-        <img src="logoFreimanpfp.png" style="width:100%;height:100%;object-fit:contain;filter:invert(1)" alt="">
+      <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:420px;height:420px;pointer-events:none;z-index:0">
+        <img src="Logo_Fondo_Taller.png" style="width:100%;height:100%;object-fit:contain;opacity:0.07;filter:grayscale(1) brightness(3)" alt="">
       </div>
     `;
   } catch(e) {
