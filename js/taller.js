@@ -41,43 +41,44 @@ function montarTaller() {
       @keyframes pulse-dot  { 0%,100%{opacity:1} 50%{opacity:.35} }
       @keyframes flash-border {
         0%,100%{border-color:rgba(255,255,255,.1)}
-        30%,70%{border-color:#F59E0B;box-shadow:0 0 0 1px #F59E0B44}
+        30%,70%{border-color:#F59E0B;box-shadow:0 0 0 0.1vw #F59E0B44}
       }
       @keyframes overlay-in {
         from{opacity:0;transform:scale(.95)}
         to{opacity:1;transform:scale(1)}
       }
       @keyframes slide-in-right {
-        from{opacity:0;transform:translateX(20px)}
+        from{opacity:0;transform:translateX(2vw)}
         to{opacity:1;transform:translateX(0)}
       }
       #pag-taller {
         background:#060B14;height:100vh;overflow:hidden;
         display:flex;flex-direction:column;
+        font-size:1.1vw;
       }
       .tv-shell {
         display:flex;flex-direction:column;height:100vh;overflow:hidden;position:relative;
       }
       .tv-header {
         background:#060B14;border-bottom:1px solid rgba(255,255,255,.1);
-        padding:0 24px;height:48px;flex-shrink:0;
+        padding:0 2.5vw;height:6vh;flex-shrink:0;
         display:flex;align-items:center;justify-content:space-between;
       }
-      .tv-brand { display:flex;align-items:center;gap:10px; }
+      .tv-brand { display:flex;align-items:center;gap:1vw; }
       .tv-brand-dot {
-        width:8px;height:8px;border-radius:50%;background:#22C55E;
+        width:.7vw;height:.7vw;border-radius:50%;background:#22C55E;
         animation:pulse-dot 2s infinite;
       }
       .tv-brand-name {
-        font-family:'DM Mono',monospace;font-size:10px;
+        font-family:'DM Mono',monospace;font-size:.7vw;
         letter-spacing:.18em;color:rgba(255,255,255,.45);text-transform:uppercase;
       }
       .tv-clock {
-        font-family:'DM Mono',monospace;font-size:20px;font-weight:700;
+        font-family:'DM Mono',monospace;font-size:2.2vw;font-weight:700;
         letter-spacing:.06em;color:#FFFFFF;
       }
       .tv-date {
-        font-family:'DM Mono',monospace;font-size:10px;
+        font-family:'DM Mono',monospace;font-size:.75vw;
         letter-spacing:.08em;color:#FFFFFF;
         text-align:right;text-transform:uppercase;
       }
@@ -87,54 +88,54 @@ function montarTaller() {
         border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;
       }
       .tv-kpi {
-        padding:8px 24px;border-right:1px solid rgba(255,255,255,.08);
-        display:flex;align-items:center;gap:10px;
+        padding:1.2vh 2.5vw;border-right:1px solid rgba(255,255,255,.08);
+        display:flex;align-items:center;gap:1.2vw;
       }
       .tv-kpi:last-child { border-right:none; }
       .tv-kpi-num {
-        font-family:'DM Mono',monospace;font-size:32px;font-weight:700;line-height:1;
+        font-family:'DM Mono',monospace;font-size:4vw;font-weight:700;line-height:1;
       }
       .tv-kpi-label {
-        font-size:10px;font-weight:600;text-transform:uppercase;
-        letter-spacing:.09em;color:rgba(255,255,255,.4);line-height:1.4;
+        font-size:.8vw;font-weight:600;text-transform:uppercase;
+        letter-spacing:.09em;color:rgba(255,255,255,.4);line-height:1.5;
       }
       /* ── BODY: grid + panel ── */
       .tv-body {
-        flex:1;overflow:hidden;padding:10px 0 10px;
+        flex:1;overflow:hidden;padding:1vh 0 1vh;
         display:flex;gap:0;
       }
       .tv-grid-wrap {
-        flex:1;overflow:hidden;padding:0 10px 0 18px;
+        flex:1;overflow:hidden;padding:0 .8vw 0 1.5vw;
         display:flex;flex-direction:column;
       }
       .tv-grid {
         display:grid;
         grid-template-columns:repeat(3,1fr);
         grid-template-rows:repeat(2,1fr);
-        gap:8px;flex:1;overflow:hidden;
+        gap:.8vw;flex:1;overflow:hidden;
       }
       /* ── PANEL DERECHO ── */
       .tv-panel-right {
-        width:190px;flex-shrink:0;
+        width:16vw;flex-shrink:0;
         border-left:1px solid rgba(255,255,255,.08);
         display:flex;flex-direction:column;
         overflow:hidden;
       }
       .tv-panel-title {
-        font-family:'DM Mono',monospace;font-size:8px;font-weight:700;
+        font-family:'DM Mono',monospace;font-size:.65vw;font-weight:700;
         letter-spacing:.18em;text-transform:uppercase;
         color:rgba(255,255,255,.4);
-        padding:7px 12px 6px;
+        padding:.8vh 1.2vw .7vh;
         border-bottom:1px solid rgba(255,255,255,.06);
         flex-shrink:0;
       }
       .tv-panel-list {
-        flex:1;overflow:hidden;padding:4px 6px;
-        display:flex;flex-direction:column;gap:3px;
+        flex:1;overflow:hidden;padding:.4vh .6vw;
+        display:flex;flex-direction:column;gap:.4vh;
       }
       .tv-panel-item {
-        border-radius:5px;padding:5px 8px;
-        display:flex;align-items:center;gap:7px;
+        border-radius:.4vw;padding:.6vh .8vw;
+        display:flex;align-items:center;gap:.7vw;
         animation:slide-in-right .4s ease;
         flex-shrink:0;cursor:pointer;
       }
@@ -147,139 +148,134 @@ function montarTaller() {
         border:1px solid rgba(34,197,94,.18);
       }
       .tv-panel-dot {
-        width:6px;height:6px;border-radius:50%;flex-shrink:0;
+        width:.55vw;height:.55vw;border-radius:50%;flex-shrink:0;
       }
       .tv-panel-dot.listo    { background:#FCD34D; }
       .tv-panel-dot.entregado{ background:#4ADE80; }
       .tv-panel-info { flex:1;min-width:0; }
       .tv-panel-placa {
-        font-family:'DM Mono',monospace;font-size:13px;font-weight:700;
+        font-family:'DM Mono',monospace;font-size:1.1vw;font-weight:700;
         color:#FFFFFF;letter-spacing:.04em;line-height:1;
       }
       .tv-panel-status {
-        font-size:9px;font-weight:500;
+        font-size:.65vw;font-weight:500;
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-        margin-top:1px;
+        margin-top:.2vh;
       }
       .tv-panel-status.listo    { color:rgba(252,211,77,.65); }
       .tv-panel-status.entregado{ color:rgba(74,222,128,.65); }
       .tv-panel-time {
-        font-family:'DM Mono',monospace;font-size:9px;
+        font-family:'DM Mono',monospace;font-size:.65vw;
         color:rgba(255,255,255,.25);flex-shrink:0;
       }
       .tv-panel-empty {
-        font-size:10px;color:rgba(255,255,255,.15);
-        font-style:italic;padding:10px 0;text-align:center;
+        font-size:.8vw;color:rgba(255,255,255,.15);
+        font-style:italic;padding:1.5vh 0;text-align:center;
       }
       /* ── TARJETAS GRID ── */
       .tv-card {
         background:#0C1220;border:1px solid rgba(255,255,255,.1);
-        border-radius:9px;overflow:hidden;display:flex;flex-direction:column;
+        border-radius:.7vw;overflow:hidden;display:flex;flex-direction:column;
         cursor:pointer;transition:border-color .2s;
       }
       .tv-card:hover { border-color:rgba(255,255,255,.22); }
       .tv-card.updated { animation:flash-border 1.5s ease-in-out; }
       .tv-card-head {
-        padding:9px 13px 7px;border-bottom:1px solid rgba(255,255,255,.07);
-        display:flex;align-items:flex-start;justify-content:space-between;gap:6px;flex-shrink:0;
+        padding:1.2vh 1.2vw 1vh;border-bottom:1px solid rgba(255,255,255,.07);
+        display:flex;align-items:flex-start;justify-content:space-between;gap:.5vw;flex-shrink:0;
       }
       .tv-placa {
-        font-family:'DM Mono',monospace;font-size:18px;font-weight:700;
+        font-family:'DM Mono',monospace;font-size:2vw;font-weight:700;
         color:#FFFFFF;letter-spacing:.05em;line-height:1;
       }
-      .tv-vehiculo { font-size:10px;color:rgba(255,255,255,.38);margin-top:2px; }
+      .tv-vehiculo { font-size:.75vw;color:rgba(255,255,255,.38);margin-top:.3vh; }
       .tv-tag {
-        font-family:'DM Mono',monospace;font-size:8px;font-weight:700;
-        padding:2px 6px;border-radius:3px;text-transform:uppercase;
+        font-family:'DM Mono',monospace;font-size:.6vw;font-weight:700;
+        padding:.3vh .5vw;border-radius:.3vw;text-transform:uppercase;
         letter-spacing:.07em;white-space:nowrap;border:1px solid transparent;
       }
       .tv-tag-amber { background:rgba(245,158,11,.15);color:#FCD34D;border-color:rgba(245,158,11,.35); }
       .tv-tag-blue  { background:rgba(59,130,246,.15);color:#93C5FD;border-color:rgba(59,130,246,.35); }
       .tv-tag-red   { background:rgba(248,113,113,.13);color:#F87171;border-color:rgba(248,113,113,.3); }
       .tv-tag-gray  { background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);border-color:rgba(255,255,255,.12); }
-      .tv-card-body { padding:7px 13px 5px;flex:1;display:flex;flex-direction:column;gap:2px; }
-      .tv-etapa-row { display:flex;align-items:center;gap:6px;padding:1px 0; }
-      .tv-edot      { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+      .tv-card-body { padding:.8vh 1.2vw .5vh;flex:1;display:flex;flex-direction:column;gap:.3vh; }
+      .tv-etapa-row { display:flex;align-items:center;gap:.6vw;padding:.1vh 0; }
+      .tv-edot      { width:.6vw;height:.6vw;border-radius:50%;flex-shrink:0; }
       .tv-edot.done { background:#22C55E; }
       .tv-edot.active { background:#F59E0B; }
       .tv-edot.pending{ background:transparent;border:1.5px solid rgba(255,255,255,.15); }
       .tv-edot.waiting{ background:transparent;border:1.5px solid rgba(245,158,11,.4); }
-      .tv-ename     { font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+      .tv-ename     { font-size:.9vw;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
       .tv-ename.done   { color:rgba(255,255,255,.48); }
       .tv-ename.active { color:#FCD34D;font-weight:700; }
       .tv-ename.pending{ color:rgba(255,255,255,.18); }
       .tv-ename.waiting{ color:rgba(245,158,11,.6); }
-      .tv-etime     { font-family:'DM Mono',monospace;font-size:10px;flex-shrink:0; }
+      .tv-etime     { font-family:'DM Mono',monospace;font-size:.8vw;flex-shrink:0; }
       .tv-etime.active{ color:#FCD34D;font-weight:700; }
       .tv-etime.done  { color:rgba(255,255,255,.28); }
       .tv-card-foot {
-        padding:5px 13px;border-top:1px solid rgba(255,255,255,.07);
+        padding:.6vh 1.2vw;border-top:1px solid rgba(255,255,255,.07);
         display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
       }
-      .tv-mname { font-size:10px;color:rgba(255,255,255,.4); }
-      .tv-entrega-chip{ font-family:'DM Mono',monospace;font-size:9px;font-weight:700; }
+      .tv-mname { font-size:.8vw;color:rgba(255,255,255,.4); }
+      .tv-entrega-chip{ font-family:'DM Mono',monospace;font-size:.75vw;font-weight:700; }
       /* ── OVERLAY ── */
       .tv-update-overlay {
         position:absolute;inset:0;background:rgba(6,11,20,.88);
-        z-index:30;display:flex;align-items:center;justify-content:center;padding:20px;
+        z-index:30;display:flex;align-items:center;justify-content:center;padding:2vw;
       }
       .tv-overlay-card {
-        background:#0C1220;border:2px solid #F59E0B;border-radius:12px;
-        width:300px;overflow:hidden;animation:overlay-in .3s ease;
+        background:#0C1220;border:0.15vw solid #F59E0B;border-radius:1vw;
+        width:28vw;overflow:hidden;animation:overlay-in .3s ease;
       }
       .tv-overlay-card.green-border { border-color:#22C55E; }
       .tv-overlay-badge {
         background:#F59E0B;color:#060B14;
-        font-family:'DM Mono',monospace;font-size:9px;font-weight:700;
+        font-family:'DM Mono',monospace;font-size:.8vw;font-weight:700;
         letter-spacing:.18em;text-transform:uppercase;
-        padding:6px 16px;text-align:center;
+        padding:.8vh 1.5vw;text-align:center;
       }
       .tv-overlay-badge.green-bg { background:#22C55E; }
       .tv-overlay-head {
-        padding:14px 18px 10px;border-bottom:1px solid rgba(255,255,255,.08);
+        padding:1.5vh 1.8vw 1vh;border-bottom:1px solid rgba(255,255,255,.08);
       }
       .tv-overlay-placa {
-        font-family:'DM Mono',monospace;font-size:26px;font-weight:700;
+        font-family:'DM Mono',monospace;font-size:3vw;font-weight:700;
         color:#FFFFFF;letter-spacing:.04em;line-height:1;
       }
-      .tv-overlay-veh { font-size:12px;color:rgba(255,255,255,.38);margin-top:3px; }
-      .tv-overlay-body { padding:10px 18px; }
+      .tv-overlay-veh { font-size:1vw;color:rgba(255,255,255,.38);margin-top:.4vh; }
+      .tv-overlay-body { padding:1vh 1.8vw; }
       .tv-overlay-row {
-        display:flex;align-items:center;gap:8px;padding:5px 0;
+        display:flex;align-items:center;gap:.8vw;padding:.6vh 0;
         border-bottom:1px solid rgba(255,255,255,.05);
       }
       .tv-overlay-row:last-child { border-bottom:none; }
-      .tv-odot        { width:9px;height:9px;border-radius:50%;flex-shrink:0; }
+      .tv-odot        { width:.8vw;height:.8vw;border-radius:50%;flex-shrink:0; }
       .tv-odot.done   { background:#22C55E; }
       .tv-odot.active { background:#F59E0B; }
       .tv-odot.pending{ background:transparent;border:2px solid rgba(255,255,255,.15); }
-      .tv-oname       { font-size:13px;flex:1; }
+      .tv-oname       { font-size:1.1vw;flex:1; }
       .tv-oname.done  { color:rgba(255,255,255,.5); }
       .tv-oname.active{ color:#FCD34D;font-weight:700; }
       .tv-oname.pending{ color:rgba(255,255,255,.2); }
-      .tv-otime       { font-family:'DM Mono',monospace;font-size:12px;font-weight:700; }
+      .tv-otime       { font-family:'DM Mono',monospace;font-size:1vw;font-weight:700; }
       .tv-otime.active{ color:#FCD34D; }
       .tv-otime.done  { color:rgba(255,255,255,.28); }
       .tv-overlay-foot {
-        padding:10px 18px;border-top:1px solid rgba(255,255,255,.08);
+        padding:1vh 1.8vw;border-top:1px solid rgba(255,255,255,.08);
         display:flex;justify-content:space-between;align-items:center;
       }
-      .tv-overlay-tec { font-size:11px;color:rgba(255,255,255,.45); }
-      .tv-overlay-entrega { font-size:11px;font-weight:700; }
+      .tv-overlay-tec { font-size:.9vw;color:rgba(255,255,255,.45); }
+      .tv-overlay-entrega { font-size:.9vw;font-weight:700; }
       .tv-overlay-countdown {
-        font-family:'DM Mono',monospace;font-size:9px;
+        font-family:'DM Mono',monospace;font-size:.7vw;
         color:rgba(255,255,255,.25);text-align:center;
-        padding:7px;border-top:1px solid rgba(255,255,255,.05);
-      }
-      .tv-empty {
-        flex:1;display:flex;align-items:center;justify-content:center;
-        font-family:'DM Mono',monospace;font-size:13px;
-        letter-spacing:.15em;color:rgba(255,255,255,.12);text-transform:uppercase;
+        padding:.7vh;border-top:1px solid rgba(255,255,255,.05);
       }
       .tv-watermark {
         position:fixed;top:50%;left:50%;
         transform:translate(-50%,-50%);
-        width:380px;height:380px;pointer-events:none;z-index:0;
+        width:38vw;height:38vw;pointer-events:none;z-index:0;
       }
     `;
     document.head.appendChild(st);
@@ -617,7 +613,7 @@ async function cargarPantallaTaller() {
           <div class="tv-grid-wrap">
             ${gridCards
               ? `<div class="tv-grid">${gridCards}</div>`
-              : '<div class="tv-empty">Sin órdenes activas</div>'
+              : '<div style="flex:1"></div>'
             }
           </div>
           <div class="tv-panel-right">
