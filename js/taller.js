@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════
 // PANTALLA TALLER — TV compacto, overlay de actualización
+// Fixes: entregadas hoy visibles, sonido al entregar, overlay automático
 // ═══════════════════════════════════════════════════════════
 
 const _tallerOrdenesNotificadas = new Set();
@@ -108,7 +109,7 @@ function montarTaller() {
       }
       .tv-card:hover { border-color:rgba(255,255,255,.22); }
       .tv-card.updated { animation:flash-border 1.5s ease-in-out; }
-      .tv-card.completada {
+      .tv-card.entregada {
         border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.04);
       }
       .tv-card-head {
@@ -149,24 +150,22 @@ function montarTaller() {
       }
       .tv-mname { font-size:10px;color:rgba(255,255,255,.4); }
       .tv-entrega-chip { font-family:'DM Mono',monospace;font-size:9px;font-weight:700; }
-
-      /* ── OVERLAY ── */
       .tv-update-overlay {
         position:absolute;inset:0;background:rgba(6,11,20,.88);
-        z-index:30;display:flex;align-items:center;justify-content:center;
-        padding:20px;
+        z-index:30;display:flex;align-items:center;justify-content:center;padding:20px;
       }
       .tv-overlay-card {
         background:#0C1220;border:2px solid #F59E0B;border-radius:12px;
-        width:300px;overflow:hidden;
-        animation:overlay-in .3s ease;
+        width:300px;overflow:hidden;animation:overlay-in .3s ease;
       }
+      .tv-overlay-card.entregada-overlay { border-color:#22C55E; }
       .tv-overlay-badge {
         background:#F59E0B;color:#060B14;
         font-family:'DM Mono',monospace;font-size:9px;font-weight:700;
         letter-spacing:.18em;text-transform:uppercase;
         padding:6px 16px;text-align:center;
       }
+      .tv-overlay-badge.entregada-badge { background:#22C55E; }
       .tv-overlay-head {
         padding:14px 18px 10px;border-bottom:1px solid rgba(255,255,255,.08);
       }
@@ -257,12 +256,12 @@ function _tvEntregaInfo(orden) {
   return { color:'#4ADE80', label:`${dias}d` };
 }
 
-function _tvMostrarOverlay(orden, etapasOrden, badge) {
-  // Limpiar timer anterior
+function _tvMostrarOverlay(orden, etapasOrden, badge, esEntregada) {
   if (_tallerOverlayTimer) clearInterval(_tallerOverlayTimer);
 
   const { color: entColor, label: entLabel } = _tvEntregaInfo(orden);
-  const tecnico = etapasOrden.find(e => e.inicio && !e.fin)?.tecnico || '';
+  const tecnico = etapasOrden.find(e => e.inicio && !e.fin)?.tecnico
+    || etapasOrden.filter(e => e.tecnico).slice(-1)[0]?.tecnico || '';
 
   const etapasHtml = etapasOrden.map(e => {
     const cls = e.fin ? 'done' : (e.inicio && !e.fin ? 'active' : 'pending');
@@ -274,10 +273,15 @@ function _tvMostrarOverlay(orden, etapasOrden, badge) {
     </div>`;
   }).join('');
 
+  const cardCls  = esEntregada ? 'tv-overlay-card entregada-overlay' : 'tv-overlay-card';
+  const badgeCls = esEntregada ? 'tv-overlay-badge entregada-badge'  : 'tv-overlay-badge';
+  const entregaColor = esEntregada ? '#4ADE80' : entColor;
+  const entregaLabel = esEntregada ? '✓ Entregado hoy' : entLabel;
+
   const overlayHtml = `
     <div class="tv-update-overlay" id="tv-overlay" onclick="this.remove()">
-      <div class="tv-overlay-card" onclick="event.stopPropagation()">
-        <div class="tv-overlay-badge">${badge}</div>
+      <div class="${cardCls}" onclick="event.stopPropagation()">
+        <div class="${badgeCls}">${badge}</div>
         <div class="tv-overlay-head">
           <div class="tv-overlay-placa">${orden.placa}</div>
           <div class="tv-overlay-veh">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
@@ -285,7 +289,7 @@ function _tvMostrarOverlay(orden, etapasOrden, badge) {
         <div class="tv-overlay-body">${etapasHtml}</div>
         <div class="tv-overlay-foot">
           <span class="tv-overlay-tec">${tecnico||'—'}</span>
-          <span class="tv-overlay-entrega" style="color:${entColor}">${entLabel}</span>
+          <span class="tv-overlay-entrega" style="color:${entregaColor}">${entregaLabel}</span>
         </div>
         <div class="tv-overlay-countdown" id="tv-overlay-cd">Cerrando en 5s — toca para cerrar</div>
       </div>
@@ -319,103 +323,104 @@ async function cargarPantallaTaller() {
     const manana = new Date(hoy); manana.setDate(manana.getDate()+1);
     const hoyISO = hoy.toISOString().split('T')[0];
 
-    const [todasOrdenes, etapasActivas, etapasTodas] = await Promise.all([
+    // ── 3 queries: activas, entregadas hoy, etapas ──────────
+    const [ordenesActivas, entregadasHoy, etapasActivas, etapasTodas] = await Promise.all([
       api(`/ordenes?estado=eq.Activa&order=fecha_entrega_1.asc`).catch(()=>[]) || [],
+      api(`/ordenes?estado=eq.Entregada&entregada_en=gte.${hoy.toISOString()}&order=entregada_en.desc`).catch(()=>[]) || [],
       api(`/etapas?fin=is.null&inicio=not.is.null&select=id,orden_id,etapa,servicio,mecanico_id,tecnico,inicio`).catch(()=>[]) || [],
       api(`/etapas?select=id,orden_id,etapa,servicio,inicio,fin,tecnico&order=creado_en.asc`).catch(()=>[]) || []
     ]);
 
-    const creadasHoy  = todasOrdenes.filter(o => new Date(o.creado_en) >= hoy && new Date(o.creado_en) < manana);
-    const entregarHoy = todasOrdenes.filter(o => o.fecha_entrega_1?.split('T')[0] === hoyISO || o.fecha_entrega_2?.split('T')[0] === hoyISO);
-    const enProceso   = todasOrdenes.filter(o => etapasActivas.some(e => e.orden_id === o.id));
+    const creadasHoy  = ordenesActivas.filter(o => new Date(o.creado_en) >= hoy && new Date(o.creado_en) < manana);
+    const entregarHoy = ordenesActivas.filter(o => o.fecha_entrega_1?.split('T')[0] === hoyISO || o.fecha_entrega_2?.split('T')[0] === hoyISO);
+    const enProceso   = ordenesActivas.filter(o => etapasActivas.some(e => e.orden_id === o.id));
 
-    // Detectar recién completadas y disparar audio
-    const recienCompletadas = todasOrdenes.filter(o => {
-      const ets = etapasTodas.filter(e => e.orden_id === o.id);
-      if (!ets.length) return false;
-      return !etapasActivas.some(e => e.orden_id === o.id) && ets.every(e => e.fin);
-    });
-    const nuevasComp = recienCompletadas.filter(o => !_tallerOrdenesNotificadas.has(o.id));
-    if (nuevasComp.length) {
-      nuevasComp.forEach(o => _tallerOrdenesNotificadas.add(o.id));
+    // ── Sonido + overlay para órdenes recién entregadas ─────
+    const nuevasEntregadas = entregadasHoy.filter(o => !_tallerOrdenesNotificadas.has('ent_' + o.id));
+    if (nuevasEntregadas.length) {
+      nuevasEntregadas.forEach(o => _tallerOrdenesNotificadas.add('ent_' + o.id));
       const audio = document.getElementById('taller-audio');
       if (audio) { audio.currentTime = 0; audio.play().catch(()=>{}); }
+      // Mostrar overlay de entrega para la más reciente
+      const oEnt = nuevasEntregadas[0];
+      const etsEnt = etapasTodas.filter(e => e.orden_id === oEnt.id);
+      setTimeout(() => _tvMostrarOverlay(oEnt, etsEnt, '✓ ORDEN ENTREGADA', true), 600);
     }
 
-    // Detectar cambios de etapa para mostrar overlay
+    // ── Detectar cambio de etapa activa para overlay ────────
     const snapshotNuevo = {};
     etapasActivas.forEach(e => { snapshotNuevo[e.orden_id] = e.id; });
     let ordenCambiada = null;
     let badgeOverlay  = 'ETAPA ACTUALIZADA';
+
     Object.entries(snapshotNuevo).forEach(([oid, eid]) => {
       if (_tallerEtapasSnapshot[oid] && _tallerEtapasSnapshot[oid] !== eid) {
-        ordenCambiada = todasOrdenes.find(o => o.id === parseInt(oid));
+        ordenCambiada = ordenesActivas.find(o => o.id === parseInt(oid));
         badgeOverlay  = 'ETAPA ACTUALIZADA';
       }
     });
-    // Nueva orden (no estaba antes)
-    todasOrdenes.forEach(o => {
-      if (creadasHoy.some(c => c.id === o.id) && !_tallerEtapasSnapshot['orden_' + o.id]) {
-        _tallerEtapasSnapshot['orden_' + o.id] = true;
-        if (Object.keys(_tallerEtapasSnapshot).length > 1) {
-          ordenCambiada = o;
-          badgeOverlay  = 'ORDEN INGRESADA';
-        }
+    // Nueva orden ingresada hoy (no existía en snapshot anterior)
+    creadasHoy.forEach(o => {
+      const key = 'ord_' + o.id;
+      if (!_tallerEtapasSnapshot[key] && Object.keys(_tallerEtapasSnapshot).length > 0) {
+        ordenCambiada = o;
+        badgeOverlay  = 'ORDEN INGRESADA';
       }
+      _tallerEtapasSnapshot[key] = true;
     });
-    _tallerEtapasSnapshot = { ...snapshotNuevo };
+    _tallerEtapasSnapshot = { ..._tallerEtapasSnapshot, ...snapshotNuevo };
 
-    // Prioridad y deduplicación
-    const completadasIds = new Set(recienCompletadas.map(o=>o.id));
-    const entregaIds     = new Set(entregarHoy.filter(o=>!completadasIds.has(o.id)).map(o=>o.id));
-    const ingresoIds     = new Set(creadasHoy.filter(o=>!completadasIds.has(o.id)&&!entregaIds.has(o.id)).map(o=>o.id));
-    const procesoFilt    = enProceso.filter(o=>!completadasIds.has(o.id)&&!entregaIds.has(o.id)&&!ingresoIds.has(o.id));
+    // ── Deduplicación y orden de display ────────────────────
+    // Prioridad: entregadas hoy > entregan hoy > ingresos hoy > en proceso
+    const entregadasIds = new Set(entregadasHoy.map(o=>o.id));
+    const entregaHoyIds = new Set(entregarHoy.filter(o=>!entregadasIds.has(o.id)).map(o=>o.id));
+    const ingresoIds    = new Set(creadasHoy.filter(o=>!entregadasIds.has(o.id)&&!entregaHoyIds.has(o.id)).map(o=>o.id));
+    const procesoFilt   = enProceso.filter(o=>!entregadasIds.has(o.id)&&!entregaHoyIds.has(o.id)&&!ingresoIds.has(o.id));
 
     const ordenesDisplay = [
-      ...recienCompletadas.map(o=>({orden:o,tipo:'completada'})),
-      ...entregarHoy.filter(o=>entregaIds.has(o.id)).map(o=>({orden:o,tipo:'entrega'})),
-      ...creadasHoy.filter(o=>ingresoIds.has(o.id)).map(o=>({orden:o,tipo:'ingreso'})),
-      ...procesoFilt.map(o=>({orden:o,tipo:'activa'}))
+      ...entregadasHoy.map(o=>({orden:o, tipo:'entregada'})),
+      ...entregarHoy.filter(o=>entregaHoyIds.has(o.id)).map(o=>({orden:o, tipo:'entrega'})),
+      ...creadasHoy.filter(o=>ingresoIds.has(o.id)).map(o=>({orden:o, tipo:'ingreso'})),
+      ...procesoFilt.map(o=>({orden:o, tipo:'activa'}))
     ].slice(0, 8);
 
     // ── Render tarjeta ──────────────────────────────────────
     function renderCard({orden, tipo}) {
       const etsOrden    = etapasTodas.filter(e => e.orden_id === orden.id);
       const etapaActiva = etapasActivas.find(e => e.orden_id === orden.id);
-      const esComp      = tipo === 'completada';
+      const esEntregada = tipo === 'entregada';
       const { color: entColor, label: entLabel } = _tvEntregaInfo(orden);
-      const tecnico = etapaActiva?.tecnico || '';
+      const tecnico = etapaActiva?.tecnico
+        || etsOrden.filter(e=>e.tecnico).slice(-1)[0]?.tecnico || '';
 
       const tipoTagMap = {
-        completada: '<span class="tv-tag tv-tag-green">✓ Lista</span>',
-        entrega:    '<span class="tv-tag tv-tag-amber">Entrega hoy</span>',
-        ingreso:    '<span class="tv-tag tv-tag-blue">Nuevo hoy</span>',
-        activa:     ''
+        entregada: '<span class="tv-tag tv-tag-green">✓ Entregada hoy</span>',
+        entrega:   '<span class="tv-tag tv-tag-amber">Entrega hoy</span>',
+        ingreso:   '<span class="tv-tag tv-tag-blue">Nuevo hoy</span>',
+        activa:    ''
       };
 
-      // Tag de entrega para 'activa' (sin otra etiqueta)
+      // Días de entrega como tag para órdenes activas sin otra etiqueta
       let entregaTagFallback = '';
-      if (tipo === 'activa') {
-        const dias = orden.fecha_entrega_1
-          ? Math.round((new Date(orden.fecha_entrega_1) - new Date()) / 86400000) : null;
-        if (dias !== null) {
-          if (dias < 0)   entregaTagFallback = `<span class="tv-tag tv-tag-red">${Math.abs(dias)}d vencida</span>`;
-          else if (dias === 0) entregaTagFallback = `<span class="tv-tag tv-tag-amber">Hoy</span>`;
-          else if (dias <= 2)  entregaTagFallback = `<span class="tv-tag tv-tag-amber">${dias}d</span>`;
-          else entregaTagFallback = `<span class="tv-tag tv-tag-gray">${dias}d</span>`;
-        }
+      if (tipo === 'activa' && orden.fecha_entrega_1) {
+        const dias = Math.round((new Date(orden.fecha_entrega_1) - new Date()) / 86400000);
+        if (dias < 0)        entregaTagFallback = `<span class="tv-tag tv-tag-red">${Math.abs(dias)}d vencida</span>`;
+        else if (dias === 0) entregaTagFallback = `<span class="tv-tag tv-tag-amber">Hoy</span>`;
+        else if (dias <= 2)  entregaTagFallback = `<span class="tv-tag tv-tag-amber">${dias}d</span>`;
+        else                 entregaTagFallback = `<span class="tv-tag tv-tag-gray">${dias}d</span>`;
       }
 
-      // Etapas: todas visibles, máximo 5 — si hay más, colapsar pendientes
-      const MAX_ETAPAS = 5;
+      // Etapas: máx 5 visibles, prioriza completadas + activa
+      const MAX = 5;
       let etapasHtml = '';
       if (etsOrden.length) {
-        const visibles = etsOrden.length <= MAX_ETAPAS
+        const relevantes = etsOrden.filter(e => e.fin || (e.inicio && !e.fin));
+        const pendientes  = etsOrden.filter(e => !e.fin && !e.inicio);
+        const visibles    = etsOrden.length <= MAX
           ? etsOrden
-          : etsOrden.filter(e => e.fin || (e.inicio && !e.fin)).concat(
-              etsOrden.filter(e => !e.fin && !e.inicio).slice(0, MAX_ETAPAS - etsOrden.filter(e => e.fin || (e.inicio && !e.fin)).length)
-            );
-        const pendientesOcultas = etsOrden.length - visibles.length;
+          : [...relevantes, ...pendientes.slice(0, Math.max(0, MAX - relevantes.length))];
+        const ocultas = etsOrden.length - visibles.length;
+
         etapasHtml = visibles.map(e => {
           const cls = e.fin ? 'done' : (e.inicio && !e.fin ? 'active' : 'pending');
           const tiempo = cls === 'active'
@@ -429,14 +434,15 @@ async function cargarPantallaTaller() {
             ${tiempo}
           </div>`;
         }).join('');
-        if (pendientesOcultas > 0) {
-          etapasHtml += `<div style="font-size:9px;color:rgba(255,255,255,.2);padding-top:2px">+${pendientesOcultas} más pendientes</div>`;
+
+        if (ocultas > 0) {
+          etapasHtml += `<div style="font-size:9px;color:rgba(255,255,255,.2);padding-top:2px">+${ocultas} más pendientes</div>`;
         }
       } else {
         etapasHtml = `<span style="font-size:10px;color:rgba(255,255,255,.2);font-style:italic">Sin etapas asignadas</span>`;
       }
 
-      return `<div class="tv-card${esComp?' completada':''}"
+      return `<div class="tv-card${esEntregada?' entregada':''}"
         onclick="_tvVerDetalle(${orden.id})"
         id="tv-card-${orden.id}">
         <div class="tv-card-head">
@@ -448,12 +454,13 @@ async function cargarPantallaTaller() {
         </div>
         <div class="tv-card-body">${etapasHtml}</div>
         <div class="tv-card-foot">
-          <span class="tv-mname">${tecnico||(esComp?'Completada':'Sin técnico')}</span>
-          <span class="tv-entrega-chip" style="color:${entColor}">${entLabel}</span>
+          <span class="tv-mname">${tecnico||(esEntregada?'Entregado':'Sin técnico')}</span>
+          <span class="tv-entrega-chip" style="color:${esEntregada?'#4ADE80':entColor}">${esEntregada?'Entregada':entLabel}</span>
         </div>
       </div>`;
     }
 
+    // ── Render HTML ─────────────────────────────────────────
     cont.innerHTML = `
       <div class="tv-shell">
         <div class="tv-header">
@@ -467,12 +474,12 @@ async function cargarPantallaTaller() {
 
         <div class="tv-kpi-strip">
           <div class="tv-kpi">
-            <div class="tv-kpi-num" style="color:#93C5FD">${todasOrdenes.length}</div>
+            <div class="tv-kpi-num" style="color:#93C5FD">${ordenesActivas.length}</div>
             <div class="tv-kpi-label">Órdenes<br>activas</div>
           </div>
           <div class="tv-kpi">
-            <div class="tv-kpi-num" style="color:#4ADE80">${entregarHoy.length}</div>
-            <div class="tv-kpi-label">Entregan<br>hoy</div>
+            <div class="tv-kpi-num" style="color:#4ADE80">${entregadasHoy.length}</div>
+            <div class="tv-kpi-label">Entregadas<br>hoy</div>
           </div>
           <div class="tv-kpi">
             <div class="tv-kpi-num" style="color:#93C5FD">${creadasHoy.length}</div>
@@ -497,13 +504,14 @@ async function cargarPantallaTaller() {
       </div>
     `;
 
-    // Guardar referencia de etapas para overlay al detectar cambios
-    window._tvEtapasTodas  = etapasTodas;
-    window._tvTodasOrdenes = todasOrdenes;
+    // Guardar referencias para overlay manual
+    window._tvEtapasTodas    = etapasTodas;
+    window._tvOrdenesActivas = ordenesActivas;
+    window._tvEntregadasHoy  = entregadasHoy;
 
     iniciarRelojTaller();
 
-    // Timers en vivo
+    // Timers en vivo para etapas activas
     if (window._tallerTimerInterval) clearInterval(window._tallerTimerInterval);
     window._tallerTimerInterval = setInterval(() => {
       etapasActivas.forEach(e => {
@@ -512,14 +520,10 @@ async function cargarPantallaTaller() {
       });
     }, 1000);
 
-    // Mostrar overlay si hubo cambio de etapa
-    if (ordenCambiada) {
+    // Overlay automático por cambio de etapa (solo si no hay overlay de entrega activo)
+    if (ordenCambiada && !nuevasEntregadas.length) {
       const etsOrdenCambiada = etapasTodas.filter(e => e.orden_id === ordenCambiada.id);
-      setTimeout(() => _tvMostrarOverlay(ordenCambiada, etsOrdenCambiada, badgeOverlay), 400);
-    }
-
-    // Marcar tarjeta actualizada con animación de borde
-    if (ordenCambiada) {
+      setTimeout(() => _tvMostrarOverlay(ordenCambiada, etsOrdenCambiada, badgeOverlay, false), 400);
       const cardEl = document.getElementById(`tv-card-${ordenCambiada.id}`);
       if (cardEl) { cardEl.classList.remove('updated'); void cardEl.offsetWidth; cardEl.classList.add('updated'); }
     }
@@ -529,11 +533,12 @@ async function cargarPantallaTaller() {
   }
 }
 
-// Ver detalle de una orden al tocar su tarjeta
+// Overlay manual al tocar una tarjeta
 function _tvVerDetalle(ordenId) {
-  if (!window._tvEtapasTodas || !window._tvTodasOrdenes) return;
-  const orden = window._tvTodasOrdenes.find(o => o.id === ordenId);
+  const todasOrdenes = [...(window._tvOrdenesActivas||[]), ...(window._tvEntregadasHoy||[])];
+  const orden = todasOrdenes.find(o => o.id === ordenId);
   if (!orden) return;
-  const ets = window._tvEtapasTodas.filter(e => e.orden_id === ordenId);
-  _tvMostrarOverlay(orden, ets, 'DETALLE DE ORDEN');
+  const ets = (window._tvEtapasTodas||[]).filter(e => e.orden_id === ordenId);
+  const esEntregada = (window._tvEntregadasHoy||[]).some(o => o.id === ordenId);
+  _tvMostrarOverlay(orden, ets, esEntregada ? '✓ ENTREGADA HOY' : 'DETALLE DE ORDEN', esEntregada);
 }
