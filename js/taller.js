@@ -4,6 +4,7 @@
 
 const _tallerOrdenesNotificadas = new Set();
 let _tallerEtapasSnapshot = {};
+let _tallerGridSnapshot = new Set();   // IDs de órdenes que estaban en el grid
 let _tallerOverlayTimer = null;
 
 function montarTaller() {
@@ -290,7 +291,7 @@ function montarTaller() {
   mostrarPagina('pag-taller');
   cargarPantallaTaller();
   iniciarRelojTaller();
-  setInterval(() => { if (sesion?.perfil === 'taller') cargarPantallaTaller(); }, 30000);
+  setInterval(() => { if (sesion?.perfil === 'taller') cargarPantallaTaller(); }, 10000);
 }
 
 function iniciarRelojTaller() {
@@ -430,7 +431,12 @@ async function cargarPantallaTaller() {
       setTimeout(() => _tvMostrarOverlay(oEnt, etsEnt, '✓ ORDEN ENTREGADA', true), 600);
     }
 
-    const nuevasListas = ordenesListas.filter(o => !_tallerOrdenesNotificadas.has('lst_' + o.id));
+    // Detectar órdenes que acaban de terminar: estaban en el grid y ahora están en lista
+    // Se usa _tallerGridSnapshot para comparar el ciclo anterior con el actual
+    const nuevasListas = ordenesListas.filter(o =>
+      !_tallerOrdenesNotificadas.has('lst_' + o.id) &&
+      (_tallerGridSnapshot.size === 0 || _tallerGridSnapshot.has(o.id))
+    );
     if (nuevasListas.length && !nuevasEntregadas.length) {
       nuevasListas.forEach(o => _tallerOrdenesNotificadas.add('lst_' + o.id));
       const audio = document.getElementById('taller-audio');
@@ -439,6 +445,8 @@ async function cargarPantallaTaller() {
       const etsLst = etapasTodas.filter(e => e.orden_id === oLst.id);
       setTimeout(() => _tvMostrarOverlay(oLst, etsLst, '✓ VEHÍCULO LISTO', true), 600);
     }
+    // Actualizar snapshot del grid para el próximo ciclo
+    _tallerGridSnapshot = new Set(ordenesEnGrid.map(o => o.id));
 
     // ── Detectar cambio de etapa activa para overlay ─────────
     const snapshotNuevo = {};
