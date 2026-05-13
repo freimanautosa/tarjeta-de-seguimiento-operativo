@@ -117,6 +117,7 @@
       </div>
       <div class="pagina" id="pag-nueva">
         <div class="card" style="padding:28px">
+
           <div class="form-section">
             <div class="form-section-titulo">Identificación del vehículo</div>
             <div style="display:flex;gap:8px">
@@ -137,15 +138,39 @@
           </div>
 
           <div class="form-section">
+            <div class="form-section-titulo">Tipo de persona</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+              <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1.5px solid var(--gris-borde);border-radius:7px;cursor:pointer;font-size:13px;font-weight:500">
+                <input type="radio" name="n-tipo-persona" value="natural" checked onchange="toggleTipoPersonaNueva('natural')">
+                Persona natural
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1.5px solid var(--gris-borde);border-radius:7px;cursor:pointer;font-size:13px;font-weight:500">
+                <input type="radio" name="n-tipo-persona" value="empresa" onchange="toggleTipoPersonaNueva('empresa')">
+                Empresa
+              </label>
+            </div>
+          </div>
+
+          <div class="form-section">
             <div class="form-section-titulo">Datos del vehículo</div>
             <div class="grid-2">
               <div class="field"><label>Marca</label><input id="n-marca" placeholder="Toyota"></div>
               <div class="field"><label>Línea</label><input id="n-linea" placeholder="Hilux"></div>
               <div class="field"><label>Modelo (año)</label><input id="n-modelo" placeholder="2021" maxlength="4"></div>
               <div class="field"><label>Color</label><input id="n-color" placeholder="Blanco"></div>
-              <div class="field"><label>Propietario</label><input id="n-propietario" placeholder="Nombre completo"></div>
+              <div class="field full"><label>VIN <span style="font-weight:400;color:var(--gris-mid);font-size:11px">(17 caracteres, opcional)</span></label>
+                <input id="n-vin" placeholder="WBA3A5C50DF256145" maxlength="17" style="font-family:'DM Mono',monospace;letter-spacing:1px" oninput="this.value=this.value.toUpperCase()">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-titulo">Datos del propietario</div>
+            <div class="grid-2">
+              <div class="field full"><label id="lbl-n-propietario">Nombre completo *</label><input id="n-propietario" placeholder="Nombre completo"></div>
               <div class="field"><label>Teléfono</label><input id="n-telefono" placeholder="3134753389" type="tel"></div>
-              <div class="field full"><label>Cédula del cliente</label><input id="n-cedula-cliente" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')"></div>
+              <div class="field"><label id="lbl-n-cedula">Cédula</label><input id="n-cedula-cliente" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')"></div>
+              <div class="field full"><label>Correo electrónico</label><input id="n-correo-cliente" placeholder="correo@ejemplo.com" type="email"></div>
             </div>
           </div>
 
@@ -153,19 +178,27 @@
             <div class="form-section-titulo">Datos de la orden</div>
             <div class="grid-2">
               <div class="field"><label>Tipo de cliente *</label>
-                <select id="n-tipo-cliente">
+                <select id="n-tipo-cliente" onchange="toggleTipoClienteNueva(this.value)">
                   <option value="">— Seleccionar —</option>
+                  <option value="particular">Particular</option>
                   <option value="aseguradora">Aseguradora</option>
                   <option value="flotilla">Flotilla</option>
-                  <option value="particular">Particular</option>
+                  <option value="empresa">Empresa</option>
                 </select>
               </div>
-              <div class="field"><label>Aseguradora</label>
-                <select id="n-aseguradora">
-                  <option value="">— Ninguna —</option>
-                  <option>HDI</option><option>AXA</option><option>Sura</option>
-                  <option>Bolívar</option><option>Allianz</option><option>Liberty</option>
-                </select>
+              <div class="field" id="n-wrap-aseg" style="display:none">
+                <label>Aseguradora</label>
+                <div style="display:flex;gap:6px">
+                  <select id="n-aseguradora-sel" style="flex:1"><option value="">— Seleccionar —</option></select>
+                  <button class="btn btn-ghost btn-sm" onclick="agregarNuevaAsegNueva()" title="Agregar nueva">+</button>
+                </div>
+              </div>
+              <div class="field" id="n-wrap-flot" style="display:none">
+                <label>Flotilla</label>
+                <div style="display:flex;gap:6px">
+                  <select id="n-flotilla-sel" style="flex:1"><option value="">— Seleccionar —</option></select>
+                  <button class="btn btn-ghost btn-sm" onclick="agregarNuevaFlotNueva()" title="Agregar nueva">+</button>
+                </div>
               </div>
               <div class="field"><label>Nivel de daño</label>
                 <select id="n-dano">
