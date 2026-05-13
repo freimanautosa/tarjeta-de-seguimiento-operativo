@@ -671,7 +671,7 @@ async function asignarMecanico(eid, k) {
 // NUEVA ORDEN
 // ============================================================
 function resetNuevaOrden() {
-  const fields = ['n-placa', 'n-marca', 'n-linea', 'n-modelo', 'n-color', 'n-propietario', 'n-telefono', 'n-km', 'n-fecha1', 'n-fecha2', 'n-inv-obs', 'n-cedula-cliente', 'n-vin', 'n-correo-cliente'];
+  const fields = ['n-placa', 'n-marca', 'n-linea', 'n-modelo', 'n-color', 'n-propietario', 'n-telefono', 'n-km', 'n-fecha1', 'n-fecha2', 'n-inv-obs', 'n-cedula-cliente', 'n-vin', 'n-correo-cliente', 'n-aseg-nombre', 'n-aseg-nit', 'n-flot-nombre', 'n-flot-nit', 'n-flot-dir', 'n-combustible-val'];
   fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const aseguradora = document.getElementById('n-aseguradora');
   const dano = document.getElementById('n-dano');
@@ -686,6 +686,18 @@ function resetNuevaOrden() {
   });
   fotosIngresoPendientes = [];
   renderPreviewIngreso();
+  document.querySelectorAll('.combustible-opcion').forEach(l => l.classList.remove('selected'));
+  document.querySelectorAll('.tipo-cliente-btn').forEach(b => b.classList.remove('selected'));
+  const hiddenTipo = document.getElementById('n-tipo-cliente');
+  if (hiddenTipo) hiddenTipo.value = '';
+  ['n-wrap-aseg','n-wrap-flot','n-wrap-empresa'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  ['n-wrap-aseg-extra','n-wrap-flot-extra','n-wrap-empresa-extra'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
   const resultado = document.getElementById('placa-resultado');
   const historial = document.getElementById('historial-previo');
   if (resultado) resultado.style.display = 'none';
@@ -786,29 +798,101 @@ function toggleTipoPersonaNueva(tipo) {
 }
 
 function toggleTipoClienteNueva(tipo) {
-  const wAseg = document.getElementById('n-wrap-aseg');
-  const wFlot = document.getElementById('n-wrap-flot');
-  if (wAseg) wAseg.style.display = tipo === 'aseguradora' ? 'block' : 'none';
-  if (wFlot) wFlot.style.display = tipo === 'flotilla'    ? 'block' : 'none';
+  const bloques = ['n-wrap-aseg','n-wrap-flot','n-wrap-empresa'];
+  bloques.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  if (tipo === 'aseguradora') {
+    const el = document.getElementById('n-wrap-aseg');
+    if (el) el.style.display = 'block';
+  } else if (tipo === 'flotilla') {
+    const el = document.getElementById('n-wrap-flot');
+    if (el) el.style.display = 'block';
+  } else if (tipo === 'empresa') {
+    const el = document.getElementById('n-wrap-empresa');
+    if (el) el.style.display = 'block';
+  }
+  // Actualizar campo hidden
+  const hidden = document.getElementById('n-tipo-cliente');
+  if (hidden) hidden.value = tipo;
+}
+
+function selTipoCliente(label, tipo) {
+  // Actualizar visual
+  document.querySelectorAll('.tipo-cliente-btn').forEach(b => b.classList.remove('selected'));
+  label.classList.add('selected');
+  toggleTipoClienteNueva(tipo);
+}
+
+function toggleNuevaAseg(val) {
+  const extra = document.getElementById('n-wrap-aseg-extra');
+  if (extra) extra.style.display = val ? 'none' : 'block';
+}
+
+function toggleNuevaFlot(val) {
+  const extra = document.getElementById('n-wrap-flot-extra');
+  if (extra) extra.style.display = val ? 'none' : 'block';
+}
+
+function toggleNuevaEmpresa(val) {
+  const extra = document.getElementById('n-wrap-empresa-extra');
+  if (extra) extra.style.display = val ? 'none' : 'block';
+}
+
+async function agregarNuevaEmpresaNueva() {
+  const nombreField = document.getElementById('n-emp-nombre');
+  const nitField    = document.getElementById('n-emp-nit');
+  const nombre = nombreField?.value.trim() || prompt('Razón social de la empresa:')?.trim();
+  if (!nombre) return;
+  const nit = nitField?.value.trim() || null;
+  try {
+    await api('/flotillas', 'POST', { nombre, nit, activo: true }, { Prefer:'return=minimal' });
+    toast('Empresa agregada ✓');
+    if (nombreField) nombreField.value = '';
+    if (nitField)    nitField.value = '';
+    await recargarListasNuevaOrden();
+    const sel = document.getElementById('n-empresa-sel');
+    if (sel) sel.value = nombre;
+  } catch(e) { toast('Error: '+e.message,'err'); }
 }
 
 async function agregarNuevaAsegNueva() {
-  const nombre = prompt('Nombre de la nueva aseguradora:')?.trim();
+  // Si hay campos de nueva aseguradora en el form, usarlos; si no, usar prompt
+  const nombreField = document.getElementById('n-aseg-nombre');
+  const nitField    = document.getElementById('n-aseg-nit');
+  const nombre = nombreField?.value.trim() || prompt('Nombre de la nueva aseguradora:')?.trim();
   if (!nombre) return;
+  const nit = nitField?.value.trim() || null;
   try {
-    await api('/aseguradoras', 'POST', { nombre, activo: true }, { Prefer:'return=minimal' });
+    await api('/aseguradoras', 'POST', { nombre, nit, activo: true }, { Prefer:'return=minimal' });
     toast('Aseguradora agregada ✓');
+    if (nombreField) nombreField.value = '';
+    if (nitField)    nitField.value = '';
     await recargarListasNuevaOrden();
+    // Seleccionar la recién creada
+    const sel = document.getElementById('n-aseguradora-sel');
+    if (sel) sel.value = nombre;
   } catch(e) { toast('Error: '+e.message,'err'); }
 }
 
 async function agregarNuevaFlotNueva() {
-  const nombre = prompt('Nombre de la nueva flotilla:')?.trim();
+  const nombreField = document.getElementById('n-flot-nombre');
+  const nitField    = document.getElementById('n-flot-nit');
+  const dirField    = document.getElementById('n-flot-dir');
+  const nombre = nombreField?.value.trim() || prompt('Nombre de la nueva flotilla:')?.trim();
   if (!nombre) return;
+  const nit       = nitField?.value.trim()  || null;
+  const direccion = dirField?.value.trim()  || null;
   try {
-    await api('/flotillas', 'POST', { nombre, activo: true }, { Prefer:'return=minimal' });
+    await api('/flotillas', 'POST', { nombre, nit, direccion, activo: true }, { Prefer:'return=minimal' });
     toast('Flotilla agregada ✓');
+    if (nombreField) nombreField.value = '';
+    if (nitField)    nitField.value = '';
+    if (dirField)    dirField.value = '';
     await recargarListasNuevaOrden();
+    const sel = document.getElementById('n-flotilla-sel');
+    if (sel) sel.value = nombre;
   } catch(e) { toast('Error: '+e.message,'err'); }
 }
 
@@ -819,9 +903,12 @@ async function recargarListasNuevaOrden() {
   ]);
   const selA = document.getElementById('n-aseguradora-sel');
   const selF = document.getElementById('n-flotilla-sel');
+  const selE = document.getElementById('n-empresa-sel');
   if (selA) selA.innerHTML = '<option value="">— Seleccionar —</option>' +
     aseg.map(a=>`<option value="${a.nombre}">${a.nombre}</option>`).join('');
   if (selF) selF.innerHTML = '<option value="">— Seleccionar —</option>' +
+    flot.map(f=>`<option value="${f.nombre}">${f.nombre}</option>`).join('');
+  if (selE) selE.innerHTML = '<option value="">— Seleccionar —</option>' +
     flot.map(f=>`<option value="${f.nombre}">${f.nombre}</option>`).join('');
 }
 
@@ -839,6 +926,7 @@ async function crearOrden() {
 
   const invItems = {};
   document.querySelectorAll('.inv-item input[type=checkbox]').forEach(chk => { invItems[chk.value] = chk.checked; });
+  const combustible = document.getElementById('n-combustible-val')?.value || null;
 
   let clienteId = null;
   if (cedulaCliente) {
@@ -860,8 +948,21 @@ async function crearOrden() {
     aseguradora: (() => {
       const tipo = document.getElementById('n-tipo-cliente')?.value || '';
       if (tipo === 'aseguradora') return document.getElementById('n-aseguradora-sel')?.value || null;
-      if (tipo === 'flotilla')    return document.getElementById('n-flotilla-sel')?.value || null;
+      if (tipo === 'flotilla')    return document.getElementById('n-flotilla-sel')?.value    || null;
+      if (tipo === 'empresa')     return document.getElementById('n-empresa-sel')?.value     || null;
       return null;
+    })(),
+    // Propietario/telefono/cedula según tipo de cliente
+    propietario: (() => {
+      const tipo = document.getElementById('n-tipo-cliente')?.value || '';
+      if (tipo === 'aseguradora') return document.getElementById('n-propietario-aseg')?.value.trim() || document.getElementById('n-propietario')?.value.trim() || null;
+      return document.getElementById('n-propietario')?.value.trim() || null;
+    })(),
+    telefono: (() => {
+      const tipo = document.getElementById('n-tipo-cliente')?.value || '';
+      if (tipo === 'aseguradora') return document.getElementById('n-telefono-aseg')?.value.trim() || document.getElementById('n-telefono')?.value.trim() || null;
+      if (tipo === 'empresa')     return document.getElementById('n-empresa-tel')?.value.trim()   || null;
+      return document.getElementById('n-telefono')?.value.trim() || null;
     })(),
     marca: document.getElementById('n-marca')?.value || null,
     linea: document.getElementById('n-linea')?.value || null,
@@ -874,11 +975,11 @@ async function crearOrden() {
       if (persona === 'empresa') return 'empresa';
       return document.getElementById('n-tipo-cliente')?.value || null;
     })(),
-    nivel_dano: document.getElementById('n-dano')?.value || null,
+    nivel_dano: null,
     kilometraje: parseInt(document.getElementById('n-km')?.value) || null,
     fecha_entrega_1: document.getElementById('n-fecha1')?.value || null,
     fecha_entrega_2: document.getElementById('n-fecha2')?.value || null,
-    inventario: JSON.stringify({ items: invItems, observaciones: document.getElementById('n-inv-obs')?.value.trim() || null }),
+    inventario: JSON.stringify({ items: invItems, combustible: combustible, observaciones: document.getElementById('n-inv-obs')?.value.trim() || null }),
     estado: 'Activa',
     cliente_id: clienteId,
     vin: vin || null,
@@ -2336,4 +2437,11 @@ async function guardarEdicionOrden() {
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Guardar cambios'; }
   }
+}
+// ── Combustible ───────────────────────────────────────────
+function setCombustible(label, valor) {
+  document.querySelectorAll('.combustible-opcion').forEach(l => l.classList.remove('selected'));
+  label.classList.add('selected');
+  const hidden = document.getElementById('n-combustible-val');
+  if (hidden) hidden.value = valor;
 }
