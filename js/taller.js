@@ -1,6 +1,5 @@
 // ═══════════════════════════════════════════════════════════
-// PANTALLA TALLER — TV compacto, overlay de actualización
-// Fixes: entregadas hoy visibles, sonido al entregar, overlay automático
+// PANTALLA TALLER — Layout TV: grid 3 col + panel derecho
 // ═══════════════════════════════════════════════════════════
 
 const _tallerOrdenesNotificadas = new Set();
@@ -38,7 +37,7 @@ function montarTaller() {
     const st = document.createElement('style');
     st.id = 'taller-tv-styles';
     st.textContent = `
-      @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.35} }
+      @keyframes pulse-dot  { 0%,100%{opacity:1} 50%{opacity:.35} }
       @keyframes flash-border {
         0%,100%{border-color:rgba(255,255,255,.1)}
         30%,70%{border-color:#F59E0B;box-shadow:0 0 0 1px #F59E0B44}
@@ -46,6 +45,10 @@ function montarTaller() {
       @keyframes overlay-in {
         from{opacity:0;transform:scale(.95)}
         to{opacity:1;transform:scale(1)}
+      }
+      @keyframes slide-in-right {
+        from{opacity:0;transform:translateX(20px)}
+        to{opacity:1;transform:translateX(0)}
       }
       #pag-taller {
         background:#060B14;height:100vh;overflow:hidden;
@@ -77,6 +80,7 @@ function montarTaller() {
         letter-spacing:.08em;color:#FFFFFF;
         text-align:right;text-transform:uppercase;
       }
+      /* ── KPI STRIP ── */
       .tv-kpi-strip {
         display:grid;grid-template-columns:repeat(4,1fr);
         border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;
@@ -93,15 +97,79 @@ function montarTaller() {
         font-size:10px;font-weight:600;text-transform:uppercase;
         letter-spacing:.09em;color:rgba(255,255,255,.4);line-height:1.4;
       }
+      /* ── BODY: grid + panel ── */
       .tv-body {
-        flex:1;overflow:hidden;padding:10px 18px 10px;display:flex;flex-direction:column;
+        flex:1;overflow:hidden;padding:10px 0 10px;
+        display:flex;gap:0;
+      }
+      .tv-grid-wrap {
+        flex:1;overflow:hidden;padding:0 10px 0 18px;
+        display:flex;flex-direction:column;
       }
       .tv-grid {
         display:grid;
-        grid-template-columns:repeat(4,1fr);
+        grid-template-columns:repeat(3,1fr);
         grid-template-rows:repeat(2,1fr);
         gap:8px;flex:1;overflow:hidden;
       }
+      /* ── PANEL DERECHO ── */
+      .tv-panel-right {
+        width:220px;flex-shrink:0;
+        border-left:1px solid rgba(255,255,255,.08);
+        display:flex;flex-direction:column;
+        overflow:hidden;padding:0 0 10px;
+      }
+      .tv-panel-title {
+        font-family:'DM Mono',monospace;font-size:9px;font-weight:700;
+        letter-spacing:.18em;text-transform:uppercase;
+        color:rgba(255,255,255,.4);
+        padding:10px 16px 8px;
+        border-bottom:1px solid rgba(255,255,255,.06);
+        flex-shrink:0;
+      }
+      .tv-panel-list {
+        flex:1;overflow-y:auto;padding:8px 12px;
+        display:flex;flex-direction:column;gap:6px;
+      }
+      .tv-panel-list::-webkit-scrollbar { width:3px; }
+      .tv-panel-list::-webkit-scrollbar-track { background:transparent; }
+      .tv-panel-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1);border-radius:2px; }
+      .tv-panel-item {
+        border-radius:7px;padding:9px 11px;
+        display:flex;flex-direction:column;gap:4px;
+        animation:slide-in-right .4s ease;
+        flex-shrink:0;
+      }
+      .tv-panel-item.listo {
+        background:rgba(245,158,11,.08);
+        border:1px solid rgba(245,158,11,.25);
+      }
+      .tv-panel-item.entregado {
+        background:rgba(34,197,94,.07);
+        border:1px solid rgba(34,197,94,.22);
+      }
+      .tv-panel-placa {
+        font-family:'DM Mono',monospace;font-size:15px;font-weight:700;
+        color:#FFFFFF;letter-spacing:.04em;line-height:1;
+      }
+      .tv-panel-vehiculo {
+        font-size:10px;color:rgba(255,255,255,.35);
+      }
+      .tv-panel-status {
+        font-size:9px;font-weight:700;letter-spacing:.06em;
+        text-transform:uppercase;margin-top:2px;
+      }
+      .tv-panel-status.listo    { color:#FCD34D; }
+      .tv-panel-status.entregado{ color:#4ADE80; }
+      .tv-panel-time {
+        font-family:'DM Mono',monospace;font-size:9px;
+        color:rgba(255,255,255,.25);margin-top:1px;
+      }
+      .tv-panel-empty {
+        font-size:10px;color:rgba(255,255,255,.15);
+        font-style:italic;padding:12px 0;text-align:center;
+      }
+      /* ── TARJETAS GRID ── */
       .tv-card {
         background:#0C1220;border:1px solid rgba(255,255,255,.1);
         border-radius:9px;overflow:hidden;display:flex;flex-direction:column;
@@ -109,9 +177,6 @@ function montarTaller() {
       }
       .tv-card:hover { border-color:rgba(255,255,255,.22); }
       .tv-card.updated { animation:flash-border 1.5s ease-in-out; }
-      .tv-card.entregada {
-        border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.04);
-      }
       .tv-card-head {
         padding:9px 13px 7px;border-bottom:1px solid rgba(255,255,255,.07);
         display:flex;align-items:flex-start;justify-content:space-between;gap:6px;flex-shrink:0;
@@ -126,30 +191,32 @@ function montarTaller() {
         padding:2px 6px;border-radius:3px;text-transform:uppercase;
         letter-spacing:.07em;white-space:nowrap;border:1px solid transparent;
       }
-      .tv-tag-green  { background:rgba(34,197,94,.15);color:#4ADE80;border-color:rgba(34,197,94,.35); }
-      .tv-tag-amber  { background:rgba(245,158,11,.15);color:#FCD34D;border-color:rgba(245,158,11,.35); }
-      .tv-tag-blue   { background:rgba(59,130,246,.15);color:#93C5FD;border-color:rgba(59,130,246,.35); }
-      .tv-tag-red    { background:rgba(248,113,113,.13);color:#F87171;border-color:rgba(248,113,113,.3); }
-      .tv-tag-gray   { background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);border-color:rgba(255,255,255,.12); }
-      .tv-card-body  { padding:7px 13px 5px;flex:1;display:flex;flex-direction:column;gap:2px; }
-      .tv-etapa-row  { display:flex;align-items:center;gap:6px;padding:1px 0; }
-      .tv-edot       { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
-      .tv-edot.done  { background:#22C55E; }
-      .tv-edot.active{ background:#F59E0B; }
+      .tv-tag-amber { background:rgba(245,158,11,.15);color:#FCD34D;border-color:rgba(245,158,11,.35); }
+      .tv-tag-blue  { background:rgba(59,130,246,.15);color:#93C5FD;border-color:rgba(59,130,246,.35); }
+      .tv-tag-red   { background:rgba(248,113,113,.13);color:#F87171;border-color:rgba(248,113,113,.3); }
+      .tv-tag-gray  { background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);border-color:rgba(255,255,255,.12); }
+      .tv-card-body { padding:7px 13px 5px;flex:1;display:flex;flex-direction:column;gap:2px; }
+      .tv-etapa-row { display:flex;align-items:center;gap:6px;padding:1px 0; }
+      .tv-edot      { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+      .tv-edot.done { background:#22C55E; }
+      .tv-edot.active { background:#F59E0B; }
       .tv-edot.pending{ background:transparent;border:1.5px solid rgba(255,255,255,.15); }
-      .tv-ename      { font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-      .tv-ename.done { color:rgba(255,255,255,.48); }
-      .tv-ename.active{ color:#FCD34D;font-weight:700; }
+      .tv-edot.waiting{ background:transparent;border:1.5px solid rgba(245,158,11,.4); }
+      .tv-ename     { font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+      .tv-ename.done   { color:rgba(255,255,255,.48); }
+      .tv-ename.active { color:#FCD34D;font-weight:700; }
       .tv-ename.pending{ color:rgba(255,255,255,.18); }
-      .tv-etime      { font-family:'DM Mono',monospace;font-size:10px;flex-shrink:0; }
+      .tv-ename.waiting{ color:rgba(245,158,11,.6); }
+      .tv-etime     { font-family:'DM Mono',monospace;font-size:10px;flex-shrink:0; }
       .tv-etime.active{ color:#FCD34D;font-weight:700; }
-      .tv-etime.done { color:rgba(255,255,255,.28); }
-      .tv-card-foot  {
+      .tv-etime.done  { color:rgba(255,255,255,.28); }
+      .tv-card-foot {
         padding:5px 13px;border-top:1px solid rgba(255,255,255,.07);
         display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
       }
       .tv-mname { font-size:10px;color:rgba(255,255,255,.4); }
-      .tv-entrega-chip { font-family:'DM Mono',monospace;font-size:9px;font-weight:700; }
+      .tv-entrega-chip{ font-family:'DM Mono',monospace;font-size:9px;font-weight:700; }
+      /* ── OVERLAY ── */
       .tv-update-overlay {
         position:absolute;inset:0;background:rgba(6,11,20,.88);
         z-index:30;display:flex;align-items:center;justify-content:center;padding:20px;
@@ -158,14 +225,14 @@ function montarTaller() {
         background:#0C1220;border:2px solid #F59E0B;border-radius:12px;
         width:300px;overflow:hidden;animation:overlay-in .3s ease;
       }
-      .tv-overlay-card.entregada-overlay { border-color:#22C55E; }
+      .tv-overlay-card.green-border { border-color:#22C55E; }
       .tv-overlay-badge {
         background:#F59E0B;color:#060B14;
         font-family:'DM Mono',monospace;font-size:9px;font-weight:700;
         letter-spacing:.18em;text-transform:uppercase;
         padding:6px 16px;text-align:center;
       }
-      .tv-overlay-badge.entregada-badge { background:#22C55E; }
+      .tv-overlay-badge.green-bg { background:#22C55E; }
       .tv-overlay-head {
         padding:14px 18px 10px;border-bottom:1px solid rgba(255,255,255,.08);
       }
@@ -180,17 +247,17 @@ function montarTaller() {
         border-bottom:1px solid rgba(255,255,255,.05);
       }
       .tv-overlay-row:last-child { border-bottom:none; }
-      .tv-odot       { width:9px;height:9px;border-radius:50%;flex-shrink:0; }
-      .tv-odot.done  { background:#22C55E; }
-      .tv-odot.active{ background:#F59E0B; }
+      .tv-odot        { width:9px;height:9px;border-radius:50%;flex-shrink:0; }
+      .tv-odot.done   { background:#22C55E; }
+      .tv-odot.active { background:#F59E0B; }
       .tv-odot.pending{ background:transparent;border:2px solid rgba(255,255,255,.15); }
-      .tv-oname      { font-size:13px;flex:1; }
-      .tv-oname.done { color:rgba(255,255,255,.5); }
+      .tv-oname       { font-size:13px;flex:1; }
+      .tv-oname.done  { color:rgba(255,255,255,.5); }
       .tv-oname.active{ color:#FCD34D;font-weight:700; }
       .tv-oname.pending{ color:rgba(255,255,255,.2); }
-      .tv-otime      { font-family:'DM Mono',monospace;font-size:12px;font-weight:700; }
+      .tv-otime       { font-family:'DM Mono',monospace;font-size:12px;font-weight:700; }
       .tv-otime.active{ color:#FCD34D; }
-      .tv-otime.done { color:rgba(255,255,255,.28); }
+      .tv-otime.done  { color:rgba(255,255,255,.28); }
       .tv-overlay-foot {
         padding:10px 18px;border-top:1px solid rgba(255,255,255,.08);
         display:flex;justify-content:space-between;align-items:center;
@@ -247,6 +314,11 @@ function _tvTimerStr(inicioISO) {
   return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
 
+function _tvHoraStr(isoStr) {
+  if (!isoStr) return '';
+  return new Date(isoStr).toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', hour12:false });
+}
+
 function _tvEntregaInfo(orden) {
   if (!orden.fecha_entrega_1) return { color:'rgba(255,255,255,.35)', label:'Sin fecha' };
   const dias = Math.round((new Date(orden.fecha_entrega_1) - new Date()) / 86400000);
@@ -256,7 +328,7 @@ function _tvEntregaInfo(orden) {
   return { color:'#4ADE80', label:`${dias}d` };
 }
 
-function _tvMostrarOverlay(orden, etapasOrden, badge, esEntregada) {
+function _tvMostrarOverlay(orden, etapasOrden, badge, esVerde) {
   if (_tallerOverlayTimer) clearInterval(_tallerOverlayTimer);
 
   const { color: entColor, label: entLabel } = _tvEntregaInfo(orden);
@@ -273,15 +345,10 @@ function _tvMostrarOverlay(orden, etapasOrden, badge, esEntregada) {
     </div>`;
   }).join('');
 
-  const cardCls  = esEntregada ? 'tv-overlay-card entregada-overlay' : 'tv-overlay-card';
-  const badgeCls = esEntregada ? 'tv-overlay-badge entregada-badge'  : 'tv-overlay-badge';
-  const entregaColor = esEntregada ? '#4ADE80' : entColor;
-  const entregaLabel = esEntregada ? '✓ Entregado hoy' : entLabel;
-
   const overlayHtml = `
     <div class="tv-update-overlay" id="tv-overlay" onclick="this.remove()">
-      <div class="${cardCls}" onclick="event.stopPropagation()">
-        <div class="${badgeCls}">${badge}</div>
+      <div class="tv-overlay-card${esVerde?' green-border':''}" onclick="event.stopPropagation()">
+        <div class="tv-overlay-badge${esVerde?' green-bg':''}">${badge}</div>
         <div class="tv-overlay-head">
           <div class="tv-overlay-placa">${orden.placa}</div>
           <div class="tv-overlay-veh">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
@@ -289,7 +356,7 @@ function _tvMostrarOverlay(orden, etapasOrden, badge, esEntregada) {
         <div class="tv-overlay-body">${etapasHtml}</div>
         <div class="tv-overlay-foot">
           <span class="tv-overlay-tec">${tecnico||'—'}</span>
-          <span class="tv-overlay-entrega" style="color:${entregaColor}">${entregaLabel}</span>
+          <span class="tv-overlay-entrega" style="color:${esVerde?'#4ADE80':entColor}">${esVerde?'✓ Proceso completo':entLabel}</span>
         </div>
         <div class="tv-overlay-countdown" id="tv-overlay-cd">Cerrando en 5s — toca para cerrar</div>
       </div>
@@ -323,7 +390,6 @@ async function cargarPantallaTaller() {
     const manana = new Date(hoy); manana.setDate(manana.getDate()+1);
     const hoyISO = hoy.toISOString().split('T')[0];
 
-    // ── 3 queries: activas, entregadas hoy, etapas ──────────
     const [ordenesActivas, entregadasHoy, etapasActivas, etapasTodas] = await Promise.all([
       api(`/ordenes?estado=eq.Activa&order=fecha_entrega_1.asc`).catch(()=>[]) || [],
       api(`/ordenes?estado=eq.Entregada&entregada_en=gte.${hoy.toISOString()}&order=entregada_en.desc`).catch(()=>[]) || [],
@@ -331,23 +397,49 @@ async function cargarPantallaTaller() {
       api(`/etapas?select=id,orden_id,etapa,servicio,inicio,fin,tecnico&order=creado_en.asc`).catch(()=>[]) || []
     ]);
 
-    const creadasHoy  = ordenesActivas.filter(o => new Date(o.creado_en) >= hoy && new Date(o.creado_en) < manana);
-    const entregarHoy = ordenesActivas.filter(o => o.fecha_entrega_1?.split('T')[0] === hoyISO || o.fecha_entrega_2?.split('T')[0] === hoyISO);
-    const enProceso   = ordenesActivas.filter(o => etapasActivas.some(e => e.orden_id === o.id));
+    // ── Clasificar órdenes activas ───────────────────────────
+    // LISTAS: todas las etapas tienen fin — ya no van al grid
+    const ordenesListas = ordenesActivas.filter(o => {
+      const ets = etapasTodas.filter(e => e.orden_id === o.id);
+      return ets.length > 0 && ets.every(e => e.fin);
+    });
+    const listasIds = new Set(ordenesListas.map(o => o.id));
 
-    // ── Sonido + overlay para órdenes recién entregadas ─────
+    // EN GRID: tienen al menos una etapa sin fin (activa o pendiente) — FIX bug desaparición
+    const ordenesEnGrid = ordenesActivas.filter(o => {
+      const ets = etapasTodas.filter(e => e.orden_id === o.id);
+      // Sin etapas asignadas: mostrar igual
+      if (!ets.length) return true;
+      // Mostrar si queda al menos una etapa sin completar
+      return ets.some(e => !e.fin);
+    }).filter(o => !listasIds.has(o.id));
+
+    const creadasHoy  = ordenesEnGrid.filter(o => new Date(o.creado_en) >= hoy && new Date(o.creado_en) < manana);
+    const entregarHoy = ordenesEnGrid.filter(o => o.fecha_entrega_1?.split('T')[0] === hoyISO || o.fecha_entrega_2?.split('T')[0] === hoyISO);
+    const enProceso   = ordenesEnGrid.filter(o => etapasActivas.some(e => e.orden_id === o.id));
+
+    // ── Sonido + overlay para nuevas entregas y nuevas listas ─
     const nuevasEntregadas = entregadasHoy.filter(o => !_tallerOrdenesNotificadas.has('ent_' + o.id));
     if (nuevasEntregadas.length) {
       nuevasEntregadas.forEach(o => _tallerOrdenesNotificadas.add('ent_' + o.id));
       const audio = document.getElementById('taller-audio');
       if (audio) { audio.currentTime = 0; audio.play().catch(()=>{}); }
-      // Mostrar overlay de entrega para la más reciente
       const oEnt = nuevasEntregadas[0];
       const etsEnt = etapasTodas.filter(e => e.orden_id === oEnt.id);
       setTimeout(() => _tvMostrarOverlay(oEnt, etsEnt, '✓ ORDEN ENTREGADA', true), 600);
     }
 
-    // ── Detectar cambio de etapa activa para overlay ────────
+    const nuevasListas = ordenesListas.filter(o => !_tallerOrdenesNotificadas.has('lst_' + o.id));
+    if (nuevasListas.length && !nuevasEntregadas.length) {
+      nuevasListas.forEach(o => _tallerOrdenesNotificadas.add('lst_' + o.id));
+      const audio = document.getElementById('taller-audio');
+      if (audio) { audio.currentTime = 0; audio.play().catch(()=>{}); }
+      const oLst = nuevasListas[0];
+      const etsLst = etapasTodas.filter(e => e.orden_id === oLst.id);
+      setTimeout(() => _tvMostrarOverlay(oLst, etsLst, '✓ VEHÍCULO LISTO', true), 600);
+    }
+
+    // ── Detectar cambio de etapa activa para overlay ─────────
     const snapshotNuevo = {};
     etapasActivas.forEach(e => { snapshotNuevo[e.orden_id] = e.id; });
     let ordenCambiada = null;
@@ -359,7 +451,6 @@ async function cargarPantallaTaller() {
         badgeOverlay  = 'ETAPA ACTUALIZADA';
       }
     });
-    // Nueva orden ingresada hoy (no existía en snapshot anterior)
     creadasHoy.forEach(o => {
       const key = 'ord_' + o.id;
       if (!_tallerEtapasSnapshot[key] && Object.keys(_tallerEtapasSnapshot).length > 0) {
@@ -370,51 +461,36 @@ async function cargarPantallaTaller() {
     });
     _tallerEtapasSnapshot = { ..._tallerEtapasSnapshot, ...snapshotNuevo };
 
-    // ── Deduplicación y orden de display ────────────────────
-    // Prioridad: entregadas hoy > entregan hoy > ingresos hoy > en proceso
-    const entregadasIds = new Set(entregadasHoy.map(o=>o.id));
-    const entregaHoyIds = new Set(entregarHoy.filter(o=>!entregadasIds.has(o.id)).map(o=>o.id));
-    const ingresoIds    = new Set(creadasHoy.filter(o=>!entregadasIds.has(o.id)&&!entregaHoyIds.has(o.id)).map(o=>o.id));
-    const procesoFilt   = enProceso.filter(o=>!entregadasIds.has(o.id)&&!entregaHoyIds.has(o.id)&&!ingresoIds.has(o.id));
-
-    const ordenesDisplay = [
-      ...entregadasHoy.map(o=>({orden:o, tipo:'entregada'})),
-      ...entregarHoy.filter(o=>entregaHoyIds.has(o.id)).map(o=>({orden:o, tipo:'entrega'})),
-      ...creadasHoy.filter(o=>ingresoIds.has(o.id)).map(o=>({orden:o, tipo:'ingreso'})),
-      ...procesoFilt.map(o=>({orden:o, tipo:'activa'}))
-    ].slice(0, 8);
-
-    // ── Render tarjeta ──────────────────────────────────────
-    function renderCard({orden, tipo}) {
+    // ── Render tarjeta de grid ───────────────────────────────
+    function renderCard(orden) {
       const etsOrden    = etapasTodas.filter(e => e.orden_id === orden.id);
       const etapaActiva = etapasActivas.find(e => e.orden_id === orden.id);
-      const esEntregada = tipo === 'entregada';
       const { color: entColor, label: entLabel } = _tvEntregaInfo(orden);
-      const tecnico = etapaActiva?.tecnico
-        || etsOrden.filter(e=>e.tecnico).slice(-1)[0]?.tecnico || '';
+      const tecnico = etapaActiva?.tecnico || '';
 
-      const tipoTagMap = {
-        entregada: '<span class="tv-tag tv-tag-green">✓ Entregada hoy</span>',
-        entrega:   '<span class="tv-tag tv-tag-amber">Entrega hoy</span>',
-        ingreso:   '<span class="tv-tag tv-tag-blue">Nuevo hoy</span>',
-        activa:    ''
-      };
-
-      // Días de entrega como tag para órdenes activas sin otra etiqueta
-      let entregaTagFallback = '';
-      if (tipo === 'activa' && orden.fecha_entrega_1) {
+      const esIngreso  = creadasHoy.some(o => o.id === orden.id);
+      const esEntrega  = entregarHoy.some(o => o.id === orden.id);
+      let tag = '';
+      if (esIngreso && esEntrega) tag = '<span class="tv-tag tv-tag-amber">Entrega hoy</span>';
+      else if (esIngreso)         tag = '<span class="tv-tag tv-tag-blue">Nuevo hoy</span>';
+      else if (esEntrega) {
         const dias = Math.round((new Date(orden.fecha_entrega_1) - new Date()) / 86400000);
-        if (dias < 0)        entregaTagFallback = `<span class="tv-tag tv-tag-red">${Math.abs(dias)}d vencida</span>`;
-        else if (dias === 0) entregaTagFallback = `<span class="tv-tag tv-tag-amber">Hoy</span>`;
-        else if (dias <= 2)  entregaTagFallback = `<span class="tv-tag tv-tag-amber">${dias}d</span>`;
-        else                 entregaTagFallback = `<span class="tv-tag tv-tag-gray">${dias}d</span>`;
+        tag = dias < 0
+          ? `<span class="tv-tag tv-tag-red">${Math.abs(dias)}d vencida</span>`
+          : '<span class="tv-tag tv-tag-amber">Entrega hoy</span>';
+      } else if (orden.fecha_entrega_1) {
+        const dias = Math.round((new Date(orden.fecha_entrega_1) - new Date()) / 86400000);
+        if (dias < 0)        tag = `<span class="tv-tag tv-tag-red">${Math.abs(dias)}d vencida</span>`;
+        else if (dias === 0) tag = '<span class="tv-tag tv-tag-amber">Hoy</span>';
+        else if (dias <= 2)  tag = `<span class="tv-tag tv-tag-amber">${dias}d</span>`;
+        else                 tag = `<span class="tv-tag tv-tag-gray">${dias}d</span>`;
       }
 
-      // Etapas: máx 5 visibles, prioriza completadas + activa
+      // Etapas: máx 5, prioriza completadas + activa + esperando
       const MAX = 5;
       let etapasHtml = '';
       if (etsOrden.length) {
-        const relevantes = etsOrden.filter(e => e.fin || (e.inicio && !e.fin));
+        const relevantes = etsOrden.filter(e => e.fin || e.inicio);
         const pendientes  = etsOrden.filter(e => !e.fin && !e.inicio);
         const visibles    = etsOrden.length <= MAX
           ? etsOrden
@@ -422,12 +498,23 @@ async function cargarPantallaTaller() {
         const ocultas = etsOrden.length - visibles.length;
 
         etapasHtml = visibles.map(e => {
-          const cls = e.fin ? 'done' : (e.inicio && !e.fin ? 'active' : 'pending');
-          const tiempo = cls === 'active'
+          // done = tiene fin; active = inicio pero no fin; waiting = terminó última etapa, esperando inicio de esta
+          const done    = !!e.fin;
+          const active  = !!e.inicio && !e.fin;
+          // "waiting" = no tiene inicio ni fin pero la etapa anterior sí terminó
+          const idxE    = etsOrden.indexOf(e);
+          const prevDone= idxE > 0 && !!etsOrden[idxE-1]?.fin;
+          const waiting = !done && !active && prevDone;
+          const cls     = done ? 'done' : active ? 'active' : waiting ? 'waiting' : 'pending';
+
+          const tiempo = active
             ? `<span class="tv-etime active" id="tv-et-${e.id}">${_tvTimerStr(e.inicio)}</span>`
-            : cls === 'done'
+            : done
               ? `<span class="tv-etime done">✓</span>`
-              : '';
+              : waiting
+                ? `<span style="font-size:9px;color:rgba(245,158,11,.5)">próxima</span>`
+                : '';
+
           return `<div class="tv-etapa-row">
             <div class="tv-edot ${cls}"></div>
             <span class="tv-ename ${cls}">${e.etapa||'—'}</span>
@@ -436,31 +523,55 @@ async function cargarPantallaTaller() {
         }).join('');
 
         if (ocultas > 0) {
-          etapasHtml += `<div style="font-size:9px;color:rgba(255,255,255,.2);padding-top:2px">+${ocultas} más pendientes</div>`;
+          etapasHtml += `<div style="font-size:9px;color:rgba(255,255,255,.2);padding-top:2px">+${ocultas} pendientes</div>`;
         }
       } else {
         etapasHtml = `<span style="font-size:10px;color:rgba(255,255,255,.2);font-style:italic">Sin etapas asignadas</span>`;
       }
 
-      return `<div class="tv-card${esEntregada?' entregada':''}"
-        onclick="_tvVerDetalle(${orden.id})"
-        id="tv-card-${orden.id}">
+      return `<div class="tv-card" onclick="_tvVerDetalle(${orden.id})" id="tv-card-${orden.id}">
         <div class="tv-card-head">
           <div>
             <div class="tv-placa">${orden.placa}</div>
             <div class="tv-vehiculo">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
           </div>
-          ${tipoTagMap[tipo] || entregaTagFallback}
+          ${tag}
         </div>
         <div class="tv-card-body">${etapasHtml}</div>
         <div class="tv-card-foot">
-          <span class="tv-mname">${tecnico||(esEntregada?'Entregado':'Sin técnico')}</span>
-          <span class="tv-entrega-chip" style="color:${esEntregada?'#4ADE80':entColor}">${esEntregada?'Entregada':entLabel}</span>
+          <span class="tv-mname">${tecnico||'Sin técnico activo'}</span>
+          <span class="tv-entrega-chip" style="color:${entColor}">${entLabel}</span>
         </div>
       </div>`;
     }
 
-    // ── Render HTML ─────────────────────────────────────────
+    // ── Render panel derecho ────────────────────────────────
+    // Combina: listas (todas etapas fin, aún Activa) + entregadas hoy
+    const panelItems = [
+      ...ordenesListas.map(o => ({ orden:o, tipo:'listo' })),
+      ...entregadasHoy.map(o => ({ orden:o, tipo:'entregado' }))
+    ];
+
+    const panelHtml = panelItems.length
+      ? panelItems.map(({orden, tipo}) => {
+          const hora = tipo === 'entregado'
+            ? _tvHoraStr(orden.entregada_en)
+            : '';
+          const statusTxt = tipo === 'listo'
+            ? 'Vehículo listo — preparando entrega'
+            : '✓ Entregado al cliente';
+          return `<div class="tv-panel-item ${tipo}" onclick="_tvVerDetalle(${orden.id})">
+            <div class="tv-panel-placa">${orden.placa}</div>
+            <div class="tv-panel-vehiculo">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
+            <div class="tv-panel-status ${tipo}">${statusTxt}</div>
+            ${hora ? `<div class="tv-panel-time">${hora}</div>` : ''}
+          </div>`;
+        }).join('')
+      : '<div class="tv-panel-empty">Sin terminados hoy</div>';
+
+    // ── Render HTML completo ────────────────────────────────
+    const gridCards = ordenesEnGrid.slice(0, 6).map(renderCard).join('');
+
     cont.innerHTML = `
       <div class="tv-shell">
         <div class="tv-header">
@@ -492,26 +603,31 @@ async function cargarPantallaTaller() {
         </div>
 
         <div class="tv-body">
-          ${ordenesDisplay.length > 0
-            ? `<div class="tv-grid">${ordenesDisplay.map(renderCard).join('')}</div>`
-            : '<div class="tv-empty">Sin actividad hoy</div>'
-          }
+          <div class="tv-grid-wrap">
+            ${gridCards
+              ? `<div class="tv-grid">${gridCards}</div>`
+              : '<div class="tv-empty">Sin órdenes activas</div>'
+            }
+          </div>
+          <div class="tv-panel-right">
+            <div class="tv-panel-title">Listos hoy</div>
+            <div class="tv-panel-list">${panelHtml}</div>
+          </div>
         </div>
       </div>
 
       <div class="tv-watermark">
-        <img src="Logo_Fondo_Taller.png" style="width:100%;height:100%;object-fit:contain;opacity:0.04;filter:grayscale(1) brightness(3)" alt="">
+        <img src="Logo_Fondo_Taller.png"
+          style="width:100%;height:100%;object-fit:contain;opacity:0.04;filter:grayscale(1) brightness(3)" alt="">
       </div>
     `;
 
-    // Guardar referencias para overlay manual
     window._tvEtapasTodas    = etapasTodas;
     window._tvOrdenesActivas = ordenesActivas;
     window._tvEntregadasHoy  = entregadasHoy;
 
     iniciarRelojTaller();
 
-    // Timers en vivo para etapas activas
     if (window._tallerTimerInterval) clearInterval(window._tallerTimerInterval);
     window._tallerTimerInterval = setInterval(() => {
       etapasActivas.forEach(e => {
@@ -520,10 +636,10 @@ async function cargarPantallaTaller() {
       });
     }, 1000);
 
-    // Overlay automático por cambio de etapa (solo si no hay overlay de entrega activo)
-    if (ordenCambiada && !nuevasEntregadas.length) {
-      const etsOrdenCambiada = etapasTodas.filter(e => e.orden_id === ordenCambiada.id);
-      setTimeout(() => _tvMostrarOverlay(ordenCambiada, etsOrdenCambiada, badgeOverlay, false), 400);
+    // Overlay automático por cambio de etapa
+    if (ordenCambiada && !nuevasEntregadas.length && !nuevasListas.length) {
+      const ets = etapasTodas.filter(e => e.orden_id === ordenCambiada.id);
+      setTimeout(() => _tvMostrarOverlay(ordenCambiada, ets, badgeOverlay, false), 400);
       const cardEl = document.getElementById(`tv-card-${ordenCambiada.id}`);
       if (cardEl) { cardEl.classList.remove('updated'); void cardEl.offsetWidth; cardEl.classList.add('updated'); }
     }
@@ -533,10 +649,9 @@ async function cargarPantallaTaller() {
   }
 }
 
-// Overlay manual al tocar una tarjeta
 function _tvVerDetalle(ordenId) {
-  const todasOrdenes = [...(window._tvOrdenesActivas||[]), ...(window._tvEntregadasHoy||[])];
-  const orden = todasOrdenes.find(o => o.id === ordenId);
+  const todas = [...(window._tvOrdenesActivas||[]), ...(window._tvEntregadasHoy||[])];
+  const orden  = todas.find(o => o.id === ordenId);
   if (!orden) return;
   const ets = (window._tvEtapasTodas||[]).filter(e => e.orden_id === ordenId);
   const esEntregada = (window._tvEntregadasHoy||[]).some(o => o.id === ordenId);
