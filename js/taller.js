@@ -114,60 +114,61 @@ function montarTaller() {
       }
       /* ── PANEL DERECHO ── */
       .tv-panel-right {
-        width:220px;flex-shrink:0;
+        width:190px;flex-shrink:0;
         border-left:1px solid rgba(255,255,255,.08);
         display:flex;flex-direction:column;
-        overflow:hidden;padding:0 0 10px;
+        overflow:hidden;
       }
       .tv-panel-title {
-        font-family:'DM Mono',monospace;font-size:9px;font-weight:700;
+        font-family:'DM Mono',monospace;font-size:8px;font-weight:700;
         letter-spacing:.18em;text-transform:uppercase;
         color:rgba(255,255,255,.4);
-        padding:10px 16px 8px;
+        padding:7px 12px 6px;
         border-bottom:1px solid rgba(255,255,255,.06);
         flex-shrink:0;
       }
       .tv-panel-list {
-        flex:1;overflow-y:auto;padding:8px 12px;
-        display:flex;flex-direction:column;gap:6px;
+        flex:1;overflow:hidden;padding:4px 6px;
+        display:flex;flex-direction:column;gap:3px;
       }
-      .tv-panel-list::-webkit-scrollbar { width:3px; }
-      .tv-panel-list::-webkit-scrollbar-track { background:transparent; }
-      .tv-panel-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1);border-radius:2px; }
       .tv-panel-item {
-        border-radius:7px;padding:9px 11px;
-        display:flex;flex-direction:column;gap:4px;
+        border-radius:5px;padding:5px 8px;
+        display:flex;align-items:center;gap:7px;
         animation:slide-in-right .4s ease;
-        flex-shrink:0;
+        flex-shrink:0;cursor:pointer;
       }
       .tv-panel-item.listo {
-        background:rgba(245,158,11,.08);
-        border:1px solid rgba(245,158,11,.25);
+        background:rgba(245,158,11,.07);
+        border:1px solid rgba(245,158,11,.2);
       }
       .tv-panel-item.entregado {
-        background:rgba(34,197,94,.07);
-        border:1px solid rgba(34,197,94,.22);
+        background:rgba(34,197,94,.06);
+        border:1px solid rgba(34,197,94,.18);
       }
+      .tv-panel-dot {
+        width:6px;height:6px;border-radius:50%;flex-shrink:0;
+      }
+      .tv-panel-dot.listo    { background:#FCD34D; }
+      .tv-panel-dot.entregado{ background:#4ADE80; }
+      .tv-panel-info { flex:1;min-width:0; }
       .tv-panel-placa {
-        font-family:'DM Mono',monospace;font-size:15px;font-weight:700;
+        font-family:'DM Mono',monospace;font-size:13px;font-weight:700;
         color:#FFFFFF;letter-spacing:.04em;line-height:1;
       }
-      .tv-panel-vehiculo {
-        font-size:10px;color:rgba(255,255,255,.35);
-      }
       .tv-panel-status {
-        font-size:9px;font-weight:700;letter-spacing:.06em;
-        text-transform:uppercase;margin-top:2px;
+        font-size:9px;font-weight:500;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        margin-top:1px;
       }
-      .tv-panel-status.listo    { color:#FCD34D; }
-      .tv-panel-status.entregado{ color:#4ADE80; }
+      .tv-panel-status.listo    { color:rgba(252,211,77,.65); }
+      .tv-panel-status.entregado{ color:rgba(74,222,128,.65); }
       .tv-panel-time {
         font-family:'DM Mono',monospace;font-size:9px;
-        color:rgba(255,255,255,.25);margin-top:1px;
+        color:rgba(255,255,255,.25);flex-shrink:0;
       }
       .tv-panel-empty {
         font-size:10px;color:rgba(255,255,255,.15);
-        font-style:italic;padding:12px 0;text-align:center;
+        font-style:italic;padding:10px 0;text-align:center;
       }
       /* ── TARJETAS GRID ── */
       .tv-card {
@@ -558,12 +559,14 @@ async function cargarPantallaTaller() {
             ? _tvHoraStr(orden.entregada_en)
             : '';
           const statusTxt = tipo === 'listo'
-            ? 'Vehículo listo — preparando entrega'
-            : '✓ Entregado al cliente';
+            ? 'Listo — prep. entrega'
+            : '✓ Entregado';
           return `<div class="tv-panel-item ${tipo}" onclick="_tvVerDetalle(${orden.id})">
-            <div class="tv-panel-placa">${orden.placa}</div>
-            <div class="tv-panel-vehiculo">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
-            <div class="tv-panel-status ${tipo}">${statusTxt}</div>
+            <div class="tv-panel-dot ${tipo}"></div>
+            <div class="tv-panel-info">
+              <div class="tv-panel-placa">${orden.placa}</div>
+              <div class="tv-panel-status ${tipo}">${statusTxt}</div>
+            </div>
             ${hora ? `<div class="tv-panel-time">${hora}</div>` : ''}
           </div>`;
         }).join('')
