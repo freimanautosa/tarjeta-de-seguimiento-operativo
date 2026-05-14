@@ -1,148 +1,608 @@
-═══════════════════════════════════════════════════════════
-INSTRUCCIONES DE DESPLIEGUE — Freimanautos
-Mayo 2026
-═══════════════════════════════════════════════════════════
+<!DOCTYPE html>
+<html lang="es">
+<head>
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. BASE DE DATOS — EJECUTAR EN SUPABASE SQL EDITOR
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freimanautos</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="logoFreiman.png">
+  
+  <!-- CSS externo (TODO el CSS está aquí) -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
 
-OBLIGATORIO para habilitar etapas simultáneas:
+<!-- ═══════════════════════════════════════════════════════════
+     PANTALLA DE LOGIN
+═══════════════════════════════════════════════════════════ -->
+<div id="pantalla-login">
+  <div class="login-card">
+    <div class="login-logo">Freimanautos · Sistema Operativo</div>
+    <div class="login-titulo">Bienvenido</div>
+    <div class="login-sub">Ingresa tu número de cédula para continuar</div>
+    <label class="login-label" for="login-cedula">Número de cédula</label>
+    <input class="login-input" id="login-cedula" type="text" placeholder="Ej: 1234567890"
+      oninput="this.value=this.value.replace(/\D/g,'')"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()" id="login-btn">Ingresar</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
 
-  DROP INDEX IF EXISTS idx_una_etapa_activa;
+<!-- ═══════════════════════════════════════════════════════════
+     APP PRINCIPAL (estructura vacía, se llena con JS)
+═══════════════════════════════════════════════════════════ -->
+<div id="app">
+  
+  <!-- SIDEBAR (contenedor vacío, JS genera el contenido según perfil) -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-logo">Sistema Operativo</div>
+      <div class="sidebar-brand-name">Freimanautos</div>
+    </div>
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar" id="sb-avatar">
+        <img src="logoFreimanpfp.png" style="width:100%;height:100%;object-fit:contain;border-radius:50%">
+      </div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sb-nombre">—</div>
+        <div class="sidebar-user-role" id="sb-rol">—</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-capacidad" id="sidebar-capacidad">
+        <div class="capacidad-title">Capacidad del taller</div>
+        <div class="capacidad-donut-wrap">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="8"/>
+            <circle id="cap-fill" cx="40" cy="40" r="30" fill="none" stroke="#EAB308" stroke-width="8"
+              stroke-linecap="round" stroke-dasharray="0 188.5"
+              transform="rotate(-90 40 40)" style="transition:stroke-dasharray 0.5s,stroke 0.5s"/>
+            <text id="cap-pct" x="40" y="45" text-anchor="middle" font-size="14" font-weight="700" fill="white">0%</text>
+          </svg>
+          <div class="capacidad-sub" id="cap-sub">0 de 34 cupos</div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        Cerrar sesión
+      </button>
+    </div>
+  </div>
+  
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
-Pega eso en Supabase > SQL Editor > Run.
-Sin este paso las etapas simultáneas seguirán bloqueadas.
+  <!-- MAIN CONTENT -->
+  <div class="main">
+    <div class="topbar">
+      <button class="hamburger" onclick="openSidebar()">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <div class="topbar-title" id="topbar-title">Órdenes</div>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </div>
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-2. ARCHIVOS A SUBIR (reemplazar en EasyPanel)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    <div class="content">
+      <!-- PÁGINAS (contenedores vacíos, JS llena el contenido) -->
+      <div class="pagina" id="pag-dashboard">
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="filtro-btn active" id="dash-tab-mes" onclick="switchDashTab('mes')">📅 Mes actual</button>
+    <button class="filtro-btn" id="dash-tab-operativo" onclick="switchDashTab('operativo')">General</button>
+    <button class="filtro-btn" id="dash-tab-financiero" onclick="switchDashTab('financiero')">Financiero</button>
+    <button class="filtro-btn" id="dash-tab-metas" onclick="switchDashTab('metas')">Metas</button>
+  </div>
+  <div id="dash-mes-contenido"></div>
+  <div id="dash-contenido" style="display:none"></div>
+  <div id="dash-financiero-contenido" style="display:none"></div>
+  <div id="dash-metas-contenido" style="display:none"></div>
+</div>
+      <div class="pagina" id="pag-ordenes">
+        <div class="filtros-bar" id="filtros-bar">
+          <button class="filtro-btn active" onclick="setFiltro('Activa',this)">Activas</button>
+          <button class="filtro-btn" onclick="setFiltro('Entregada',this)">Entregadas</button>
+<button class="filtro-btn" onclick="setFiltroPulmon(this)">En Pulmón</button>
+        </div>
+        <div class="ordenes-grid" id="lista-ordenes">
+          <div class="loading-state">Cargando órdenes...</div>
+        </div>
+      </div>
+      <div class="pagina" id="pag-detalle">
+        <button class="back-btn" onclick="volverALista()">← Volver a órdenes</button>
+        <div id="detalle-contenido"></div>
+      </div>
+      <div class="pagina" id="pag-nueva">
+        <div class="card" style="padding:28px">
 
-Sube estos archivos reemplazando los existentes:
+          <div class="form-section">
+            <div class="form-section-titulo">Identificación del vehículo</div>
+            <div style="display:flex;gap:8px">
+              <div class="field" style="flex:1">
+                <label>Placa *</label>
+                <input id="n-placa" placeholder="LUN954" style="text-transform:uppercase;font-family:'DM Mono',monospace;letter-spacing:2px"
+                  oninput="this.value=this.value.toUpperCase()" onblur="buscarPorPlaca()">
+              </div>
+              <div style="display:flex;align-items:flex-end">
+                <button class="btn btn-ghost" onclick="buscarPorPlaca()" style="height:41px">Buscar</button>
+              </div>
+            </div>
+            <div id="placa-resultado" class="placa-resultado"></div>
+            <div id="historial-previo" class="historial-previo">
+              <div class="seccion-titulo" style="margin-bottom:8px">Historial con esta placa</div>
+              <div id="historial-lista"></div>
+            </div>
+          </div>
 
-  js/taller.js      → pantalla TV rediseñada en lista
-  js/mecanico.js    → sin bloqueo de etapas simultáneas
-  js/metas.js       → mes dinámico + descarga plantilla CSV
-  js/dashboard.js   → bug pantalla en blanco corregido +
-                       switchDashTab('mes') por defecto
-  js/ordenes.js     → tipo cliente con botones visuales +
-                       navJefe dashboard corregido
-  js/reportes.js    → NUEVO — sistema centralizado de reportes
-  styles.css        → estilos tipo cliente + combustible
+          <div class="form-section">
+            <div class="form-section-titulo">Tipo de persona</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+              <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1.5px solid var(--gris-borde);border-radius:7px;cursor:pointer;font-size:13px;font-weight:500">
+                <input type="radio" name="n-tipo-persona" value="natural" checked onchange="toggleTipoPersonaNueva('natural')">
+                Persona natural
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1.5px solid var(--gris-borde);border-radius:7px;cursor:pointer;font-size:13px;font-weight:500">
+                <input type="radio" name="n-tipo-persona" value="empresa" onchange="toggleTipoPersonaNueva('empresa')">
+                Empresa
+              </label>
+            </div>
+          </div>
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-3. CAMBIOS EN index.html
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          <div class="form-section">
+            <div class="form-section-titulo">Datos del vehículo</div>
+            <div class="grid-2">
+              <div class="field"><label>Marca</label><input id="n-marca" placeholder="Toyota"></div>
+              <div class="field"><label>Línea</label><input id="n-linea" placeholder="Hilux"></div>
+              <div class="field"><label>Modelo (año)</label><input id="n-modelo" placeholder="2021" maxlength="4"></div>
+              <div class="field"><label>Color</label><input id="n-color" placeholder="Blanco"></div>
+              <div class="field full"><label>VIN <span style="font-weight:400;color:var(--gris-mid);font-size:11px">(17 caracteres, opcional)</span></label>
+                <input id="n-vin" placeholder="WBA3A5C50DF256145" maxlength="17" style="font-family:'DM Mono',monospace;letter-spacing:1px" oninput="this.value=this.value.toUpperCase()">
+              </div>
+            </div>
+          </div>
 
-A) Agregar el script de reportes.js (antes del cierre </body>):
+          <div class="form-section">
+            <div class="form-section-titulo">Datos del propietario</div>
+            <div class="grid-2">
+              <div class="field full"><label id="lbl-n-propietario">Nombre completo *</label><input id="n-propietario" placeholder="Nombre completo"></div>
+              <div class="field"><label>Teléfono</label><input id="n-telefono" placeholder="3134753389" type="tel"></div>
+              <div class="field"><label id="lbl-n-cedula">Cédula</label><input id="n-cedula-cliente" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')"></div>
+              <div class="field full"><label>Correo electrónico</label><input id="n-correo-cliente" placeholder="correo@ejemplo.com" type="email"></div>
+            </div>
+          </div>
 
-  <script src="js/reportes.js"></script>
+          <div class="form-section">
+            <div class="form-section-titulo">Tipo de cliente</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+              <label class="tipo-cliente-btn" id="tcb-particular" onclick="selTipoCliente(this,'particular')">
+                <span style="font-size:20px">👤</span>
+                <span>Particular</span>
+              </label>
+              <label class="tipo-cliente-btn" id="tcb-aseguradora" onclick="selTipoCliente(this,'aseguradora')">
+                <span style="font-size:20px">🏢</span>
+                <span>Aseguradora</span>
+              </label>
+              <label class="tipo-cliente-btn" id="tcb-flotilla" onclick="selTipoCliente(this,'flotilla')">
+                <span style="font-size:20px">🚛</span>
+                <span>Flotilla</span>
+              </label>
+              <label class="tipo-cliente-btn" id="tcb-empresa" onclick="selTipoCliente(this,'empresa')">
+                <span style="font-size:20px">🏭</span>
+                <span>Empresa</span>
+              </label>
+            </div>
+            <input type="hidden" id="n-tipo-cliente">
 
-B) Agregar pag-reportes si no existe (dentro del div#app,
-   junto a las otras páginas):
+            <!-- BLOQUE ASEGURADORA -->
+            <div id="n-wrap-aseg" style="display:none">
+              <div class="grid-2" style="margin-bottom:8px">
+                <div class="field">
+                  <label>Aseguradora *</label>
+                  <div style="display:flex;gap:6px">
+                    <select id="n-aseguradora-sel" style="flex:1" onchange="toggleNuevaAseg(this.value)"><option value="">— Seleccionar —</option></select>
+                    <button class="btn btn-ghost btn-sm" onclick="agregarNuevaAsegNueva()" title="Agregar nueva">+</button>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Cliente que trae el vehículo *</label>
+                  <input id="n-propietario-aseg" placeholder="Nombre completo">
+                </div>
+                <div class="field">
+                  <label>Teléfono cliente</label>
+                  <input id="n-telefono-aseg" type="tel" placeholder="3001234567">
+                </div>
+                <div class="field">
+                  <label>Cédula cliente</label>
+                  <input id="n-cedula-aseg" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')">
+                </div>
+              </div>
+              <div id="n-wrap-aseg-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde);margin-top:4px">
+                <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nueva aseguradora</div>
+                <div class="grid-2">
+                  <div class="field"><label>Nombre</label><input id="n-aseg-nombre" placeholder="HDI Seguros, Sura..."></div>
+                  <div class="field"><label>NIT</label><input id="n-aseg-nit" placeholder="900123456-7"></div>
+                </div>
+              </div>
+            </div>
 
-  <div class="pagina" id="pag-reportes">
-    <div id="reportes-contenido"></div>
+            <!-- BLOQUE FLOTILLA -->
+            <div id="n-wrap-flot" style="display:none">
+              <div class="field" style="margin-bottom:8px">
+                <label>Flotilla *</label>
+                <div style="display:flex;gap:6px">
+                  <select id="n-flotilla-sel" style="flex:1" onchange="toggleNuevaFlot(this.value)"><option value="">— Seleccionar —</option></select>
+                  <button class="btn btn-ghost btn-sm" onclick="agregarNuevaFlotNueva()" title="Agregar nueva">+</button>
+                </div>
+              </div>
+              <div id="n-wrap-flot-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde);margin-top:4px">
+                <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nueva flotilla</div>
+                <div class="grid-2">
+                  <div class="field"><label>Nombre</label><input id="n-flot-nombre" placeholder="Transportes XYZ S.A.S."></div>
+                  <div class="field"><label>NIT</label><input id="n-flot-nit" placeholder="900123456-7"></div>
+                  <div class="field" style="grid-column:1/-1"><label>Dirección</label><input id="n-flot-dir" placeholder="Cra 10 #20-30"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BLOQUE EMPRESA -->
+            <div id="n-wrap-empresa" style="display:none">
+              <div class="grid-2" style="margin-bottom:8px">
+                <div class="field">
+                  <label>Empresa *</label>
+                  <div style="display:flex;gap:6px">
+                    <select id="n-empresa-sel" style="flex:1" onchange="toggleNuevaEmpresa(this.value)"><option value="">— Seleccionar —</option></select>
+                    <button class="btn btn-ghost btn-sm" onclick="agregarNuevaEmpresaNueva()" title="Agregar nueva">+</button>
+                  </div>
+                </div>
+                <div class="field"><label>Teléfono empresa</label><input id="n-empresa-tel" type="tel" placeholder="6011234567"></div>
+              </div>
+              <div id="n-wrap-empresa-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde);margin-top:4px">
+                <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nueva empresa</div>
+                <div class="grid-2">
+                  <div class="field"><label>Razón social</label><input id="n-emp-nombre" placeholder="Empresa S.A.S."></div>
+                  <div class="field"><label>NIT</label><input id="n-emp-nit" placeholder="900123456-7"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CAMPOS COMUNES -->
+            <div class="grid-2" style="margin-top:12px">
+              <div class="field"><label>Kilometraje</label><input id="n-km" placeholder="45000" type="number" min="0"></div>
+              <div class="field"><label>Fecha Entrega 1</label><input id="n-fecha1" type="date"></div>
+              <div class="field"><label>Fecha Entrega 2</label><input id="n-fecha2" type="date"></div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-titulo">Nivel de combustible al ingreso</div>
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+              <label class="combustible-opcion" onclick="setCombustible(this,'vacio')">
+                <input type="radio" name="n-combustible" value="vacio" style="display:none">
+                <div class="combustible-barra" style="--pct:5%"></div>
+                <span>Vacío</span>
+              </label>
+              <label class="combustible-opcion" onclick="setCombustible(this,'1/4')">
+                <input type="radio" name="n-combustible" value="1/4" style="display:none">
+                <div class="combustible-barra" style="--pct:25%"></div>
+                <span>1/4</span>
+              </label>
+              <label class="combustible-opcion" onclick="setCombustible(this,'1/2')">
+                <input type="radio" name="n-combustible" value="1/2" style="display:none">
+                <div class="combustible-barra" style="--pct:50%"></div>
+                <span>1/2</span>
+              </label>
+              <label class="combustible-opcion" onclick="setCombustible(this,'3/4')">
+                <input type="radio" name="n-combustible" value="3/4" style="display:none">
+                <div class="combustible-barra" style="--pct:75%"></div>
+                <span>3/4</span>
+              </label>
+              <label class="combustible-opcion" onclick="setCombustible(this,'lleno')">
+                <input type="radio" name="n-combustible" value="lleno" style="display:none">
+                <div class="combustible-barra" style="--pct:100%"></div>
+                <span>Lleno</span>
+              </label>
+            </div>
+            <input type="hidden" id="n-combustible-val">
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-titulo">Inventario del vehículo</div>
+            <div class="inv-grid" id="inv-grid">
+              <div class="inv-item" onclick="toggleInv(this,'llantas')"><input type="checkbox" value="llantas"> 4 Llantas completas</div>
+              <div class="inv-item" onclick="toggleInv(this,'llanta_repuesto')"><input type="checkbox" value="llanta_repuesto"> Llanta de repuesto</div>
+              <div class="inv-item" onclick="toggleInv(this,'gato')"><input type="checkbox" value="gato"> Gato</div>
+              <div class="inv-item" onclick="toggleInv(this,'radio')"><input type="checkbox" value="radio"> Radio / Pantalla</div>
+              <div class="inv-item" onclick="toggleInv(this,'documentos')"><input type="checkbox" value="documentos"> Documentos</div>
+              <div class="inv-item" onclick="toggleInv(this,'tapetes')"><input type="checkbox" value="tapetes"> Tapetes</div>
+              <div class="inv-item" onclick="toggleInv(this,'herramientas')"><input type="checkbox" value="herramientas"> Herramientas</div>
+              <div class="inv-item" onclick="toggleInv(this,'extintor')"><input type="checkbox" value="extintor"> Extintor</div>
+            </div>
+            <div class="field"><label>Observaciones de inventario</label>
+              <textarea id="n-inv-obs" placeholder="Ej: Cargador en guantera, silla bebé en baúl..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-titulo">Fotos de ingreso</div>
+            <div class="fotos-grid" id="fotos-ingreso-preview"></div>
+            <div class="upload-zone" onclick="document.getElementById('fi-ingreso').click()">
+              <input type="file" id="fi-ingreso" accept="image/*" multiple onchange="agregarFotosIngreso(this)">
+              <div style="font-size:20px">📷</div>
+              <p>Clic para agregar fotos de ingreso</p>
+              <div class="upload-prog" id="prog-ingreso"></div>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-ghost" onclick="cancelarNuevaOrden()">Cancelar</button>
+            <button class="btn btn-primary" onclick="crearOrden()">Crear orden →</button>
+          </div>
+        </div>
+      </div>
+      <div class="pagina" id="pag-cotizaciones">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+          <input type="text" id="cot-buscar" placeholder="Buscar por placa, cliente o c digo..." style="flex:1;min-width:200px;padding:9px 14px;border:1px solid var(--gris-borde);border-radius:8px;font-size:14px" oninput="filtrarCotizaciones()">
+          <select id="cot-filtro-estado" onchange="filtrarCotizaciones()" style="padding:9px 14px;border:1px solid var(--gris-borde);border-radius:8px;font-size:14px;background:white"><option value="">Todos los estados</option><option value="pendiente">Pendiente</option><option value="aprobada">Aprobada</option><option value="rechazada">Rechazada</option></select>
+        </div>
+        <div id="cot-lista"><div class="loading-state">Cargando cotizaciones...</div></div>
+      </div>
+      <div class="pagina" id="pag-mecanico">
+        <div id="mec-contenido">
+          <div class="loading-state">Cargando...</div>
+        </div>
+      </div>
+      <div class="pagina" id="pag-mec-historial"><div id="mec-historial-contenido"></div></div>
+      <div class="pagina" id="pag-mec-repuestos"><div id="mec-repuestos-contenido"></div></div>
+      <div class="pagina" id="pag-mec-orden"><div id="mec-orden-contenido"></div></div>
+      <div class="pagina" id="pag-financiero"><div id="dash-financiero-contenido"></div></div>
+      <div class="pagina" id="pag-mec-detalle">
+        <button class="back-btn" onclick="volverAMecOrdenes()">← Mis órdenes</button>
+        <div id="mec-detalle-contenido"></div>
+      </div>
+      <div class="pagina" id="pag-cliente">
+        <div id="cliente-contenido">
+          <div class="loading-state">Cargando...</div>
+        </div>
+      </div>
+      <div class="pagina" id="pag-calendario"></div>
+      <div class="pagina" id="pag-mecanicos"></div>
+      <div class="pagina" id="pag-taller"><div id="taller-contenido"></div></div>
+      <div class="pagina" id="pag-repuestos"><div id="rep-contenido"><div class="loading-state">Cargando...</div></div></div>
+    </div>
   </div>
 
-C) Agregar botón de Reportes en el sidebar del jefe.
-   BUSCA el botón de Mecánicos en el sidebar:
+  <!-- BOTTOM NAV (mobile) -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <div class="bottom-nav-inner" id="bottom-nav-inner"></div>
+  </nav>
+</div>
 
-  <button class="nav-item" id="nav-mecanicos" onclick="navJefe('mecanicos')">
+<!-- ═══════════════════════════════════════════════════════════
+     MODALES GLOBALES
+═══════════════════════════════════════════════════════════ -->
 
-   DESPUÉS agrega:
+<!-- MODAL: SERVICIOS (nueva orden) -->
+<div class="modal-overlay" id="modal-servicios">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-srv-titulo">Paso 1 — Servicios</h2>
+      <button class="btn btn-ghost btn-sm" onclick="cerrarModalServicios()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-step active" id="paso-1">
+        <p style="font-size:13px;color:var(--gris-mid);margin-bottom:16px">Selecciona los servicios que aplican para esta orden.</p>
+        <div class="srv-grid-select">
+          <div class="srv-card-select" id="srv-latoneria" onclick="toggleServicio('latoneria')">
+            <div class="srv-card-icon"></div>
+            <div class="srv-card-name">Latonería</div>
+            <div class="srv-card-desc">Enderezado, tapicería, vidriería</div>
+          </div>
+          <div class="srv-card-select" id="srv-pintura" onclick="toggleServicio('pintura')">
+            <div class="srv-card-icon"></div>
+            <div class="srv-card-name">Pintura</div>
+            <div class="srv-card-desc">Preparación, pintura, pulida</div>
+          </div>
+          <div class="srv-card-select" id="srv-mecanica" onclick="toggleServicio('mecanica')">
+            <div class="srv-card-icon"></div>
+            <div class="srv-card-name">Mecánica</div>
+            <div class="srv-card-desc">Mecánica, eléctrica</div>
+          </div>
+          <div class="srv-card-select" id="srv-adicionales" onclick="toggleServicio('adicionales')">
+            <div class="srv-card-icon"></div>
+            <div class="srv-card-name">Adicionales</div>
+            <div class="srv-card-desc">Polarizados, radio, lavado</div>
+          </div>
+        </div>
+        <div id="srv-descripciones" style="display:none;margin-top:18px;border-top:1px solid var(--gris-borde);padding-top:16px">
+          <div style="font-size:11px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px">Descripción del trabajo (opcional)</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div id="srv-desc-latoneria" style="display:none;display:grid;grid-template-columns:90px 1fr;align-items:center;gap:10px">
+              <label style="font-size:12px;font-weight:600;color:var(--texto);text-align:right">Latonería</label>
+              <textarea id="desc-latoneria" style="height:34px;min-height:34px;font-size:13px;resize:vertical;padding:6px 10px;line-height:1.4"></textarea>
+            </div>
+            <div id="srv-desc-pintura" style="display:none;display:grid;grid-template-columns:90px 1fr;align-items:center;gap:10px">
+              <label style="font-size:12px;font-weight:600;color:var(--texto);text-align:right">Pintura</label>
+              <textarea id="desc-pintura" style="height:34px;min-height:34px;font-size:13px;resize:vertical;padding:6px 10px;line-height:1.4"></textarea>
+            </div>
+            <div id="srv-desc-mecanica" style="display:none;display:grid;grid-template-columns:90px 1fr;align-items:center;gap:10px">
+              <label style="font-size:12px;font-weight:600;color:var(--texto);text-align:right">Mecánica</label>
+              <textarea id="desc-mecanica" style="height:34px;min-height:34px;font-size:13px;resize:vertical;padding:6px 10px;line-height:1.4"></textarea>
+            </div>
+            <div id="srv-desc-adicionales" style="display:none;display:grid;grid-template-columns:90px 1fr;align-items:center;gap:10px">
+              <label style="font-size:12px;font-weight:600;color:var(--texto);text-align:right">Adicionales</label>
+              <textarea id="desc-adicionales" style="height:34px;min-height:34px;font-size:13px;resize:vertical;padding:6px 10px;line-height:1.4"></textarea>
+            </div>
+          </div>
+        </div>
+        <div id="srv-error" style="display:none;margin-top:12px;font-size:13px;color:var(--rojo)">Selecciona al menos un servicio.</div>
+      </div>
+      <div class="modal-step" id="paso-2">
+        <p style="font-size:13px;color:var(--gris-mid);margin-bottom:16px">Selecciona las etapas y asigna un técnico a cada una.</p>
+        <div id="checklist-nuevo"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-back" onclick="modalBack()" style="display:none">← Atrás</button>
+      <button class="btn btn-ghost" onclick="cerrarModalServicios()">Omitir por ahora</button>
+      <button class="btn btn-primary" id="btn-next" onclick="modalNext()">Continuar →</button>
+    </div>
+  </div>
+</div>
 
-  <button class="nav-item" id="nav-reportes" onclick="navJefe('reportes')">
-    <svg width="16" height="16" fill="none" stroke="currentColor"
-      stroke-width="2" viewBox="0 0 24 24">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-      <line x1="16" y1="13" x2="8" y2="13"/>
-      <line x1="16" y1="17" x2="8" y2="17"/>
-      <polyline points="10 9 9 9 8 9"/>
-    </svg>
-    Reportes
-  </button>
+<!-- MODAL: AGREGAR ETAPAS (post-creación) -->
+<div class="modal-overlay" id="modal-agregar">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Agregar etapas</h2>
+      <button class="btn btn-ghost btn-sm" onclick="cerrarModalAgregar()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--gris-mid);margin-bottom:16px">Las etapas ya iniciadas no pueden eliminarse.</p>
+      <div id="checklist-agregar"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModalAgregar()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarAgregarEtapas()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
 
-D) En ordenes.js, en la función navJefe(), agregar case 'reportes':
-   BUSCA el case 'mecanicos' y DESPUÉS agrega:
+<!-- MODAL: APROBACIÓN DE CALIDAD -->
+<div class="modal-overlay" id="modal-aprobacion">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h2 id="modal-aprob-titulo">Aprobación de calidad</h2>
+      <button class="btn btn-ghost btn-sm" onclick="cerrarModalAprobacion()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--gris-mid);margin-bottom:16px">Registra el resultado de la revisión de calidad para esta etapa.</p>
+      <div style="margin-bottom:14px">
+        <label class="login-label" style="margin-bottom:6px">Resultado *</label>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:500;flex:1;padding:12px;border:1.5px solid var(--gris-borde);border-radius:6px;transition:all 0.15s" id="lbl-aprobado">
+            <input type="radio" name="aprob-estado" value="aprobado" style="accent-color:var(--verde)"> ✓ Aprobado
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:500;flex:1;padding:12px;border:1.5px solid var(--gris-borde);border-radius:6px;transition:all 0.15s" id="lbl-rechazado">
+            <input type="radio" name="aprob-estado" value="rechazado" style="accent-color:var(--rojo)"> ✗ Rechazado
+          </label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Observación <span style="color:var(--gris-mid);font-weight:400;font-size:11px">(opcional)</span></label>
+        <textarea id="aprob-obs" placeholder="Ej: Requiere corregir acabado en panel izquierdo..." style="min-height:72px"></textarea>
+      </div>
+      <div id="aprob-historial" style="margin-top:16px;display:none">
+        <div class="seccion-titulo">Historial de revisiones</div>
+        <div id="aprob-historial-lista"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="cerrarModalAprobacion()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarAprobacion()">Guardar revisión</button>
+    </div>
+  </div>
+</div>
 
-  case 'reportes':
-    pagId = 'pag-reportes';
-    titulo = 'Reportes';
-    if (typeof montarReportes === 'function') montarReportes();
-    break;
 
-E) Agregar también en el bottom nav del jefe si lo tiene:
+<!-- MODAL: EDITAR ORDEN -->
+<div class="modal-overlay" id="modal-editar-orden">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <h2>Editar datos de la orden</h2>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-editar-orden').classList.remove('show')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-editar-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="document.getElementById('modal-editar-orden').classList.remove('show')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-edicion" onclick="guardarEdicionOrden()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <button id="lightbox-close" onclick="cerrarLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
 
-  <button class="bnav-item" id="bnav-reportes" onclick="navJefe('reportes')">
-    <svg width="20" height="20" fill="none" stroke="currentColor"
-      stroke-width="2" viewBox="0 0 24 24">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-    </svg>
-    <span>Reportes</span>
-  </button>
+<!-- TOAST NOTIFICATIONS -->
+<div id="toast">&nbsp;</div>
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-4. VERIFICACIÓN POST-DESPLIEGUE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<!-- ═══════════════════════════════════════════════════════════
+     SCRIPTS (todos externos, modulares)
+═══════════════════════════════════════════════════════════ -->
+<!-- Librerías para reportes -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/state.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/ordenes.js"></script>
+<script src="js/mecanico.js"></script>
+<script src="js/cliente.js"></script>
+<script src="js/cotizaciones.js"></script>
+<script src="js/taller.js"></script>
+<script src="js/repuestos.js"></script>
+<script src="js/reportes.js"></script>
+<script src="js/metas.js"></script>
+<script src="js/app.js"></script>
 
-1. Login como jefe → Dashboard → debe mostrar "Mes actual"
-   automáticamente sin hacer clic adicional.
 
-2. Nueva orden → tipo cliente → botones visuales (no select).
+  <!-- ══ MODAL REPORTE ══════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-reporte">
+    <div class="modal" style="max-width:480px">
+      <div class="modal-header">
+        <div class="modal-titulo" id="modal-rep-titulo">Generar reporte</div>
+        <button class="modal-close" onclick="cerrarModalReporte()">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div class="field">
+          <label>Período</label>
+          <select id="rep-periodo" onchange="document.getElementById('rep-fecha-wrap').style.display=this.value==='todo'?'none':'block'">
+            <option value="todo">Todo el historial</option>
+            <option value="semana">Semana específica</option>
+            <option value="mes">Mes específico</option>
+            <option value="ano">Año específico</option>
+          </select>
+        </div>
+        <div class="field" id="rep-fecha-wrap" style="display:none">
+          <label>Fecha de referencia</label>
+          <input type="date" id="rep-fecha">
+        </div>
+        <div class="field" id="rep-sel-tecnico" style="display:none">
+          <label>Técnico</label>
+          <select id="rep-sel-tecnico-id"></select>
+        </div>
+        <div class="field">
+          <label>Formato</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1.5px solid var(--gris-borde);border-radius:7px;cursor:pointer;font-size:13px;font-weight:500">
+              <input type="radio" name="rep-formato" id="rep-formato-excel" value="excel" checked onchange="document.getElementById('rep-formato').value='excel'">
+              Excel (.xlsx)
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1.5px solid var(--gris-borde);border-radius:7px;cursor:pointer;font-size:13px;font-weight:500">
+              <input type="radio" name="rep-formato" id="rep-formato-pdf" value="pdf" onchange="document.getElementById('rep-formato').value='pdf'">
+              PDF
+            </label>
+          </div>
+          <input type="hidden" id="rep-formato" value="excel">
+        </div>
+        <div class="btn-row" style="margin-top:4px">
+          <button class="btn btn-ghost" onclick="cerrarModalReporte()">Cancelar</button>
+          <button class="btn btn-primary" id="btn-gen-reporte" onclick="generarReporte()">Generar reporte</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-3. Reportes → generar uno en PDF y uno en Excel para confirmar.
-
-4. Metas → debe mostrar botón "Descargar plantilla".
-
-5. Perfil taller → debe aparecer pantalla "Iniciar pantalla del
-   taller" → presionar → debe sonar el audio al iniciar.
-
-6. Crear una orden con 2 mecánicos en etapas distintas
-   simultáneamente para confirmar que el índice fue dropeado.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-5. QUÉ HACE CADA REPORTE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Todos los reportes incluyen:
-
-  RESUMEN EJECUTIVO
-  - Órdenes entregadas, ingresadas, etapas completadas
-  - Ingresos generados en COP
-  - Tiempo promedio del ciclo completo por orden (horas)
-  - Cumplimiento: órdenes a tiempo vs tarde
-  - Total novedades (detenidos, reprocesos, garantías)
-
-  ANÁLISIS POR SERVICIO
-  - Etapas por servicio (latonería, pintura, mecánica, adicionales)
-  - Ingresos por servicio
-  - Horas promedio por etapa dentro del servicio
-  - Etapa más lenta y más rápida del período
-
-  CUELLOS DE BOTELLA
-  - Top 10 etapas con mayor duración promedio
-  - Barra visual comparativa en PDF
-
-  EFICIENCIA POR TÉCNICO
-  - Etapas completadas
-  - Horas reales vs estimadas → índice de eficiencia (>100% = más rápido)
-  - Promedio de horas por etapa
-  - Ingresos generados
-  - Horas adicionales (sobrecosto)
-
-  NOVEDADES Y DETENCIONES
-  - Desglose por tipo: Detenido / Reproceso / Garantía
-  - Detalle con motivo y responsable
-
-  DETALLE ÓRDENES
-  - Ciclo completo por orden en horas
-  - Días vs prometido (adelantado o tarde)
-  - Novedades por orden
-
-  EXCEL: cada sección en pestaña separada, lista para
-  análisis con tablas dinámicas o gráficos en Excel.
-
-  PDF: documento formateado listo para imprimir o guardar.
+</body>
+</html>
