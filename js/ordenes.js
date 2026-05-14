@@ -20,7 +20,6 @@ function setFiltroPulmon(btn) {
 }
 
 async function cargarOrdenes() {
-  if (filtroEstado === null) return; // pestaña pulmón activa, no aplica
   const lista = document.getElementById('lista-ordenes');
   if (!lista) return;
   lista.innerHTML = '<div class="loading-state">Cargando órdenes...</div>';
@@ -393,7 +392,7 @@ async function abrirOrden(id) {
               <div>${invHtml}</div>
             </div>
           </div>
-          ${`<div id="pulmon-card" class="pulmon-card ${orden.pulmon?'':'inactivo'}">`}
+          ${orden.tipo_cliente === 'aseguradora' ? `<div id="pulmon-card" class="pulmon-card ${orden.pulmon?'':'inactivo'}">` : `<div id="pulmon-card" style="display:none">`}
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
               <div style="font-size:12px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;color:${orden.pulmon?'var(--amarillo)':'var(--gris-mid)'}">Pulmón</div>
               <button class="btn btn-sm ${orden.pulmon?'btn-ghost':'btn-ghost'}" id="btn-pulmon" onclick="togglePulmon()">
@@ -672,7 +671,7 @@ async function asignarMecanico(eid, k) {
 // NUEVA ORDEN
 // ============================================================
 function resetNuevaOrden() {
-  const fields = ['n-placa', 'n-marca', 'n-linea', 'n-modelo', 'n-color', 'n-propietario', 'n-telefono', 'n-km', 'n-fecha1', 'n-fecha2', 'n-inv-obs', 'n-cedula-cliente', 'n-vin', 'n-correo-cliente', 'n-aseg-nombre', 'n-aseg-nit', 'n-flot-nombre', 'n-flot-nit', 'n-flot-dir', 'n-combustible-val'];
+  const fields = ['n-placa', 'n-marca', 'n-linea', 'n-modelo', 'n-color', 'n-propietario', 'n-telefono', 'n-km', 'n-fecha1', 'n-fecha2', 'n-inv-obs', 'n-cedula-cliente', 'n-vin', 'n-correo-cliente'];
   fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const aseguradora = document.getElementById('n-aseguradora');
   const dano = document.getElementById('n-dano');
@@ -687,24 +686,6 @@ function resetNuevaOrden() {
   });
   fotosIngresoPendientes = [];
   renderPreviewIngreso();
-  // Limpiar combustible
-  const _ci = document.getElementById('inv-combustible-item');
-  const _cl = document.getElementById('inv-combustible-label');
-  const _ch = document.getElementById('n-combustible-val');
-  if (_ci) _ci.classList.remove('checked');
-  if (_cl) _cl.textContent = '⛽ Combustible';
-  if (_ch) _ch.value = '';
-  document.querySelectorAll('.tipo-cliente-btn').forEach(b => b.classList.remove('selected'));
-  const hiddenTipo = document.getElementById('n-tipo-cliente');
-  if (hiddenTipo) hiddenTipo.value = '';
-  ['n-wrap-particular','n-wrap-aseg','n-wrap-flot','n-wrap-empresa'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-  ['n-wrap-aseg-extra','n-wrap-flot-extra','n-wrap-empresa-extra'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
   const resultado = document.getElementById('placa-resultado');
   const historial = document.getElementById('historial-previo');
   if (resultado) resultado.style.display = 'none';
@@ -741,29 +722,96 @@ function quitarFotoIngreso(i) {
   renderPreviewIngreso(); 
 }
 
+// ── Autocompletado de placa en tiempo real ──────────────────
+let _placaDebounce = null;
+
+async function autocompletarPlaca(val) {
+  clearTimeout(_placaDebounce);
+  const sugDiv = document.getElementById('placa-sugerencias');
+  if (!sugDiv) return;
+  if (!val || val.length < 2) { sugDiv.style.display = 'none'; return; }
+
+  _placaDebounce = setTimeout(async () => {
+    try {
+      const [deVehiculos, deOrdenes] = await Promise.all([
+        api(`/vehiculos?placa=ilike.${val}%&select=placa,marca,linea,modelo&limit=6`).catch(()=>[]) || [],
+        api(`/ordenes?placa=ilike.${val}%&select=placa,marca,linea,modelo,propietario,telefono,color&order=creado_en.desc&limit=6`).catch(()=>[]) || []
+      ]);
+
+      // Deduplicar por placa, priorizar vehículos
+      const mapa = {};
+      deOrdenes.forEach(o => { mapa[o.placa] = o; });
+      deVehiculos.forEach(v => { mapa[v.placa] = { ...mapa[v.placa], ...v }; });
+      const sugerencias = Object.values(mapa).slice(0, 6);
+
+      if (!sugerencias.length) { sugDiv.style.display = 'none'; return; }
+
+      sugDiv.innerHTML = sugerencias.map(s => `
+        <div class="placa-sug-item" onmousedown="seleccionarPlaca('${s.placa}',${JSON.stringify(s).replace(/"/g,'&quot;')})">
+          <span class="placa-sug-placa">${s.placa}</span>
+          <span class="placa-sug-veh">${[s.marca,s.linea,s.modelo].filter(Boolean).join(' ')||'—'}</span>
+        </div>`).join('');
+      sugDiv.style.display = 'block';
+    } catch(e) { sugDiv.style.display = 'none'; }
+  }, 250);
+}
+
+function seleccionarPlaca(placa, datos) {
+  const input = document.getElementById('n-placa');
+  if (input) input.value = placa;
+  cerrarSugerenciasPlaca();
+  // Pre-llenar campos del vehículo
+  const campos = { 'n-marca': datos.marca, 'n-linea': datos.linea, 'n-modelo': datos.modelo, 'n-color': datos.color };
+  Object.entries(campos).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el && val) el.value = val;
+  });
+  // Pre-llenar propietario si es particular
+  if (datos.propietario) {
+    const prop = document.getElementById('n-propietario');
+    const tel  = document.getElementById('n-telefono');
+    if (prop && !prop.value) prop.value = datos.propietario;
+    if (tel  && !tel.value  && datos.telefono) tel.value = datos.telefono;
+  }
+  buscarPorPlaca(); // Mostrar historial
+}
+
+function cerrarSugerenciasPlaca() {
+  const s = document.getElementById('placa-sugerencias');
+  if (s) s.style.display = 'none';
+}
+
+let _placaSugIdx = -1;
+function navSugerenciasPlaca(e) {
+  const items = document.querySelectorAll('.placa-sug-item');
+  if (!items.length) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); _placaSugIdx = Math.min(_placaSugIdx+1, items.length-1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); _placaSugIdx = Math.max(_placaSugIdx-1, 0); }
+  else if (e.key === 'Enter' && _placaSugIdx >= 0) { e.preventDefault(); items[_placaSugIdx]?.dispatchEvent(new MouseEvent('mousedown')); return; }
+  else if (e.key === 'Escape') { cerrarSugerenciasPlaca(); return; }
+  items.forEach((item, i) => item.classList.toggle('active', i === _placaSugIdx));
+}
+
 async function buscarPorPlaca() {
   const placa = document.getElementById('n-placa')?.value.trim().toUpperCase();
   const resultDiv = document.getElementById('placa-resultado');
   const histDiv = document.getElementById('historial-previo');
-  if (!placa || placa.length < 3) { 
-    if (resultDiv) resultDiv.style.display = 'none'; 
-    if (histDiv) histDiv.style.display = 'none'; 
-    return; 
+  cerrarSugerenciasPlaca();
+  if (!placa || placa.length < 3) {
+    if (resultDiv) resultDiv.style.display = 'none';
+    if (histDiv) histDiv.style.display = 'none';
+    return;
   }
   try {
     const ordenes = await api(`/ordenes?placa=eq.${placa}&order=creado_en.desc&limit=5`);
     if (ordenes?.length) {
       const u = ordenes[0];
-      const marca = document.getElementById('n-marca');
-      const linea = document.getElementById('n-linea');
-      const propietario = document.getElementById('n-propietario');
-      const telefono = document.getElementById('n-telefono');
-      const modelo = document.getElementById('n-modelo');
-      if (marca) marca.value = u.marca || '';
-      if (linea) linea.value = u.linea || '';
-      if (propietario) propietario.value = u.propietario || '';
-      if (telefono) telefono.value = u.telefono || '';
-      if (modelo && u.modelo) modelo.value = u.modelo;
+      const flds = { 'n-marca': u.marca, 'n-linea': u.linea, 'n-modelo': u.modelo, 'n-color': u.color };
+      Object.entries(flds).forEach(([id, val]) => { const el = document.getElementById(id); if (el && val && !el.value) el.value = val; });
+      const prop = document.getElementById('n-propietario');
+      const tel  = document.getElementById('n-telefono');
+      if (prop && !prop.value && u.propietario) prop.value = u.propietario;
+      if (tel  && !tel.value  && u.telefono)    tel.value  = u.telefono;
       if (resultDiv) {
         resultDiv.className = 'placa-resultado encontrado';
         resultDiv.innerHTML = '✔ Vehículo encontrado — datos autocompletados.';
@@ -773,7 +821,8 @@ async function buscarPorPlaca() {
       if (historialLista && histDiv) {
         historialLista.innerHTML = ordenes.map(o => `
           <div class="historial-item" onclick="abrirOrden(${o.id})">
-            <div><span class="historial-placa">${o.placa}</span> <span style="color:var(--gris-mid);margin-left:8px">${o.aseguradora || '—'} · ${o.nivel_dano || '—'}</span></div>
+            <div><span class="historial-placa">${o.placa}</span>
+            <span style="color:var(--gris-mid);margin-left:8px">${o.aseguradora||'—'}</span></div>
             <div style="font-size:11px;color:var(--gris-mid);text-align:right">${formatFecha(o.creado_en)}</div>
           </div>`).join('');
         histDiv.style.display = 'block';
@@ -786,8 +835,93 @@ async function buscarPorPlaca() {
       }
       if (histDiv) histDiv.style.display = 'none';
     }
-  } catch(e) { 
-    if (resultDiv) resultDiv.style.display = 'none'; 
+  } catch(e) { if (resultDiv) resultDiv.style.display = 'none'; }
+}
+
+// ── OCR Tarjeta de Propiedad ─────────────────────────────────
+async function ocrTarjetaPropiedad(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const estado = document.getElementById('ocr-estado');
+  if (estado) { estado.style.display = 'block'; estado.innerHTML = '⏳ Leyendo tarjeta de propiedad...'; }
+
+  try {
+    const base64 = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result.split(',')[1]);
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: file.type || 'image/jpeg', data: base64 } },
+            { type: 'text', text: 'Extrae los datos de esta tarjeta de propiedad o documento de un vehículo colombiano. Responde ÚNICAMENTE con JSON válido sin texto adicional ni backticks. Campos exactos (usa cadena vacía "" si no encuentras el dato): {"placa":"","marca":"","linea":"","modelo":"","color":"","vin":"","propietario":""}' }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const texto = data?.content?.[0]?.text || '{}';
+    let parsed = {};
+    try { parsed = JSON.parse(texto.trim()); } catch(e) { parsed = {}; }
+
+    const mapa = {
+      'n-placa':  parsed.placa?.toUpperCase(),
+      'n-marca':  parsed.marca,
+      'n-linea':  parsed.linea,
+      'n-modelo': parsed.modelo,
+      'n-color':  parsed.color,
+      'n-vin':    parsed.vin?.toUpperCase()
+    };
+
+    let encontrados = [];
+    Object.entries(mapa).forEach(([id, val]) => {
+      if (!val) return;
+      const el = document.getElementById(id);
+      if (el) { el.value = val; encontrados.push(id.replace('n-','').replace('-',' ')); }
+    });
+
+    // Propietario va al campo correcto según tipo cliente seleccionado
+    if (parsed.propietario) {
+      const tipo = document.getElementById('n-tipo-cliente')?.value;
+      const targetId = tipo === 'aseguradora' ? 'n-propietario-aseg' : 'n-propietario';
+      const el = document.getElementById(targetId);
+      if (el && !el.value) { el.value = parsed.propietario; encontrados.push('propietario'); }
+    }
+
+    // Si encontró placa, buscar historial
+    if (parsed.placa) buscarPorPlaca();
+
+    if (estado) {
+      if (encontrados.length) {
+        estado.innerHTML = `✅ Datos extraídos: <strong>${encontrados.join(', ')}</strong>. Revisa y corrige si es necesario.`;
+        estado.style.background = 'var(--verde-bg)';
+        estado.style.borderColor = 'var(--verde)';
+        estado.style.color = 'var(--verde)';
+      } else {
+        estado.innerHTML = '⚠️ No se pudieron extraer datos. La imagen puede estar borrosa o mal enfocada. Intenta con mejor iluminación.';
+        estado.style.background = '#FEF3C7';
+        estado.style.borderColor = '#FDE68A';
+        estado.style.color = '#92400E';
+      }
+    }
+  } catch(e) {
+    if (estado) {
+      estado.innerHTML = '❌ Error al leer la tarjeta: ' + e.message;
+      estado.style.background = 'var(--rojo-bg,#FEE2E2)';
+    }
+    console.error('OCR error:', e);
+  } finally {
+    input.value = ''; // Reset para poder volver a subir
   }
 }
 
@@ -805,8 +939,7 @@ function toggleTipoPersonaNueva(tipo) {
 }
 
 function toggleTipoClienteNueva(tipo) {
-  const bloques = ['n-wrap-particular','n-wrap-aseg','n-wrap-flot','n-wrap-empresa'];
-  bloques.forEach(id => {
+  ['n-wrap-particular','n-wrap-aseg','n-wrap-flot','n-wrap-empresa'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -816,90 +949,60 @@ function toggleTipoClienteNueva(tipo) {
     flotilla:    'n-wrap-flot',
     empresa:     'n-wrap-empresa'
   };
-  const bloqueId = mapaBloque[tipo];
-  if (bloqueId) {
-    const el = document.getElementById(bloqueId);
-    if (el) el.style.display = 'block';
-  }
+  const el = document.getElementById(mapaBloque[tipo]);
+  if (el) el.style.display = 'block';
   const hidden = document.getElementById('n-tipo-cliente');
   if (hidden) hidden.value = tipo;
 }
 
 function selTipoCliente(label, tipo) {
-  // Actualizar visual
   document.querySelectorAll('.tipo-cliente-btn').forEach(b => b.classList.remove('selected'));
   label.classList.add('selected');
   toggleTipoClienteNueva(tipo);
 }
 
 function toggleNuevaAseg(val) {
-  const extra = document.getElementById('n-wrap-aseg-extra');
-  if (extra) extra.style.display = val ? 'none' : 'block';
+  const el = document.getElementById('n-wrap-aseg-extra');
+  if (el) el.style.display = val ? 'none' : 'block';
 }
-
 function toggleNuevaFlot(val) {
-  const extra = document.getElementById('n-wrap-flot-extra');
-  if (extra) extra.style.display = val ? 'none' : 'block';
+  const el = document.getElementById('n-wrap-flot-extra');
+  if (el) el.style.display = val ? 'none' : 'block';
 }
-
 function toggleNuevaEmpresa(val) {
-  const extra = document.getElementById('n-wrap-empresa-extra');
-  if (extra) extra.style.display = val ? 'none' : 'block';
+  const el = document.getElementById('n-wrap-empresa-extra');
+  if (el) el.style.display = val ? 'none' : 'block';
 }
-
 async function agregarNuevaEmpresaNueva() {
-  const nombreField = document.getElementById('n-emp-nombre');
-  const nitField    = document.getElementById('n-emp-nit');
-  const nombre = nombreField?.value.trim() || prompt('Razón social de la empresa:')?.trim();
-  if (!nombre) return;
-  const nit = nitField?.value.trim() || null;
+  const n = document.getElementById('n-emp-nombre')?.value.trim() || prompt('Razón social:')?.trim();
+  if (!n) return;
+  const nit = document.getElementById('n-emp-nit')?.value.trim() || null;
   try {
-    await api('/flotillas', 'POST', { nombre, nit, activo: true }, { Prefer:'return=minimal' });
+    await api('/flotillas', 'POST', { nombre: n, nit, activo: true }, { Prefer:'return=minimal' });
     toast('Empresa agregada ✓');
-    if (nombreField) nombreField.value = '';
-    if (nitField)    nitField.value = '';
     await recargarListasNuevaOrden();
     const sel = document.getElementById('n-empresa-sel');
-    if (sel) sel.value = nombre;
+    if (sel) sel.value = n;
   } catch(e) { toast('Error: '+e.message,'err'); }
 }
 
 async function agregarNuevaAsegNueva() {
-  // Si hay campos de nueva aseguradora en el form, usarlos; si no, usar prompt
-  const nombreField = document.getElementById('n-aseg-nombre');
-  const nitField    = document.getElementById('n-aseg-nit');
-  const nombre = nombreField?.value.trim() || prompt('Nombre de la nueva aseguradora:')?.trim();
+  const nombre = prompt('Nombre de la nueva aseguradora:')?.trim();
   if (!nombre) return;
-  const nit = nitField?.value.trim() || null;
   try {
-    await api('/aseguradoras', 'POST', { nombre, nit, activo: true }, { Prefer:'return=minimal' });
+    await api('/aseguradoras', 'POST', { nombre, activo: true }, { Prefer:'return=minimal' });
     toast('Aseguradora agregada ✓');
-    if (nombreField) nombreField.value = '';
-    if (nitField)    nitField.value = '';
     await recargarListasNuevaOrden();
-    // Seleccionar la recién creada
-    const sel = document.getElementById('n-aseguradora-sel');
-    if (sel) sel.value = nombre;
   } catch(e) { toast('Error: '+e.message,'err'); }
 }
 
 async function agregarNuevaFlotNueva() {
-  const nombreField = document.getElementById('n-flot-nombre');
-  const nitField    = document.getElementById('n-flot-nit');
-  const dirField    = document.getElementById('n-flot-dir');
-  const nombre = nombreField?.value.trim() || prompt('Nombre de la nueva flotilla:')?.trim();
+  const nombre = prompt('Nombre de la nueva flotilla:')?.trim();
   if (!nombre) return;
-  const nit       = nitField?.value.trim()  || null;
-  const direccion = dirField?.value.trim()  || null;
   try {
-    await api('/flotillas', 'POST', { nombre, nit, direccion, activo: true }, { Prefer:'return=minimal' });
+    await api('/flotillas', 'POST', { nombre, activo: true }, { Prefer:'return=minimal' });
     toast('Flotilla agregada ✓');
-    if (nombreField) nombreField.value = '';
-    if (nitField)    nitField.value = '';
-    if (dirField)    dirField.value = '';
     await recargarListasNuevaOrden();
-    const sel = document.getElementById('n-flotilla-sel');
-    if (sel) sel.value = nombre;
   } catch(e) { toast('Error: '+e.message,'err'); }
 }
 
@@ -910,12 +1013,9 @@ async function recargarListasNuevaOrden() {
   ]);
   const selA = document.getElementById('n-aseguradora-sel');
   const selF = document.getElementById('n-flotilla-sel');
-  const selE = document.getElementById('n-empresa-sel');
   if (selA) selA.innerHTML = '<option value="">— Seleccionar —</option>' +
     aseg.map(a=>`<option value="${a.nombre}">${a.nombre}</option>`).join('');
   if (selF) selF.innerHTML = '<option value="">— Seleccionar —</option>' +
-    flot.map(f=>`<option value="${f.nombre}">${f.nombre}</option>`).join('');
-  if (selE) selE.innerHTML = '<option value="">— Seleccionar —</option>' +
     flot.map(f=>`<option value="${f.nombre}">${f.nombre}</option>`).join('');
 }
 
@@ -933,7 +1033,6 @@ async function crearOrden() {
 
   const invItems = {};
   document.querySelectorAll('.inv-item input[type=checkbox]').forEach(chk => { invItems[chk.value] = chk.checked; });
-  const combustible = document.getElementById('n-combustible-val')?.value || null;
 
   let clienteId = null;
   if (cedulaCliente) {
@@ -955,21 +1054,8 @@ async function crearOrden() {
     aseguradora: (() => {
       const tipo = document.getElementById('n-tipo-cliente')?.value || '';
       if (tipo === 'aseguradora') return document.getElementById('n-aseguradora-sel')?.value || null;
-      if (tipo === 'flotilla')    return document.getElementById('n-flotilla-sel')?.value    || null;
-      if (tipo === 'empresa')     return document.getElementById('n-empresa-sel')?.value     || null;
+      if (tipo === 'flotilla')    return document.getElementById('n-flotilla-sel')?.value || null;
       return null;
-    })(),
-    // Propietario/telefono/cedula según tipo de cliente
-    propietario: (() => {
-      const tipo = document.getElementById('n-tipo-cliente')?.value || '';
-      if (tipo === 'aseguradora') return document.getElementById('n-propietario-aseg')?.value.trim() || document.getElementById('n-propietario')?.value.trim() || null;
-      return document.getElementById('n-propietario')?.value.trim() || null;
-    })(),
-    telefono: (() => {
-      const tipo = document.getElementById('n-tipo-cliente')?.value || '';
-      if (tipo === 'aseguradora') return document.getElementById('n-telefono-aseg')?.value.trim() || document.getElementById('n-telefono')?.value.trim() || null;
-      if (tipo === 'empresa')     return document.getElementById('n-empresa-tel')?.value.trim()   || null;
-      return document.getElementById('n-telefono')?.value.trim() || null;
     })(),
     marca: document.getElementById('n-marca')?.value || null,
     linea: document.getElementById('n-linea')?.value || null,
@@ -982,11 +1068,11 @@ async function crearOrden() {
       if (persona === 'empresa') return 'empresa';
       return document.getElementById('n-tipo-cliente')?.value || null;
     })(),
-    nivel_dano: null,
+    nivel_dano: document.getElementById('n-dano')?.value || null,
     kilometraje: parseInt(document.getElementById('n-km')?.value) || null,
     fecha_entrega_1: document.getElementById('n-fecha1')?.value || null,
     fecha_entrega_2: document.getElementById('n-fecha2')?.value || null,
-    inventario: JSON.stringify({ items: invItems, combustible: combustible, observaciones: document.getElementById('n-inv-obs')?.value.trim() || null }),
+    inventario: JSON.stringify({ items: invItems, observaciones: document.getElementById('n-inv-obs')?.value.trim() || null }),
     estado: 'Activa',
     cliente_id: clienteId,
     vin: vin || null,
@@ -1437,33 +1523,28 @@ async function guardarAprobacion() {
 }
 
 // ============================================================
-// CAPACIDAD (helper)
-// ============================================================
-function _refrescarCapacidad() {
-  Promise.all([
-    api('/ordenes?estado=eq.Activa&pulmon=eq.false&select=id').catch(() => []),
-    api('/ordenes?pulmon=eq.true&pulmon_tipo=eq.interno&select=id').catch(() => [])
-  ]).then(([activas, pulmonInterno]) => {
-    actualizarCapacidad((activas||[]).length, (pulmonInterno||[]).length);
-  });
-}
-
-// ============================================================
 // PULMÓN
 // ============================================================
 async function togglePulmon() {
   const enPulmon = ordenActual.pulmon;
-
-  // Si está en pulmón, solo desactivar
-  if (enPulmon) {
-    const patch = { pulmon: false, pulmon_desde: null };
-    try {
-      await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', patch);
-      ordenActual.pulmon = false;
-      ordenActual.pulmon_desde = null;
-      const card = document.getElementById('pulmon-card');
-      const badge = document.getElementById('d-pulmon-badge');
-      const btn = document.getElementById('btn-pulmon');
+  const ahora = new Date().toISOString();
+  const patch = enPulmon ? { pulmon: false, pulmon_desde: null } : { pulmon: true, pulmon_desde: ahora };
+  try {
+    await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', patch);
+    ordenActual.pulmon = patch.pulmon;
+    ordenActual.pulmon_desde = patch.pulmon_desde;
+    const card = document.getElementById('pulmon-card');
+    const badge = document.getElementById('d-pulmon-badge');
+    const btn = document.getElementById('btn-pulmon');
+    if (patch.pulmon) {
+      if (card) card.classList.remove('inactivo');
+      if (badge) {
+        badge.textContent = `En pulmón desde ${formatFecha(ahora)}`;
+        badge.style.color = 'var(--amarillo)';
+      }
+      if (btn) btn.textContent = 'Sacar de pulmón';
+      toast('Orden en pulmón ✓');
+    } else {
       if (card) card.classList.add('inactivo');
       if (badge) {
         badge.textContent = 'Sin pulmón activo';
@@ -1471,91 +1552,8 @@ async function togglePulmon() {
       }
       if (btn) btn.textContent = 'Activar Pulmón';
       toast('Pulmón desactivado ✓');
-      _refrescarCapacidad();
-    } catch(e) { toast('Error: ' + e.message, 'err'); }
-  } else {
-    // Si no está en pulmón, mostrar diálogo de ubicación
-    showPulmonLocationDialog();
-  }
-}
-
-async function showPulmonLocationDialog() {
-  const overlay = document.createElement('div');
-  overlay.style.cssText = `
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.7); z-index: 9998;
-    display: flex; align-items: center; justify-content: center;
-  `;
-
-  const dialog = document.createElement('div');
-  dialog.style.cssText = `
-    background: white; border-radius: 12px; padding: 28px;
-    max-width: 420px; width: calc(100% - 32px); box-shadow: 0 8px 40px rgba(0,0,0,0.18);
-    font-family: inherit; z-index: 9999;
-  `;
-
-  dialog.innerHTML = `
-    <div style="margin-bottom: 6px; font-size: 17px; font-weight: 700; color: #111">
-      ¿Dónde se ubicará el vehículo?
-    </div>
-    <div style="margin-bottom: 24px; font-size: 13px; color: #6b7280; line-height: 1.5">
-      Selecciona si el carro permanece en el taller o sale mientras se esperan los repuestos.
-    </div>
-    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px">
-      <button class="btn btn-primary" style="padding: 12px 16px; font-size: 14px; font-weight: 600" onclick="activarPulmonCon('interno')">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display: inline; margin-right: 8px; vertical-align: -4px">
-          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-        Interno (en el taller)
-      </button>
-      <button class="btn btn-ghost" style="padding: 12px 16px; font-size: 14px; font-weight: 600" onclick="activarPulmonCon('externo')">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display: inline; margin-right: 8px; vertical-align: -4px">
-          <path d="M5 12a7 7 0 1014 0 7 7 0 01-14 0z"/>
-        </svg>
-        Externo (fuera del taller)
-      </button>
-    </div>
-    <button class="btn btn-ghost btn-sm" style="width: 100%; padding: 10px 16px; color: var(--gris-mid)" onclick="cerrarPulmonDialog()">
-      Cancelar
-    </button>
-  `;
-
-  overlay.appendChild(dialog);
-  document.body.appendChild(overlay);
-  window._pulmonOverlay = overlay;
-}
-
-async function activarPulmonCon(ubicacion) {
-  cerrarPulmonDialog();
-  const ahora = new Date().toISOString();
-  const patch = { pulmon: true, pulmon_desde: ahora, pulmon_tipo: ubicacion };
-  try {
-    await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', patch);
-    ordenActual.pulmon = true;
-    ordenActual.pulmon_desde = ahora;
-    ordenActual.pulmon_tipo = ubicacion;
-
-    const card = document.getElementById('pulmon-card');
-    const badge = document.getElementById('d-pulmon-badge');
-    const btn = document.getElementById('btn-pulmon');
-    if (card) card.classList.remove('inactivo');
-    if (badge) {
-      badge.textContent = `En pulmón desde ${formatFecha(ahora)}`;
-      badge.style.color = 'var(--amarillo)';
     }
-    if (btn) btn.textContent = 'Sacar de pulmón';
-    toast(`Orden en pulmón (${ubicacion}) ✓`);
-    _refrescarCapacidad();
-    cargarDashboard();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
-}
-
-function cerrarPulmonDialog() {
-  if (window._pulmonOverlay) {
-    window._pulmonOverlay.remove();
-    window._pulmonOverlay = null;
-    window._pulmonDialogAbierto = false;
-  }
 }
 
 // ============================================================
@@ -1677,9 +1675,11 @@ function montarJefe() {
   cargarMecanicos().finally(() => {
     navJefe('ordenes');
   });
-
+  
   // Cargar capacidad al inicio
-  _refrescarCapacidad();
+  api('/ordenes?estado=eq.Activa&pulmon=eq.false&select=id,pulmon').then(data => {
+    actualizarCapacidad((data || []).length);
+  }).catch(() => {});
 
   // Activar Realtime
   iniciarRealtime();
@@ -1722,8 +1722,7 @@ function navJefe(pag) {
     case 'dashboard':
       pagId = 'pag-dashboard';
       titulo = 'Estado del Taller';
-      // Pequeño delay para que el DOM renderice la página antes de cargar
-      setTimeout(() => switchDashTab('mes'), 50);
+      cargarDashboard();
       break;
     case 'cotizaciones':
       pagId = 'pag-cotizaciones';
@@ -2532,34 +2531,50 @@ async function guardarEdicionOrden() {
     if (btn) { btn.disabled = false; btn.textContent = 'Guardar cambios'; }
   }
 }
-// ── Combustible (dropdown en inventario) ──────────────────
-const _COMB_LABELS = { vacio:'⬜ Vacío', '1/4':'🟥 1/4', '1/2':'🟨 1/2', '3/4':'🟩 3/4', lleno:'🟦 Lleno' };
-
-function abrirDropdownCombustible(e, el) {
-  e.stopPropagation();
-  const dd = document.getElementById('comb-dropdown');
-  if (!dd) return;
-  const rect  = el.getBoundingClientRect();
-  const scrollY = window.scrollY || document.documentElement.scrollTop;
-  dd.style.top      = (rect.bottom + scrollY + 4) + 'px';
-  dd.style.left     = rect.left + 'px';
-  dd.style.minWidth = rect.width + 'px';
-  dd.classList.toggle('open');
-}
-
-function seleccionarCombustible(valor) {
-  const item   = document.getElementById('inv-combustible-item');
-  const label  = document.getElementById('inv-combustible-label');
+// ── Combustible (chips compactos) ───────────────────────────
+function toggleCombustible(el, valor) {
+  document.querySelectorAll('.comb-chip').forEach(c => c.classList.remove('checked'));
+  el.classList.add('checked');
   const hidden = document.getElementById('n-combustible-val');
   if (hidden) hidden.value = valor;
-  if (label)  label.textContent = _COMB_LABELS[valor] || '⛽ Combustible';
-  if (item)   item.classList.add('checked');
-  document.getElementById('comb-dropdown')?.classList.remove('open');
 }
 
-document.addEventListener('click', () => {
-  document.getElementById('comb-dropdown')?.classList.remove('open');
-});
+// ── Reset nueva orden ────────────────────────────────────────
+function resetNuevaOrden() {
+  ['n-placa','n-marca','n-linea','n-modelo','n-color','n-km','n-fecha1','n-fecha2',
+   'n-inv-obs','n-vin','n-propietario','n-telefono','n-cedula-cliente','n-correo-cliente',
+   'n-direccion','n-propietario-aseg','n-telefono-aseg','n-cedula-aseg','n-correo-aseg',
+   'n-aseg-nombre','n-aseg-nit','n-flot-nombre','n-flot-nit','n-flot-dir',
+   'n-emp-nombre','n-emp-nit','n-empresa-tel','n-combustible-val'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.querySelectorAll('.inv-item.checked').forEach(el => el.classList.remove('checked'));
+  document.querySelectorAll('.comb-chip.checked').forEach(el => el.classList.remove('checked'));
+  document.querySelectorAll('.tipo-cliente-btn.selected').forEach(el => el.classList.remove('selected'));
+  ['n-wrap-particular','n-wrap-aseg','n-wrap-flot','n-wrap-empresa'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  ['n-wrap-aseg-extra','n-wrap-flot-extra','n-wrap-empresa-extra'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  document.getElementById('n-tipo-cliente') && (document.getElementById('n-tipo-cliente').value = '');
+  document.getElementById('placa-resultado') && (document.getElementById('placa-resultado').style.display = 'none');
+  document.getElementById('historial-previo') && (document.getElementById('historial-previo').style.display = 'none');
+  document.getElementById('ocr-estado') && (document.getElementById('ocr-estado').style.display = 'none');
+  cerrarSugerenciasPlaca();
+  fotosIngresoPendientes = [];
+  if (typeof renderPreviewIngreso === 'function') renderPreviewIngreso();
+}
 
-function toggleCombustible(el, valor) { seleccionarCombustible(valor); }
-function setCombustible(_label, valor) { seleccionarCombustible(valor); }
+async function recargarListasNuevaOrden() {
+  const [aseg, flot] = await Promise.all([
+    api('/aseguradoras?activo=eq.true&order=nombre.asc').catch(()=>[]) || [],
+    api('/flotillas?activo=eq.true&order=nombre.asc').catch(()=>[]) || []
+  ]);
+  ['n-aseguradora-sel','n-flotilla-sel','n-empresa-sel'].forEach((id, i) => {
+    const sel = document.getElementById(id);
+    const lista = i === 0 ? aseg : flot;
+    if (sel) sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+      lista.map(x => `<option value="${x.nombre}">${x.nombre}</option>`).join('');
+  });
+}
