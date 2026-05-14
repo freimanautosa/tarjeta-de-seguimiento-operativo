@@ -1629,7 +1629,8 @@ function navJefe(pag) {
     case 'dashboard':
       pagId = 'pag-dashboard';
       titulo = 'Estado del Taller';
-      cargarDashboard();
+      // Pequeño delay para que el DOM renderice la página antes de cargar
+      setTimeout(() => switchDashTab('mes'), 50);
       break;
     case 'cotizaciones':
       pagId = 'pag-cotizaciones';
