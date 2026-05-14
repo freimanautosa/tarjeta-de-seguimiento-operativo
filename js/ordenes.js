@@ -853,26 +853,19 @@ async function ocrTarjetaPropiedad(input) {
       reader.readAsDataURL(file);
     });
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // Llamada via proxy n8n (evita CORS y protege la API key)
+    const response = await fetch('https://automatizacionesfreimanautos-n8n.qs0sgf.easypanel.host/webhook/ocr-tarjeta', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 400,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: file.type || 'image/jpeg', data: base64 } },
-            { type: 'text', text: 'Extrae los datos de esta tarjeta de propiedad o documento de un vehículo colombiano. Responde ÚNICAMENTE con JSON válido sin texto adicional ni backticks. Campos exactos (usa cadena vacía "" si no encuentras el dato): {"placa":"","marca":"","linea":"","modelo":"","color":"","vin":"","propietario":""}' }
-          ]
-        }]
+        imagen: base64,
+        tipo: file.type || 'image/jpeg'
       })
     });
 
     const data = await response.json();
-    const texto = data?.content?.[0]?.text || '{}';
     let parsed = {};
-    try { parsed = JSON.parse(texto.trim()); } catch(e) { parsed = {}; }
+    try { parsed = data?.datos || {}; } catch(e) { parsed = {}; }
 
     const mapa = {
       'n-placa':  parsed.placa?.toUpperCase(),
