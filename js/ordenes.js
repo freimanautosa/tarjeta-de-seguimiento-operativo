@@ -671,7 +671,7 @@ async function asignarMecanico(eid, k) {
 // NUEVA ORDEN
 // ============================================================
 function resetNuevaOrden() {
-  const fields = ['n-placa', 'n-marca', 'n-linea', 'n-modelo', 'n-color', 'n-propietario', 'n-telefono', 'n-km', 'n-fecha1', 'n-fecha2', 'n-inv-obs', 'n-cedula-cliente', 'n-vin', 'n-correo-cliente', 'n-aseg-nombre', 'n-aseg-nit', 'n-flot-nombre', 'n-flot-nit', 'n-flot-dir', 'n-combustible-val'];
+  const fields = ['n-placa', 'n-marca', 'n-linea', 'n-modelo', 'n-color', 'n-propietario', 'n-telefono', 'n-km', 'n-fecha1', 'n-fecha2', 'n-inv-obs', 'n-cedula-cliente', 'n-vin', 'n-correo-cliente'];
   fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const aseguradora = document.getElementById('n-aseguradora');
   const dano = document.getElementById('n-dano');
@@ -686,23 +686,6 @@ function resetNuevaOrden() {
   });
   fotosIngresoPendientes = [];
   renderPreviewIngreso();
-  document.querySelectorAll('.combustible-opcion').forEach(l => l.classList.remove('selected'));
-  // Limpiar combustible
-  document.querySelectorAll('.comb-chip').forEach(c => c.classList.remove('checked'));
-  document.querySelectorAll('input[name="n-combustible"]').forEach(r => {
-    r.closest('.inv-item')?.classList.remove('checked');
-  });
-  document.querySelectorAll('.tipo-cliente-btn').forEach(b => b.classList.remove('selected'));
-  const hiddenTipo = document.getElementById('n-tipo-cliente');
-  if (hiddenTipo) hiddenTipo.value = '';
-  ['n-wrap-particular','n-wrap-aseg','n-wrap-flot','n-wrap-empresa'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-  ['n-wrap-aseg-extra','n-wrap-flot-extra','n-wrap-empresa-extra'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
   const resultado = document.getElementById('placa-resultado');
   const historial = document.getElementById('historial-previo');
   if (resultado) resultado.style.display = 'none';
@@ -739,29 +722,96 @@ function quitarFotoIngreso(i) {
   renderPreviewIngreso(); 
 }
 
+// ── Autocompletado de placa en tiempo real ──────────────────
+let _placaDebounce = null;
+
+async function autocompletarPlaca(val) {
+  clearTimeout(_placaDebounce);
+  const sugDiv = document.getElementById('placa-sugerencias');
+  if (!sugDiv) return;
+  if (!val || val.length < 2) { sugDiv.style.display = 'none'; return; }
+
+  _placaDebounce = setTimeout(async () => {
+    try {
+      const [deVehiculos, deOrdenes] = await Promise.all([
+        api(`/vehiculos?placa=ilike.${val}%&select=placa,marca,linea,modelo&limit=6`).catch(()=>[]) || [],
+        api(`/ordenes?placa=ilike.${val}%&select=placa,marca,linea,modelo,propietario,telefono,color&order=creado_en.desc&limit=6`).catch(()=>[]) || []
+      ]);
+
+      // Deduplicar por placa, priorizar vehículos
+      const mapa = {};
+      deOrdenes.forEach(o => { mapa[o.placa] = o; });
+      deVehiculos.forEach(v => { mapa[v.placa] = { ...mapa[v.placa], ...v }; });
+      const sugerencias = Object.values(mapa).slice(0, 6);
+
+      if (!sugerencias.length) { sugDiv.style.display = 'none'; return; }
+
+      sugDiv.innerHTML = sugerencias.map(s => `
+        <div class="placa-sug-item" onmousedown="seleccionarPlaca('${s.placa}',${JSON.stringify(s).replace(/"/g,'&quot;')})">
+          <span class="placa-sug-placa">${s.placa}</span>
+          <span class="placa-sug-veh">${[s.marca,s.linea,s.modelo].filter(Boolean).join(' ')||'—'}</span>
+        </div>`).join('');
+      sugDiv.style.display = 'block';
+    } catch(e) { sugDiv.style.display = 'none'; }
+  }, 250);
+}
+
+function seleccionarPlaca(placa, datos) {
+  const input = document.getElementById('n-placa');
+  if (input) input.value = placa;
+  cerrarSugerenciasPlaca();
+  // Pre-llenar campos del vehículo
+  const campos = { 'n-marca': datos.marca, 'n-linea': datos.linea, 'n-modelo': datos.modelo, 'n-color': datos.color };
+  Object.entries(campos).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el && val) el.value = val;
+  });
+  // Pre-llenar propietario si es particular
+  if (datos.propietario) {
+    const prop = document.getElementById('n-propietario');
+    const tel  = document.getElementById('n-telefono');
+    if (prop && !prop.value) prop.value = datos.propietario;
+    if (tel  && !tel.value  && datos.telefono) tel.value = datos.telefono;
+  }
+  buscarPorPlaca(); // Mostrar historial
+}
+
+function cerrarSugerenciasPlaca() {
+  const s = document.getElementById('placa-sugerencias');
+  if (s) s.style.display = 'none';
+}
+
+let _placaSugIdx = -1;
+function navSugerenciasPlaca(e) {
+  const items = document.querySelectorAll('.placa-sug-item');
+  if (!items.length) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); _placaSugIdx = Math.min(_placaSugIdx+1, items.length-1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); _placaSugIdx = Math.max(_placaSugIdx-1, 0); }
+  else if (e.key === 'Enter' && _placaSugIdx >= 0) { e.preventDefault(); items[_placaSugIdx]?.dispatchEvent(new MouseEvent('mousedown')); return; }
+  else if (e.key === 'Escape') { cerrarSugerenciasPlaca(); return; }
+  items.forEach((item, i) => item.classList.toggle('active', i === _placaSugIdx));
+}
+
 async function buscarPorPlaca() {
   const placa = document.getElementById('n-placa')?.value.trim().toUpperCase();
   const resultDiv = document.getElementById('placa-resultado');
   const histDiv = document.getElementById('historial-previo');
-  if (!placa || placa.length < 3) { 
-    if (resultDiv) resultDiv.style.display = 'none'; 
-    if (histDiv) histDiv.style.display = 'none'; 
-    return; 
+  cerrarSugerenciasPlaca();
+  if (!placa || placa.length < 3) {
+    if (resultDiv) resultDiv.style.display = 'none';
+    if (histDiv) histDiv.style.display = 'none';
+    return;
   }
   try {
     const ordenes = await api(`/ordenes?placa=eq.${placa}&order=creado_en.desc&limit=5`);
     if (ordenes?.length) {
       const u = ordenes[0];
-      const marca = document.getElementById('n-marca');
-      const linea = document.getElementById('n-linea');
-      const propietario = document.getElementById('n-propietario');
-      const telefono = document.getElementById('n-telefono');
-      const modelo = document.getElementById('n-modelo');
-      if (marca) marca.value = u.marca || '';
-      if (linea) linea.value = u.linea || '';
-      if (propietario) propietario.value = u.propietario || '';
-      if (telefono) telefono.value = u.telefono || '';
-      if (modelo && u.modelo) modelo.value = u.modelo;
+      const flds = { 'n-marca': u.marca, 'n-linea': u.linea, 'n-modelo': u.modelo, 'n-color': u.color };
+      Object.entries(flds).forEach(([id, val]) => { const el = document.getElementById(id); if (el && val && !el.value) el.value = val; });
+      const prop = document.getElementById('n-propietario');
+      const tel  = document.getElementById('n-telefono');
+      if (prop && !prop.value && u.propietario) prop.value = u.propietario;
+      if (tel  && !tel.value  && u.telefono)    tel.value  = u.telefono;
       if (resultDiv) {
         resultDiv.className = 'placa-resultado encontrado';
         resultDiv.innerHTML = '✔ Vehículo encontrado — datos autocompletados.';
@@ -771,7 +821,8 @@ async function buscarPorPlaca() {
       if (historialLista && histDiv) {
         historialLista.innerHTML = ordenes.map(o => `
           <div class="historial-item" onclick="abrirOrden(${o.id})">
-            <div><span class="historial-placa">${o.placa}</span> <span style="color:var(--gris-mid);margin-left:8px">${o.aseguradora || '—'} · ${o.nivel_dano || '—'}</span></div>
+            <div><span class="historial-placa">${o.placa}</span>
+            <span style="color:var(--gris-mid);margin-left:8px">${o.aseguradora||'—'}</span></div>
             <div style="font-size:11px;color:var(--gris-mid);text-align:right">${formatFecha(o.creado_en)}</div>
           </div>`).join('');
         histDiv.style.display = 'block';
@@ -784,8 +835,93 @@ async function buscarPorPlaca() {
       }
       if (histDiv) histDiv.style.display = 'none';
     }
-  } catch(e) { 
-    if (resultDiv) resultDiv.style.display = 'none'; 
+  } catch(e) { if (resultDiv) resultDiv.style.display = 'none'; }
+}
+
+// ── OCR Tarjeta de Propiedad ─────────────────────────────────
+async function ocrTarjetaPropiedad(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const estado = document.getElementById('ocr-estado');
+  if (estado) { estado.style.display = 'block'; estado.innerHTML = '⏳ Leyendo tarjeta de propiedad...'; }
+
+  try {
+    const base64 = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result.split(',')[1]);
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: file.type || 'image/jpeg', data: base64 } },
+            { type: 'text', text: 'Extrae los datos de esta tarjeta de propiedad o documento de un vehículo colombiano. Responde ÚNICAMENTE con JSON válido sin texto adicional ni backticks. Campos exactos (usa cadena vacía "" si no encuentras el dato): {"placa":"","marca":"","linea":"","modelo":"","color":"","vin":"","propietario":""}' }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const texto = data?.content?.[0]?.text || '{}';
+    let parsed = {};
+    try { parsed = JSON.parse(texto.trim()); } catch(e) { parsed = {}; }
+
+    const mapa = {
+      'n-placa':  parsed.placa?.toUpperCase(),
+      'n-marca':  parsed.marca,
+      'n-linea':  parsed.linea,
+      'n-modelo': parsed.modelo,
+      'n-color':  parsed.color,
+      'n-vin':    parsed.vin?.toUpperCase()
+    };
+
+    let encontrados = [];
+    Object.entries(mapa).forEach(([id, val]) => {
+      if (!val) return;
+      const el = document.getElementById(id);
+      if (el) { el.value = val; encontrados.push(id.replace('n-','').replace('-',' ')); }
+    });
+
+    // Propietario va al campo correcto según tipo cliente seleccionado
+    if (parsed.propietario) {
+      const tipo = document.getElementById('n-tipo-cliente')?.value;
+      const targetId = tipo === 'aseguradora' ? 'n-propietario-aseg' : 'n-propietario';
+      const el = document.getElementById(targetId);
+      if (el && !el.value) { el.value = parsed.propietario; encontrados.push('propietario'); }
+    }
+
+    // Si encontró placa, buscar historial
+    if (parsed.placa) buscarPorPlaca();
+
+    if (estado) {
+      if (encontrados.length) {
+        estado.innerHTML = `✅ Datos extraídos: <strong>${encontrados.join(', ')}</strong>. Revisa y corrige si es necesario.`;
+        estado.style.background = 'var(--verde-bg)';
+        estado.style.borderColor = 'var(--verde)';
+        estado.style.color = 'var(--verde)';
+      } else {
+        estado.innerHTML = '⚠️ No se pudieron extraer datos. La imagen puede estar borrosa o mal enfocada. Intenta con mejor iluminación.';
+        estado.style.background = '#FEF3C7';
+        estado.style.borderColor = '#FDE68A';
+        estado.style.color = '#92400E';
+      }
+    }
+  } catch(e) {
+    if (estado) {
+      estado.innerHTML = '❌ Error al leer la tarjeta: ' + e.message;
+      estado.style.background = 'var(--rojo-bg,#FEE2E2)';
+    }
+    console.error('OCR error:', e);
+  } finally {
+    input.value = ''; // Reset para poder volver a subir
   }
 }
 
@@ -803,8 +939,7 @@ function toggleTipoPersonaNueva(tipo) {
 }
 
 function toggleTipoClienteNueva(tipo) {
-  const bloques = ['n-wrap-particular','n-wrap-aseg','n-wrap-flot','n-wrap-empresa'];
-  bloques.forEach(id => {
+  ['n-wrap-particular','n-wrap-aseg','n-wrap-flot','n-wrap-empresa'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -814,90 +949,60 @@ function toggleTipoClienteNueva(tipo) {
     flotilla:    'n-wrap-flot',
     empresa:     'n-wrap-empresa'
   };
-  const bloqueId = mapaBloque[tipo];
-  if (bloqueId) {
-    const el = document.getElementById(bloqueId);
-    if (el) el.style.display = 'block';
-  }
+  const el = document.getElementById(mapaBloque[tipo]);
+  if (el) el.style.display = 'block';
   const hidden = document.getElementById('n-tipo-cliente');
   if (hidden) hidden.value = tipo;
 }
 
 function selTipoCliente(label, tipo) {
-  // Actualizar visual
   document.querySelectorAll('.tipo-cliente-btn').forEach(b => b.classList.remove('selected'));
   label.classList.add('selected');
   toggleTipoClienteNueva(tipo);
 }
 
 function toggleNuevaAseg(val) {
-  const extra = document.getElementById('n-wrap-aseg-extra');
-  if (extra) extra.style.display = val ? 'none' : 'block';
+  const el = document.getElementById('n-wrap-aseg-extra');
+  if (el) el.style.display = val ? 'none' : 'block';
 }
-
 function toggleNuevaFlot(val) {
-  const extra = document.getElementById('n-wrap-flot-extra');
-  if (extra) extra.style.display = val ? 'none' : 'block';
+  const el = document.getElementById('n-wrap-flot-extra');
+  if (el) el.style.display = val ? 'none' : 'block';
 }
-
 function toggleNuevaEmpresa(val) {
-  const extra = document.getElementById('n-wrap-empresa-extra');
-  if (extra) extra.style.display = val ? 'none' : 'block';
+  const el = document.getElementById('n-wrap-empresa-extra');
+  if (el) el.style.display = val ? 'none' : 'block';
 }
-
 async function agregarNuevaEmpresaNueva() {
-  const nombreField = document.getElementById('n-emp-nombre');
-  const nitField    = document.getElementById('n-emp-nit');
-  const nombre = nombreField?.value.trim() || prompt('Razón social de la empresa:')?.trim();
-  if (!nombre) return;
-  const nit = nitField?.value.trim() || null;
+  const n = document.getElementById('n-emp-nombre')?.value.trim() || prompt('Razón social:')?.trim();
+  if (!n) return;
+  const nit = document.getElementById('n-emp-nit')?.value.trim() || null;
   try {
-    await api('/flotillas', 'POST', { nombre, nit, activo: true }, { Prefer:'return=minimal' });
+    await api('/flotillas', 'POST', { nombre: n, nit, activo: true }, { Prefer:'return=minimal' });
     toast('Empresa agregada ✓');
-    if (nombreField) nombreField.value = '';
-    if (nitField)    nitField.value = '';
     await recargarListasNuevaOrden();
     const sel = document.getElementById('n-empresa-sel');
-    if (sel) sel.value = nombre;
+    if (sel) sel.value = n;
   } catch(e) { toast('Error: '+e.message,'err'); }
 }
 
 async function agregarNuevaAsegNueva() {
-  // Si hay campos de nueva aseguradora en el form, usarlos; si no, usar prompt
-  const nombreField = document.getElementById('n-aseg-nombre');
-  const nitField    = document.getElementById('n-aseg-nit');
-  const nombre = nombreField?.value.trim() || prompt('Nombre de la nueva aseguradora:')?.trim();
+  const nombre = prompt('Nombre de la nueva aseguradora:')?.trim();
   if (!nombre) return;
-  const nit = nitField?.value.trim() || null;
   try {
-    await api('/aseguradoras', 'POST', { nombre, nit, activo: true }, { Prefer:'return=minimal' });
+    await api('/aseguradoras', 'POST', { nombre, activo: true }, { Prefer:'return=minimal' });
     toast('Aseguradora agregada ✓');
-    if (nombreField) nombreField.value = '';
-    if (nitField)    nitField.value = '';
     await recargarListasNuevaOrden();
-    // Seleccionar la recién creada
-    const sel = document.getElementById('n-aseguradora-sel');
-    if (sel) sel.value = nombre;
   } catch(e) { toast('Error: '+e.message,'err'); }
 }
 
 async function agregarNuevaFlotNueva() {
-  const nombreField = document.getElementById('n-flot-nombre');
-  const nitField    = document.getElementById('n-flot-nit');
-  const dirField    = document.getElementById('n-flot-dir');
-  const nombre = nombreField?.value.trim() || prompt('Nombre de la nueva flotilla:')?.trim();
+  const nombre = prompt('Nombre de la nueva flotilla:')?.trim();
   if (!nombre) return;
-  const nit       = nitField?.value.trim()  || null;
-  const direccion = dirField?.value.trim()  || null;
   try {
-    await api('/flotillas', 'POST', { nombre, nit, direccion, activo: true }, { Prefer:'return=minimal' });
+    await api('/flotillas', 'POST', { nombre, activo: true }, { Prefer:'return=minimal' });
     toast('Flotilla agregada ✓');
-    if (nombreField) nombreField.value = '';
-    if (nitField)    nitField.value = '';
-    if (dirField)    dirField.value = '';
     await recargarListasNuevaOrden();
-    const sel = document.getElementById('n-flotilla-sel');
-    if (sel) sel.value = nombre;
   } catch(e) { toast('Error: '+e.message,'err'); }
 }
 
@@ -908,12 +1013,9 @@ async function recargarListasNuevaOrden() {
   ]);
   const selA = document.getElementById('n-aseguradora-sel');
   const selF = document.getElementById('n-flotilla-sel');
-  const selE = document.getElementById('n-empresa-sel');
   if (selA) selA.innerHTML = '<option value="">— Seleccionar —</option>' +
     aseg.map(a=>`<option value="${a.nombre}">${a.nombre}</option>`).join('');
   if (selF) selF.innerHTML = '<option value="">— Seleccionar —</option>' +
-    flot.map(f=>`<option value="${f.nombre}">${f.nombre}</option>`).join('');
-  if (selE) selE.innerHTML = '<option value="">— Seleccionar —</option>' +
     flot.map(f=>`<option value="${f.nombre}">${f.nombre}</option>`).join('');
 }
 
@@ -931,7 +1033,6 @@ async function crearOrden() {
 
   const invItems = {};
   document.querySelectorAll('.inv-item input[type=checkbox]').forEach(chk => { invItems[chk.value] = chk.checked; });
-  const combustible = document.getElementById('n-combustible-val')?.value || null;
 
   let clienteId = null;
   if (cedulaCliente) {
@@ -953,21 +1054,8 @@ async function crearOrden() {
     aseguradora: (() => {
       const tipo = document.getElementById('n-tipo-cliente')?.value || '';
       if (tipo === 'aseguradora') return document.getElementById('n-aseguradora-sel')?.value || null;
-      if (tipo === 'flotilla')    return document.getElementById('n-flotilla-sel')?.value    || null;
-      if (tipo === 'empresa')     return document.getElementById('n-empresa-sel')?.value     || null;
+      if (tipo === 'flotilla')    return document.getElementById('n-flotilla-sel')?.value || null;
       return null;
-    })(),
-    // Propietario/telefono/cedula según tipo de cliente
-    propietario: (() => {
-      const tipo = document.getElementById('n-tipo-cliente')?.value || '';
-      if (tipo === 'aseguradora') return document.getElementById('n-propietario-aseg')?.value.trim() || document.getElementById('n-propietario')?.value.trim() || null;
-      return document.getElementById('n-propietario')?.value.trim() || null;
-    })(),
-    telefono: (() => {
-      const tipo = document.getElementById('n-tipo-cliente')?.value || '';
-      if (tipo === 'aseguradora') return document.getElementById('n-telefono-aseg')?.value.trim() || document.getElementById('n-telefono')?.value.trim() || null;
-      if (tipo === 'empresa')     return document.getElementById('n-empresa-tel')?.value.trim()   || null;
-      return document.getElementById('n-telefono')?.value.trim() || null;
     })(),
     marca: document.getElementById('n-marca')?.value || null,
     linea: document.getElementById('n-linea')?.value || null,
@@ -980,11 +1068,11 @@ async function crearOrden() {
       if (persona === 'empresa') return 'empresa';
       return document.getElementById('n-tipo-cliente')?.value || null;
     })(),
-    nivel_dano: null,
+    nivel_dano: document.getElementById('n-dano')?.value || null,
     kilometraje: parseInt(document.getElementById('n-km')?.value) || null,
     fecha_entrega_1: document.getElementById('n-fecha1')?.value || null,
     fecha_entrega_2: document.getElementById('n-fecha2')?.value || null,
-    inventario: JSON.stringify({ items: invItems, combustible: combustible, observaciones: document.getElementById('n-inv-obs')?.value.trim() || null }),
+    inventario: JSON.stringify({ items: invItems, observaciones: document.getElementById('n-inv-obs')?.value.trim() || null }),
     estado: 'Activa',
     cliente_id: clienteId,
     vin: vin || null,
@@ -1634,8 +1722,7 @@ function navJefe(pag) {
     case 'dashboard':
       pagId = 'pag-dashboard';
       titulo = 'Estado del Taller';
-      // Pequeño delay para que el DOM renderice la página antes de cargar
-      setTimeout(() => switchDashTab('mes'), 50);
+      cargarDashboard();
       break;
     case 'cotizaciones':
       pagId = 'pag-cotizaciones';
@@ -2444,27 +2531,50 @@ async function guardarEdicionOrden() {
     if (btn) { btn.disabled = false; btn.textContent = 'Guardar cambios'; }
   }
 }
-// ── Combustible ───────────────────────────────────────────
-function setCombustible(label, valor) {
-  document.querySelectorAll('.combustible-opcion').forEach(l => l.classList.remove('selected'));
-  // Limpiar combustible
+// ── Combustible (chips compactos) ───────────────────────────
+function toggleCombustible(el, valor) {
   document.querySelectorAll('.comb-chip').forEach(c => c.classList.remove('checked'));
-  document.querySelectorAll('input[name="n-combustible"]').forEach(r => {
-    r.closest('.inv-item')?.classList.remove('checked');
-  });
-  if (label) label.classList.add('selected');
+  el.classList.add('checked');
   const hidden = document.getElementById('n-combustible-val');
   if (hidden) hidden.value = valor;
 }
 
-function toggleCombustible(el, valor) {
-  // Desmarcar todos los chips de combustible
-  document.querySelectorAll('.comb-chip').forEach(c => c.classList.remove('checked'));
-  // También limpiar inv-items de combustible (compatibilidad)
-  document.querySelectorAll('input[name="n-combustible"]').forEach(r => {
-    r.closest('.inv-item')?.classList.remove('checked');
+// ── Reset nueva orden ────────────────────────────────────────
+function resetNuevaOrden() {
+  ['n-placa','n-marca','n-linea','n-modelo','n-color','n-km','n-fecha1','n-fecha2',
+   'n-inv-obs','n-vin','n-propietario','n-telefono','n-cedula-cliente','n-correo-cliente',
+   'n-direccion','n-propietario-aseg','n-telefono-aseg','n-cedula-aseg','n-correo-aseg',
+   'n-aseg-nombre','n-aseg-nit','n-flot-nombre','n-flot-nit','n-flot-dir',
+   'n-emp-nombre','n-emp-nit','n-empresa-tel','n-combustible-val'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
   });
-  el.classList.add('checked');
-  const hidden = document.getElementById('n-combustible-val');
-  if (hidden) hidden.value = valor;
+  document.querySelectorAll('.inv-item.checked').forEach(el => el.classList.remove('checked'));
+  document.querySelectorAll('.comb-chip.checked').forEach(el => el.classList.remove('checked'));
+  document.querySelectorAll('.tipo-cliente-btn.selected').forEach(el => el.classList.remove('selected'));
+  ['n-wrap-particular','n-wrap-aseg','n-wrap-flot','n-wrap-empresa'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  ['n-wrap-aseg-extra','n-wrap-flot-extra','n-wrap-empresa-extra'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  document.getElementById('n-tipo-cliente') && (document.getElementById('n-tipo-cliente').value = '');
+  document.getElementById('placa-resultado') && (document.getElementById('placa-resultado').style.display = 'none');
+  document.getElementById('historial-previo') && (document.getElementById('historial-previo').style.display = 'none');
+  document.getElementById('ocr-estado') && (document.getElementById('ocr-estado').style.display = 'none');
+  cerrarSugerenciasPlaca();
+  fotosIngresoPendientes = [];
+  if (typeof renderPreviewIngreso === 'function') renderPreviewIngreso();
+}
+
+async function recargarListasNuevaOrden() {
+  const [aseg, flot] = await Promise.all([
+    api('/aseguradoras?activo=eq.true&order=nombre.asc').catch(()=>[]) || [],
+    api('/flotillas?activo=eq.true&order=nombre.asc').catch(()=>[]) || []
+  ]);
+  ['n-aseguradora-sel','n-flotilla-sel','n-empresa-sel'].forEach((id, i) => {
+    const sel = document.getElementById(id);
+    const lista = i === 0 ? aseg : flot;
+    if (sel) sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+      lista.map(x => `<option value="${x.nombre}">${x.nombre}</option>`).join('');
+  });
 }

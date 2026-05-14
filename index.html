@@ -92,16 +92,14 @@
     <div class="content">
       <!-- PÁGINAS (contenedores vacíos, JS llena el contenido) -->
       <div class="pagina" id="pag-dashboard">
-  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-    <button class="filtro-btn active" id="dash-tab-mes" onclick="switchDashTab('mes')">📅 Mes actual</button>
-    <button class="filtro-btn" id="dash-tab-operativo" onclick="switchDashTab('operativo')">General</button>
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <button class="filtro-btn active" id="dash-tab-operativo" onclick="switchDashTab('operativo')">Estado del taller</button>
     <button class="filtro-btn" id="dash-tab-financiero" onclick="switchDashTab('financiero')">Financiero</button>
-    <button class="filtro-btn" id="dash-tab-metas" onclick="switchDashTab('metas')">Metas</button>
+          <button class="filtro-btn" id="dash-tab-metas" onclick="switchDashTab('metas')">Metas</button>
   </div>
-  <div id="dash-mes-contenido"></div>
-  <div id="dash-contenido" style="display:none"></div>
+  <div id="dash-contenido"></div>
   <div id="dash-financiero-contenido" style="display:none"></div>
-  <div id="dash-metas-contenido" style="display:none"></div>
+      <div id="dash-metas-contenido" style="display:none"></div>
 </div>
       <div class="pagina" id="pag-ordenes">
         <div class="filtros-bar" id="filtros-bar">
@@ -122,16 +120,32 @@
 
           <div class="form-section">
             <div class="form-section-titulo">Identificación del vehículo</div>
+
+            <!-- Autocomplete de placa -->
             <div style="display:flex;gap:8px">
-              <div class="field" style="flex:1">
+              <div class="field" style="flex:1;position:relative">
                 <label>Placa *</label>
-                <input id="n-placa" placeholder="LUN954" style="text-transform:uppercase;font-family:'DM Mono',monospace;letter-spacing:2px"
-                  oninput="this.value=this.value.toUpperCase()" onblur="buscarPorPlaca()">
+                <input id="n-placa" placeholder="LUN954"
+                  style="text-transform:uppercase;font-family:'DM Mono',monospace;letter-spacing:2px"
+                  oninput="this.value=this.value.toUpperCase();autocompletarPlaca(this.value)"
+                  onblur="setTimeout(()=>cerrarSugerenciasPlaca(),200)"
+                  onkeydown="navSugerenciasPlaca(event)">
+                <div id="placa-sugerencias" class="placa-sugerencias" style="display:none"></div>
               </div>
-              <div style="display:flex;align-items:flex-end">
+              <div style="display:flex;align-items:flex-end;gap:6px">
                 <button class="btn btn-ghost" onclick="buscarPorPlaca()" style="height:41px">Buscar</button>
+                <!-- OCR tarjeta de propiedad -->
+                <label class="btn btn-ghost" style="height:41px;display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;font-size:13px" title="Leer tarjeta de propiedad">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  Tarjeta
+                  <input type="file" id="ocr-tarjeta-input" accept="image/*" style="display:none" onchange="ocrTarjetaPropiedad(this)">
+                </label>
               </div>
             </div>
+
+            <!-- Estado OCR -->
+            <div id="ocr-estado" style="display:none;margin-top:8px;font-size:12px;padding:8px 12px;border-radius:6px;border:1px solid var(--gris-borde);background:var(--gris-bg)"></div>
+
             <div id="placa-resultado" class="placa-resultado"></div>
             <div id="historial-previo" class="historial-previo">
               <div class="seccion-titulo" style="margin-bottom:8px">Historial con esta placa</div>
@@ -139,25 +153,42 @@
             </div>
           </div>
 
-          <!-- ═══ 1. TIPO DE CLIENTE (primero) ═══ -->
+
+
+          <div class="form-section">
+            <div class="form-section-titulo">Datos del vehículo</div>
+            <div class="grid-2">
+              <div class="field"><label>Marca</label><input id="n-marca" placeholder="Toyota"></div>
+              <div class="field"><label>Línea</label><input id="n-linea" placeholder="Hilux"></div>
+              <div class="field"><label>Modelo (año)</label><input id="n-modelo" placeholder="2021" maxlength="4"></div>
+              <div class="field"><label>Color</label><input id="n-color" placeholder="Blanco"></div>
+              <div class="field full"><label>VIN <span style="font-weight:400;color:var(--gris-mid);font-size:11px">(17 caracteres, opcional)</span></label>
+                <input id="n-vin" placeholder="WBA3A5C50DF256145" maxlength="17" style="font-family:'DM Mono',monospace;letter-spacing:1px" oninput="this.value=this.value.toUpperCase()">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-titulo">Datos del propietario</div>
+            <div class="grid-2">
+            </div>
+          </div>
+
+          <!-- ═══ TIPO DE CLIENTE ═══ -->
           <div class="form-section">
             <div class="form-section-titulo">Tipo de cliente</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
               <label class="tipo-cliente-btn" id="tcb-particular" onclick="selTipoCliente(this,'particular')">
-                <span style="font-size:20px">👤</span>
-                <span>Particular</span>
+                <span style="font-size:20px">👤</span><span>Particular</span>
               </label>
               <label class="tipo-cliente-btn" id="tcb-aseguradora" onclick="selTipoCliente(this,'aseguradora')">
-                <span style="font-size:20px">🏢</span>
-                <span>Aseguradora</span>
+                <span style="font-size:20px">🏢</span><span>Aseguradora</span>
               </label>
               <label class="tipo-cliente-btn" id="tcb-flotilla" onclick="selTipoCliente(this,'flotilla')">
-                <span style="font-size:20px">🚛</span>
-                <span>Flotilla</span>
+                <span style="font-size:20px">🚛</span><span>Flotilla</span>
               </label>
               <label class="tipo-cliente-btn" id="tcb-empresa" onclick="selTipoCliente(this,'empresa')">
-                <span style="font-size:20px">🏭</span>
-                <span>Empresa</span>
+                <span style="font-size:20px">🏭</span><span>Empresa</span>
               </label>
             </div>
             <input type="hidden" id="n-tipo-cliente">
@@ -166,16 +197,16 @@
             <div id="n-wrap-particular" style="display:none">
               <div class="grid-2">
                 <div class="field full"><label>Nombre completo *</label><input id="n-propietario" placeholder="Nombre completo"></div>
-                <div class="field"><label>Teléfono</label><input id="n-telefono" placeholder="3134753389" type="tel"></div>
+                <div class="field"><label>Teléfono</label><input id="n-telefono" type="tel" placeholder="3134753389"></div>
                 <div class="field"><label>Cédula</label><input id="n-cedula-cliente" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')"></div>
                 <div class="field"><label>Dirección</label><input id="n-direccion" placeholder="Cra 10 #20-30"></div>
-                <div class="field full"><label>Correo electrónico</label><input id="n-correo-cliente" placeholder="correo@ejemplo.com" type="email"></div>
+                <div class="field full"><label>Correo electrónico</label><input id="n-correo-cliente" type="email" placeholder="correo@ejemplo.com"></div>
               </div>
             </div>
 
             <!-- ASEGURADORA -->
             <div id="n-wrap-aseg" style="display:none">
-              <div class="grid-2" style="margin-bottom:8px">
+              <div class="grid-2">
                 <div class="field">
                   <label>Aseguradora *</label>
                   <div style="display:flex;gap:6px">
@@ -184,11 +215,11 @@
                   </div>
                 </div>
                 <div class="field"><label>Cliente que trae el vehículo *</label><input id="n-propietario-aseg" placeholder="Nombre completo"></div>
-                <div class="field"><label>Teléfono cliente</label><input id="n-telefono-aseg" type="tel" placeholder="3001234567"></div>
-                <div class="field"><label>Cédula cliente</label><input id="n-cedula-aseg" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')"></div>
-                <div class="field full"><label>Correo cliente</label><input id="n-correo-aseg" type="email" placeholder="correo@ejemplo.com"></div>
+                <div class="field"><label>Teléfono</label><input id="n-telefono-aseg" type="tel" placeholder="3001234567"></div>
+                <div class="field"><label>Cédula</label><input id="n-cedula-aseg" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')"></div>
+                <div class="field full"><label>Correo</label><input id="n-correo-aseg" type="email" placeholder="correo@ejemplo.com"></div>
               </div>
-              <div id="n-wrap-aseg-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde)">
+              <div id="n-wrap-aseg-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde);margin-top:8px">
                 <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nueva aseguradora</div>
                 <div class="grid-2">
                   <div class="field"><label>Nombre</label><input id="n-aseg-nombre" placeholder="HDI Seguros, Sura..."></div>
@@ -199,14 +230,14 @@
 
             <!-- FLOTILLA -->
             <div id="n-wrap-flot" style="display:none">
-              <div class="field" style="margin-bottom:8px">
+              <div class="field">
                 <label>Flotilla *</label>
                 <div style="display:flex;gap:6px">
                   <select id="n-flotilla-sel" style="flex:1" onchange="toggleNuevaFlot(this.value)"><option value="">— Seleccionar —</option></select>
                   <button class="btn btn-ghost btn-sm" onclick="agregarNuevaFlotNueva()" title="Agregar nueva">+</button>
                 </div>
               </div>
-              <div id="n-wrap-flot-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde)">
+              <div id="n-wrap-flot-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde);margin-top:8px">
                 <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nueva flotilla</div>
                 <div class="grid-2">
                   <div class="field"><label>Nombre</label><input id="n-flot-nombre" placeholder="Transportes XYZ S.A.S."></div>
@@ -218,7 +249,7 @@
 
             <!-- EMPRESA -->
             <div id="n-wrap-empresa" style="display:none">
-              <div class="grid-2" style="margin-bottom:8px">
+              <div class="grid-2">
                 <div class="field">
                   <label>Empresa *</label>
                   <div style="display:flex;gap:6px">
@@ -228,7 +259,7 @@
                 </div>
                 <div class="field"><label>Teléfono empresa</label><input id="n-empresa-tel" type="tel" placeholder="6011234567"></div>
               </div>
-              <div id="n-wrap-empresa-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde)">
+              <div id="n-wrap-empresa-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde);margin-top:8px">
                 <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nueva empresa</div>
                 <div class="grid-2">
                   <div class="field"><label>Razón social</label><input id="n-emp-nombre" placeholder="Empresa S.A.S."></div>
@@ -238,7 +269,7 @@
             </div>
           </div>
 
-          <!-- ═══ 2. DATOS DEL VEHÍCULO ═══ -->
+          <!-- ═══ DATOS DEL VEHÍCULO ═══ -->
           <div class="form-section">
             <div class="form-section-titulo">Datos del vehículo</div>
             <div class="grid-2">
@@ -253,7 +284,7 @@
             </div>
           </div>
 
-          <!-- ═══ 3. FECHAS DE ENTREGA ═══ -->
+          <!-- ═══ FECHAS DE ENTREGA ═══ -->
           <div class="form-section">
             <div class="form-section-titulo">Fechas de entrega</div>
             <div class="grid-2">
@@ -270,7 +301,7 @@
             </div>
           </div>
 
-          <!-- ═══ 4. INVENTARIO + COMBUSTIBLE ═══ -->
+          <!-- ═══ INVENTARIO + COMBUSTIBLE ═══ -->
           <div class="form-section">
             <div class="form-section-titulo">Inventario del vehículo</div>
             <div class="inv-grid" id="inv-grid">
