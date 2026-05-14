@@ -139,43 +139,7 @@
             </div>
           </div>
 
-          <div class="form-section">
-            <div class="form-section-titulo">Tipo de persona</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-              <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1.5px solid var(--gris-borde);border-radius:7px;cursor:pointer;font-size:13px;font-weight:500">
-                <input type="radio" name="n-tipo-persona" value="natural" checked onchange="toggleTipoPersonaNueva('natural')">
-                Persona natural
-              </label>
-              <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1.5px solid var(--gris-borde);border-radius:7px;cursor:pointer;font-size:13px;font-weight:500">
-                <input type="radio" name="n-tipo-persona" value="empresa" onchange="toggleTipoPersonaNueva('empresa')">
-                Empresa
-              </label>
-            </div>
-          </div>
-
-          <div class="form-section">
-            <div class="form-section-titulo">Datos del vehículo</div>
-            <div class="grid-2">
-              <div class="field"><label>Marca</label><input id="n-marca" placeholder="Toyota"></div>
-              <div class="field"><label>Línea</label><input id="n-linea" placeholder="Hilux"></div>
-              <div class="field"><label>Modelo (año)</label><input id="n-modelo" placeholder="2021" maxlength="4"></div>
-              <div class="field"><label>Color</label><input id="n-color" placeholder="Blanco"></div>
-              <div class="field full"><label>VIN <span style="font-weight:400;color:var(--gris-mid);font-size:11px">(17 caracteres, opcional)</span></label>
-                <input id="n-vin" placeholder="WBA3A5C50DF256145" maxlength="17" style="font-family:'DM Mono',monospace;letter-spacing:1px" oninput="this.value=this.value.toUpperCase()">
-              </div>
-            </div>
-          </div>
-
-          <div class="form-section">
-            <div class="form-section-titulo">Datos del propietario</div>
-            <div class="grid-2">
-              <div class="field full"><label id="lbl-n-propietario">Nombre completo *</label><input id="n-propietario" placeholder="Nombre completo"></div>
-              <div class="field"><label>Teléfono</label><input id="n-telefono" placeholder="3134753389" type="tel"></div>
-              <div class="field"><label id="lbl-n-cedula">Cédula</label><input id="n-cedula-cliente" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')"></div>
-              <div class="field full"><label>Correo electrónico</label><input id="n-correo-cliente" placeholder="correo@ejemplo.com" type="email"></div>
-            </div>
-          </div>
-
+          <!-- ═══ 1. TIPO DE CLIENTE (primero) ═══ -->
           <div class="form-section">
             <div class="form-section-titulo">Tipo de cliente</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
@@ -198,7 +162,18 @@
             </div>
             <input type="hidden" id="n-tipo-cliente">
 
-            <!-- BLOQUE ASEGURADORA -->
+            <!-- PARTICULAR -->
+            <div id="n-wrap-particular" style="display:none">
+              <div class="grid-2">
+                <div class="field full"><label>Nombre completo *</label><input id="n-propietario" placeholder="Nombre completo"></div>
+                <div class="field"><label>Teléfono</label><input id="n-telefono" placeholder="3134753389" type="tel"></div>
+                <div class="field"><label>Cédula</label><input id="n-cedula-cliente" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')"></div>
+                <div class="field"><label>Dirección</label><input id="n-direccion" placeholder="Cra 10 #20-30"></div>
+                <div class="field full"><label>Correo electrónico</label><input id="n-correo-cliente" placeholder="correo@ejemplo.com" type="email"></div>
+              </div>
+            </div>
+
+            <!-- ASEGURADORA -->
             <div id="n-wrap-aseg" style="display:none">
               <div class="grid-2" style="margin-bottom:8px">
                 <div class="field">
@@ -208,20 +183,12 @@
                     <button class="btn btn-ghost btn-sm" onclick="agregarNuevaAsegNueva()" title="Agregar nueva">+</button>
                   </div>
                 </div>
-                <div class="field">
-                  <label>Cliente que trae el vehículo *</label>
-                  <input id="n-propietario-aseg" placeholder="Nombre completo">
-                </div>
-                <div class="field">
-                  <label>Teléfono cliente</label>
-                  <input id="n-telefono-aseg" type="tel" placeholder="3001234567">
-                </div>
-                <div class="field">
-                  <label>Cédula cliente</label>
-                  <input id="n-cedula-aseg" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')">
-                </div>
+                <div class="field"><label>Cliente que trae el vehículo *</label><input id="n-propietario-aseg" placeholder="Nombre completo"></div>
+                <div class="field"><label>Teléfono cliente</label><input id="n-telefono-aseg" type="tel" placeholder="3001234567"></div>
+                <div class="field"><label>Cédula cliente</label><input id="n-cedula-aseg" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')"></div>
+                <div class="field full"><label>Correo cliente</label><input id="n-correo-aseg" type="email" placeholder="correo@ejemplo.com"></div>
               </div>
-              <div id="n-wrap-aseg-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde);margin-top:4px">
+              <div id="n-wrap-aseg-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde)">
                 <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nueva aseguradora</div>
                 <div class="grid-2">
                   <div class="field"><label>Nombre</label><input id="n-aseg-nombre" placeholder="HDI Seguros, Sura..."></div>
@@ -230,7 +197,7 @@
               </div>
             </div>
 
-            <!-- BLOQUE FLOTILLA -->
+            <!-- FLOTILLA -->
             <div id="n-wrap-flot" style="display:none">
               <div class="field" style="margin-bottom:8px">
                 <label>Flotilla *</label>
@@ -239,7 +206,7 @@
                   <button class="btn btn-ghost btn-sm" onclick="agregarNuevaFlotNueva()" title="Agregar nueva">+</button>
                 </div>
               </div>
-              <div id="n-wrap-flot-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde);margin-top:4px">
+              <div id="n-wrap-flot-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde)">
                 <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nueva flotilla</div>
                 <div class="grid-2">
                   <div class="field"><label>Nombre</label><input id="n-flot-nombre" placeholder="Transportes XYZ S.A.S."></div>
@@ -249,7 +216,7 @@
               </div>
             </div>
 
-            <!-- BLOQUE EMPRESA -->
+            <!-- EMPRESA -->
             <div id="n-wrap-empresa" style="display:none">
               <div class="grid-2" style="margin-bottom:8px">
                 <div class="field">
@@ -261,7 +228,7 @@
                 </div>
                 <div class="field"><label>Teléfono empresa</label><input id="n-empresa-tel" type="tel" placeholder="6011234567"></div>
               </div>
-              <div id="n-wrap-empresa-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde);margin-top:4px">
+              <div id="n-wrap-empresa-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde)">
                 <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nueva empresa</div>
                 <div class="grid-2">
                   <div class="field"><label>Razón social</label><input id="n-emp-nombre" placeholder="Empresa S.A.S."></div>
@@ -269,47 +236,41 @@
                 </div>
               </div>
             </div>
-
-            <!-- CAMPOS COMUNES -->
-            <div class="grid-2" style="margin-top:12px">
-              <div class="field"><label>Kilometraje</label><input id="n-km" placeholder="45000" type="number" min="0"></div>
-              <div class="field"><label>Fecha Entrega 1</label><input id="n-fecha1" type="date"></div>
-              <div class="field"><label>Fecha Entrega 2</label><input id="n-fecha2" type="date"></div>
-            </div>
           </div>
 
+          <!-- ═══ 2. DATOS DEL VEHÍCULO ═══ -->
           <div class="form-section">
-            <div class="form-section-titulo">Nivel de combustible al ingreso</div>
-            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
-              <label class="combustible-opcion" onclick="setCombustible(this,'vacio')">
-                <input type="radio" name="n-combustible" value="vacio" style="display:none">
-                <div class="combustible-barra" style="--pct:5%"></div>
-                <span>Vacío</span>
-              </label>
-              <label class="combustible-opcion" onclick="setCombustible(this,'1/4')">
-                <input type="radio" name="n-combustible" value="1/4" style="display:none">
-                <div class="combustible-barra" style="--pct:25%"></div>
-                <span>1/4</span>
-              </label>
-              <label class="combustible-opcion" onclick="setCombustible(this,'1/2')">
-                <input type="radio" name="n-combustible" value="1/2" style="display:none">
-                <div class="combustible-barra" style="--pct:50%"></div>
-                <span>1/2</span>
-              </label>
-              <label class="combustible-opcion" onclick="setCombustible(this,'3/4')">
-                <input type="radio" name="n-combustible" value="3/4" style="display:none">
-                <div class="combustible-barra" style="--pct:75%"></div>
-                <span>3/4</span>
-              </label>
-              <label class="combustible-opcion" onclick="setCombustible(this,'lleno')">
-                <input type="radio" name="n-combustible" value="lleno" style="display:none">
-                <div class="combustible-barra" style="--pct:100%"></div>
-                <span>Lleno</span>
-              </label>
+            <div class="form-section-titulo">Datos del vehículo</div>
+            <div class="grid-2">
+              <div class="field"><label>Marca</label><input id="n-marca" placeholder="Toyota"></div>
+              <div class="field"><label>Línea</label><input id="n-linea" placeholder="Hilux"></div>
+              <div class="field"><label>Modelo (año)</label><input id="n-modelo" placeholder="2021" maxlength="4"></div>
+              <div class="field"><label>Color</label><input id="n-color" placeholder="Blanco"></div>
+              <div class="field"><label>Kilometraje</label><input id="n-km" placeholder="45000" type="number" min="0"></div>
+              <div class="field full"><label>VIN <span style="font-weight:400;color:var(--gris-mid);font-size:11px">(17 caracteres, opcional)</span></label>
+                <input id="n-vin" placeholder="WBA3A5C50DF256145" maxlength="17" style="font-family:'DM Mono',monospace;letter-spacing:1px" oninput="this.value=this.value.toUpperCase()">
+              </div>
             </div>
-            <input type="hidden" id="n-combustible-val">
           </div>
 
+          <!-- ═══ 3. FECHAS DE ENTREGA ═══ -->
+          <div class="form-section">
+            <div class="form-section-titulo">Fechas de entrega</div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Fecha estimada de entrega</label>
+                <input id="n-fecha1" type="date">
+                <div style="font-size:11px;color:var(--gris-mid);margin-top:3px">Fecha prometida al cliente</div>
+              </div>
+              <div class="field">
+                <label>Fecha máxima de entrega</label>
+                <input id="n-fecha2" type="date">
+                <div style="font-size:11px;color:var(--gris-mid);margin-top:3px">Plazo máximo con aseguradora</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ 4. INVENTARIO + COMBUSTIBLE ═══ -->
           <div class="form-section">
             <div class="form-section-titulo">Inventario del vehículo</div>
             <div class="inv-grid" id="inv-grid">
@@ -322,7 +283,20 @@
               <div class="inv-item" onclick="toggleInv(this,'herramientas')"><input type="checkbox" value="herramientas"> Herramientas</div>
               <div class="inv-item" onclick="toggleInv(this,'extintor')"><input type="checkbox" value="extintor"> Extintor</div>
             </div>
-            <div class="field"><label>Observaciones de inventario</label>
+
+            <div style="margin-top:12px;border-top:1px solid var(--gris-borde);padding-top:10px">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gris-mid);margin-bottom:8px">Nivel de combustible</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <div class="comb-chip" onclick="toggleCombustible(this,'vacio')"><input type="radio" name="n-combustible" value="vacio" style="display:none">⬜ Vacío</div>
+                <div class="comb-chip" onclick="toggleCombustible(this,'1/4')"><input type="radio" name="n-combustible" value="1/4" style="display:none">🟥 1/4</div>
+                <div class="comb-chip" onclick="toggleCombustible(this,'1/2')"><input type="radio" name="n-combustible" value="1/2" style="display:none">🟨 1/2</div>
+                <div class="comb-chip" onclick="toggleCombustible(this,'3/4')"><input type="radio" name="n-combustible" value="3/4" style="display:none">🟩 3/4</div>
+                <div class="comb-chip" onclick="toggleCombustible(this,'lleno')"><input type="radio" name="n-combustible" value="lleno" style="display:none">🟦 Lleno</div>
+              </div>
+              <input type="hidden" id="n-combustible-val">
+            </div>
+
+            <div class="field" style="margin-top:12px"><label>Observaciones de inventario</label>
               <textarea id="n-inv-obs" placeholder="Ej: Cargador en guantera, silla bebé en baúl..."></textarea>
             </div>
           </div>

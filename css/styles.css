@@ -1620,3 +1620,27 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   color: var(--azul);
   box-shadow: 0 0 0 3px rgba(42,82,152,0.12);
 }
+
+/* ── Combustible compacto (chip) ── */
+.comb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--gris-texto);
+  background: white;
+  transition: all 0.15s;
+  user-select: none;
+}
+.comb-chip:hover { border-color: var(--azul-mid); background: var(--azul-light); }
+.comb-chip.checked {
+  border-color: var(--azul-mid);
+  background: var(--azul-light);
+  color: var(--azul);
+  font-weight: 600;
+}

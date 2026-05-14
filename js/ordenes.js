@@ -687,10 +687,15 @@ function resetNuevaOrden() {
   fotosIngresoPendientes = [];
   renderPreviewIngreso();
   document.querySelectorAll('.combustible-opcion').forEach(l => l.classList.remove('selected'));
+  // Limpiar combustible
+  document.querySelectorAll('.comb-chip').forEach(c => c.classList.remove('checked'));
+  document.querySelectorAll('input[name="n-combustible"]').forEach(r => {
+    r.closest('.inv-item')?.classList.remove('checked');
+  });
   document.querySelectorAll('.tipo-cliente-btn').forEach(b => b.classList.remove('selected'));
   const hiddenTipo = document.getElementById('n-tipo-cliente');
   if (hiddenTipo) hiddenTipo.value = '';
-  ['n-wrap-aseg','n-wrap-flot','n-wrap-empresa'].forEach(id => {
+  ['n-wrap-particular','n-wrap-aseg','n-wrap-flot','n-wrap-empresa'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -798,22 +803,22 @@ function toggleTipoPersonaNueva(tipo) {
 }
 
 function toggleTipoClienteNueva(tipo) {
-  const bloques = ['n-wrap-aseg','n-wrap-flot','n-wrap-empresa'];
+  const bloques = ['n-wrap-particular','n-wrap-aseg','n-wrap-flot','n-wrap-empresa'];
   bloques.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
-  if (tipo === 'aseguradora') {
-    const el = document.getElementById('n-wrap-aseg');
-    if (el) el.style.display = 'block';
-  } else if (tipo === 'flotilla') {
-    const el = document.getElementById('n-wrap-flot');
-    if (el) el.style.display = 'block';
-  } else if (tipo === 'empresa') {
-    const el = document.getElementById('n-wrap-empresa');
+  const mapaBloque = {
+    particular:  'n-wrap-particular',
+    aseguradora: 'n-wrap-aseg',
+    flotilla:    'n-wrap-flot',
+    empresa:     'n-wrap-empresa'
+  };
+  const bloqueId = mapaBloque[tipo];
+  if (bloqueId) {
+    const el = document.getElementById(bloqueId);
     if (el) el.style.display = 'block';
   }
-  // Actualizar campo hidden
   const hidden = document.getElementById('n-tipo-cliente');
   if (hidden) hidden.value = tipo;
 }
@@ -2442,7 +2447,24 @@ async function guardarEdicionOrden() {
 // ── Combustible ───────────────────────────────────────────
 function setCombustible(label, valor) {
   document.querySelectorAll('.combustible-opcion').forEach(l => l.classList.remove('selected'));
-  label.classList.add('selected');
+  // Limpiar combustible
+  document.querySelectorAll('.comb-chip').forEach(c => c.classList.remove('checked'));
+  document.querySelectorAll('input[name="n-combustible"]').forEach(r => {
+    r.closest('.inv-item')?.classList.remove('checked');
+  });
+  if (label) label.classList.add('selected');
+  const hidden = document.getElementById('n-combustible-val');
+  if (hidden) hidden.value = valor;
+}
+
+function toggleCombustible(el, valor) {
+  // Desmarcar todos los chips de combustible
+  document.querySelectorAll('.comb-chip').forEach(c => c.classList.remove('checked'));
+  // También limpiar inv-items de combustible (compatibilidad)
+  document.querySelectorAll('input[name="n-combustible"]').forEach(r => {
+    r.closest('.inv-item')?.classList.remove('checked');
+  });
+  el.classList.add('checked');
   const hidden = document.getElementById('n-combustible-val');
   if (hidden) hidden.value = valor;
 }
