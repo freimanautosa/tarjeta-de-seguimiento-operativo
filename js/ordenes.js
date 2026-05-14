@@ -20,6 +20,7 @@ function setFiltroPulmon(btn) {
 }
 
 async function cargarOrdenes() {
+  if (filtroEstado === null) return; // pestaña pulmón activa, no aplica
   const lista = document.getElementById('lista-ordenes');
   if (!lista) return;
   lista.innerHTML = '<div class="loading-state">Cargando órdenes...</div>';
@@ -686,12 +687,13 @@ function resetNuevaOrden() {
   });
   fotosIngresoPendientes = [];
   renderPreviewIngreso();
-  document.querySelectorAll('.combustible-opcion').forEach(l => l.classList.remove('selected'));
   // Limpiar combustible
-  document.querySelectorAll('.comb-chip').forEach(c => c.classList.remove('checked'));
-  document.querySelectorAll('input[name="n-combustible"]').forEach(r => {
-    r.closest('.inv-item')?.classList.remove('checked');
-  });
+  const _ci = document.getElementById('inv-combustible-item');
+  const _cl = document.getElementById('inv-combustible-label');
+  const _ch = document.getElementById('n-combustible-val');
+  if (_ci) _ci.classList.remove('checked');
+  if (_cl) _cl.textContent = '⛽ Combustible';
+  if (_ch) _ch.value = '';
   document.querySelectorAll('.tipo-cliente-btn').forEach(b => b.classList.remove('selected'));
   const hiddenTipo = document.getElementById('n-tipo-cliente');
   if (hiddenTipo) hiddenTipo.value = '';
@@ -1435,6 +1437,18 @@ async function guardarAprobacion() {
 }
 
 // ============================================================
+// CAPACIDAD (helper)
+// ============================================================
+function _refrescarCapacidad() {
+  Promise.all([
+    api('/ordenes?estado=eq.Activa&pulmon=eq.false&select=id').catch(() => []),
+    api('/ordenes?pulmon=eq.true&pulmon_tipo=eq.interno&select=id').catch(() => [])
+  ]).then(([activas, pulmonInterno]) => {
+    actualizarCapacidad((activas||[]).length, (pulmonInterno||[]).length);
+  });
+}
+
+// ============================================================
 // PULMÓN
 // ============================================================
 async function togglePulmon() {
@@ -1457,6 +1471,7 @@ async function togglePulmon() {
       }
       if (btn) btn.textContent = 'Activar Pulmón';
       toast('Pulmón desactivado ✓');
+      _refrescarCapacidad();
     } catch(e) { toast('Error: ' + e.message, 'err'); }
   } else {
     // Si no está en pulmón, mostrar diálogo de ubicación
@@ -1474,19 +1489,17 @@ async function showPulmonLocationDialog() {
 
   const dialog = document.createElement('div');
   dialog.style.cssText = `
-    background: var(--bg-card); border-radius: 12px; padding: 28px;
-    max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    font-family: inherit; z-index: 9999; border: 1px solid rgba(255,255,255,0.1);
+    background: white; border-radius: 12px; padding: 28px;
+    max-width: 420px; width: calc(100% - 32px); box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    font-family: inherit; z-index: 9999;
   `;
 
   dialog.innerHTML = `
-    <div style="margin-bottom: 6px; font-size: 18px; font-weight: 700; color: var(--texto)">
-      ¿Dónde se ubicará?
+    <div style="margin-bottom: 6px; font-size: 17px; font-weight: 700; color: #111">
+      ¿Dónde se ubicará el vehículo?
     </div>
-    <div style="margin-bottom: 24px; font-size: 13px; color: var(--gris-mid); line-height: 1.5">
-      <div>Selecciona si está dentro o fuera del taller</div>
-      <div style="margin-top: 8px; opacity: 0.7; font-size: 12px">• Interno: ocupa espacio en capacidad</div>
-      <div style="opacity: 0.7; font-size: 12px">• Externo: sin afectar capacidad</div>
+    <div style="margin-bottom: 24px; font-size: 13px; color: #6b7280; line-height: 1.5">
+      Selecciona si el carro permanece en el taller o sale mientras se esperan los repuestos.
     </div>
     <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px">
       <button class="btn btn-primary" style="padding: 12px 16px; font-size: 14px; font-weight: 600" onclick="activarPulmonCon('interno')">
@@ -1515,15 +1528,12 @@ async function showPulmonLocationDialog() {
 async function activarPulmonCon(ubicacion) {
   cerrarPulmonDialog();
   const ahora = new Date().toISOString();
-  const patch = {
-    pulmon: true,
-    pulmon_desde: ahora
-  };
+  const patch = { pulmon: true, pulmon_desde: ahora, pulmon_tipo: ubicacion };
   try {
     await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', patch);
     ordenActual.pulmon = true;
     ordenActual.pulmon_desde = ahora;
-    localStorage.setItem(`pulmon_${ordenActual.id}_ubicacion`, ubicacion);
+    ordenActual.pulmon_tipo = ubicacion;
 
     const card = document.getElementById('pulmon-card');
     const badge = document.getElementById('d-pulmon-badge');
@@ -1535,7 +1545,7 @@ async function activarPulmonCon(ubicacion) {
     }
     if (btn) btn.textContent = 'Sacar de pulmón';
     toast(`Orden en pulmón (${ubicacion}) ✓`);
-
+    _refrescarCapacidad();
     cargarDashboard();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
@@ -1669,11 +1679,7 @@ function montarJefe() {
   });
 
   // Cargar capacidad al inicio
-  api('/ordenes?estado=eq.Activa&select=id,pulmon').then(data => {
-    const activas = (data || []).filter(o => !o.pulmon).length;
-    const enPulmon = (data || []).filter(o => o.pulmon).length;
-    actualizarCapacidad(activas, enPulmon);
-  }).catch(() => {});
+  _refrescarCapacidad();
 
   // Activar Realtime
   iniciarRealtime();
@@ -2526,27 +2532,34 @@ async function guardarEdicionOrden() {
     if (btn) { btn.disabled = false; btn.textContent = 'Guardar cambios'; }
   }
 }
-// ── Combustible ───────────────────────────────────────────
-function setCombustible(label, valor) {
-  document.querySelectorAll('.combustible-opcion').forEach(l => l.classList.remove('selected'));
-  // Limpiar combustible
-  document.querySelectorAll('.comb-chip').forEach(c => c.classList.remove('checked'));
-  document.querySelectorAll('input[name="n-combustible"]').forEach(r => {
-    r.closest('.inv-item')?.classList.remove('checked');
-  });
-  if (label) label.classList.add('selected');
-  const hidden = document.getElementById('n-combustible-val');
-  if (hidden) hidden.value = valor;
+// ── Combustible (dropdown en inventario) ──────────────────
+const _COMB_LABELS = { vacio:'⬜ Vacío', '1/4':'🟥 1/4', '1/2':'🟨 1/2', '3/4':'🟩 3/4', lleno:'🟦 Lleno' };
+
+function abrirDropdownCombustible(e, el) {
+  e.stopPropagation();
+  const dd = document.getElementById('comb-dropdown');
+  if (!dd) return;
+  const rect  = el.getBoundingClientRect();
+  const scrollY = window.scrollY || document.documentElement.scrollTop;
+  dd.style.top      = (rect.bottom + scrollY + 4) + 'px';
+  dd.style.left     = rect.left + 'px';
+  dd.style.minWidth = rect.width + 'px';
+  dd.classList.toggle('open');
 }
 
-function toggleCombustible(el, valor) {
-  // Desmarcar todos los chips de combustible
-  document.querySelectorAll('.comb-chip').forEach(c => c.classList.remove('checked'));
-  // También limpiar inv-items de combustible (compatibilidad)
-  document.querySelectorAll('input[name="n-combustible"]').forEach(r => {
-    r.closest('.inv-item')?.classList.remove('checked');
-  });
-  el.classList.add('checked');
+function seleccionarCombustible(valor) {
+  const item   = document.getElementById('inv-combustible-item');
+  const label  = document.getElementById('inv-combustible-label');
   const hidden = document.getElementById('n-combustible-val');
   if (hidden) hidden.value = valor;
+  if (label)  label.textContent = _COMB_LABELS[valor] || '⛽ Combustible';
+  if (item)   item.classList.add('checked');
+  document.getElementById('comb-dropdown')?.classList.remove('open');
 }
+
+document.addEventListener('click', () => {
+  document.getElementById('comb-dropdown')?.classList.remove('open');
+});
+
+function toggleCombustible(el, valor) { seleccionarCombustible(valor); }
+function setCombustible(_label, valor) { seleccionarCombustible(valor); }

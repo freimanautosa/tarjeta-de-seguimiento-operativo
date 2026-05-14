@@ -2,37 +2,33 @@
 // DASHBOARD - ESTADO DEL TALLER
 // ═══════════════════════════════════════════════════════════
 
-function actualizarCapacidad(activas, enPulmon = 0) {
-  const cap   = document.getElementById('sidebar-capacidad');
-  const fillActivas = document.getElementById('cap-fill-activas');
-  const fillPulmon = document.getElementById('cap-fill-pulmon');
-  const pctEl = document.getElementById('cap-pct');
-  const subEl = document.getElementById('cap-sub');
+function actualizarCapacidad(activasNormales, pulmonInterno = 0) {
+  const cap         = document.getElementById('sidebar-capacidad');
+  const fillAm      = document.getElementById('cap-fill-activas');
+  const fillNar     = document.getElementById('cap-fill-pulmon');
+  const pctEl       = document.getElementById('cap-pct');
+  const subEl       = document.getElementById('cap-sub');
+  const pulmonSubEl = document.getElementById('cap-pulmon-sub');
   if (!cap) return;
   cap.style.display = 'block';
 
-  const circ = 2 * Math.PI * 30;
+  const circ    = 2 * Math.PI * 30;
+  const enTaller = activasNormales + pulmonInterno;
+  const pct     = Math.min(Math.round((enTaller / CAPACIDAD_TALLER) * 100), 100);
+  const dashAm  = Math.min(activasNormales / CAPACIDAD_TALLER, 1) * circ;
+  const dashNar = Math.min(pulmonInterno   / CAPACIDAD_TALLER, 1) * circ;
 
-  // Amarillo: solo activas
-  const dashActivas = (activas / CAPACIDAD_TALLER) * circ;
-  const pctActivas = Math.min(Math.round((activas / CAPACIDAD_TALLER) * 100), 100);
-  if (fillActivas) {
-    fillActivas.style.strokeDasharray = `${dashActivas} ${circ}`;
-    fillActivas.style.stroke = '#EAB308';
+  // Amarillo (abajo): activas normales desde 0
+  if (fillAm)  fillAm.style.strokeDasharray  = `${dashAm} ${circ}`;
+  // Naranja (encima): pulmón interno desde 0, tapa el inicio del amarillo
+  if (fillNar) fillNar.style.strokeDasharray = pulmonInterno > 0 ? `${dashNar} ${circ}` : `0 ${circ}`;
+
+  if (pctEl) pctEl.textContent = pct + '%';
+  if (subEl) subEl.textContent = `${activasNormales} de ${CAPACIDAD_TALLER} cupos`;
+  if (pulmonSubEl) {
+    pulmonSubEl.style.display = pulmonInterno > 0 ? 'block' : 'none';
+    if (pulmonInterno > 0) pulmonSubEl.textContent = `+ ${pulmonInterno} en pulmón interno`;
   }
-
-  // Naranja: pulmón que ocupa espacio (internos)
-  const dashPulmon = (enPulmon / CAPACIDAD_TALLER) * circ;
-  if (fillPulmon) {
-    fillPulmon.style.strokeDasharray = `${dashPulmon} ${circ}`;
-    fillPulmon.style.stroke = '#D97706';
-    fillPulmon.style.display = enPulmon > 0 ? 'block' : 'none';
-  }
-
-  const total = activas + enPulmon;
-  const pctTotal = Math.min(Math.round((total / CAPACIDAD_TALLER) * 100), 100);
-  if (pctEl) pctEl.textContent = pctTotal + '%';
-  if (subEl) subEl.textContent = `${activas} de ${CAPACIDAD_TALLER} cupos${enPulmon ? ` · ${enPulmon} en pulmón` : ''}`;
 }
 
 // ── Helpers ──────────────────────────────────────────────
@@ -56,18 +52,19 @@ async function cargarDashboard() {
 
   try {
     const [ordenes, todasEtapas] = await Promise.all([
-      api(`/ordenes?select=id,placa,marca,linea,modelo,propietario,estado,pulmon,creado_en,fecha_entrega_1,fecha_entrega_2`).catch(() => []) || [],
+      api(`/ordenes?select=id,placa,marca,linea,modelo,propietario,estado,pulmon,pulmon_tipo,creado_en,fecha_entrega_1,fecha_entrega_2`).catch(() => []) || [],
       api(`/etapas?select=id,orden_id,servicio,etapa,etapa_key,inicio,fin,mecanico_id,tecnico`).catch(() => []) || []
     ]);
 
     // ── Métricas base ─────────────────────────────────────
-    const activas    = ordenes.filter(o => o.estado === 'Activa' && !o.pulmon).length;
-    const pulmon     = ordenes.filter(o => o.pulmon).length;
+    const activas       = ordenes.filter(o => o.estado === 'Activa' && !o.pulmon).length;
+    const pulmonInterno = ordenes.filter(o => o.pulmon && o.pulmon_tipo === 'interno').length;
+    const pulmon        = ordenes.filter(o => o.pulmon).length;
     const entregadas = ordenes.filter(o => o.estado === 'Entregada').length;
     const total      = ordenes.length;
 
-    // Pulmón NO cuenta en la capacidad operativa del taller
-    actualizarCapacidad(activas, pulmon);
+    // Pulmón externo no cuenta; pulmón interno sí ocupa cupo
+    actualizarCapacidad(activas, pulmonInterno);
 
     const etapasActivas = todasEtapas.filter(e => e.inicio && !e.fin);
 
