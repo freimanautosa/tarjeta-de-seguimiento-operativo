@@ -734,8 +734,8 @@ async function autocompletarPlaca(val) {
   _placaDebounce = setTimeout(async () => {
     try {
       const [deVehiculos, deOrdenes] = await Promise.all([
-        api(`/vehiculos?placa=ilike.${val}%&select=placa,marca,linea,modelo&limit=6`).catch(()=>[]) || [],
-        api(`/ordenes?placa=ilike.${val}%&select=placa,marca,linea,modelo,propietario,telefono,color&order=creado_en.desc&limit=6`).catch(()=>[]) || []
+        api(`/vehiculos?placa=ilike.${val}*&select=placa,marca,linea,modelo&limit=6`).catch(()=>[]) || [],
+        api(`/ordenes?placa=ilike.${val}*&select=placa,marca,linea,modelo,propietario,telefono,color&order=creado_en.desc&limit=6`).catch(()=>[]) || []
       ]);
 
       // Deduplicar por placa, priorizar vehículos
