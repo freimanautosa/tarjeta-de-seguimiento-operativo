@@ -1,12 +1,8 @@
 // ═══════════════════════════════════════════════════════════
-// DASHBOARD DE METAS — Tab "Metas"
-// El contador sube un CSV mensual con la meta.
-// Formato esperado del CSV:
-//   mes,ano,meta_ordenes,meta_ingresos,nota
-//   Mayo,2026,45,85000000,Meta conservadora Q2
+// DASHBOARD DE METAS
 // ═══════════════════════════════════════════════════════════
 
-let _metasData = []; // Cache en memoria de la sesión
+let _metasData = [];
 
 async function cargarDashboardMetas() {
   const cont = document.getElementById('dash-metas-contenido');
@@ -14,35 +10,33 @@ async function cargarDashboardMetas() {
   cont.innerHTML = '<div class="loading-state">Cargando metas...</div>';
 
   try {
-    // Leer metas guardadas en Supabase (tabla: metas_taller)
     const metas = await api('/metas_taller?order=ano.desc,mes_num.desc&limit=24').catch(()=>[]) || [];
-    _metasData = metas;
+    _metasData  = metas;
 
-    // Leer órdenes entregadas del mes actual para comparar
-    const ahora = new Date();
-    const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString();
+    const ahora      = new Date();
+    const inicioMes  = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString();
+    const mesesNombres = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                          'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const mesActualNombre = mesesNombres[ahora.getMonth()];
+    const anioActual      = ahora.getFullYear();
+    const mesNumActual    = ahora.getMonth() + 1;
+
     const [ordenesEnt, etapasMes] = await Promise.all([
       api(`/ordenes?estado=eq.Entregada&creado_en=gte.${inicioMes}&select=id,placa,creado_en`).catch(()=>[]) || [],
       api(`/etapas?fin=gte.${inicioMes}&select=orden_id,valor&fin=not.is.null`).catch(()=>[]) || []
     ]);
 
-    const ingresosMes = etapasMes.reduce((s,e)=>s+(e.valor||0), 0);
+    const ingresosMes = etapasMes.reduce((s,e) => s+(e.valor||0), 0);
     const ordenesMes  = ordenesEnt.length;
 
-    // Meta del mes actual
-    const mesActual = ahora.toLocaleDateString('es-CO',{month:'long'});
-    const metaMes = metas.find(m =>
-      m.ano === ahora.getFullYear() &&
-      (m.mes_num === ahora.getMonth()+1 || m.mes?.toLowerCase() === mesActual.toLowerCase())
-    );
+    const metaMes = metas.find(m => m.ano === anioActual && m.mes_num === mesNumActual);
 
-    const fmt = n => n!=null ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : '—';
-    const pct = (real, meta) => meta > 0 ? Math.min(Math.round((real/meta)*100), 999) : 0;
+    const fmt      = n => n != null ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : '—';
+    const pct      = (real, meta) => meta > 0 ? Math.min(Math.round((real/meta)*100), 999) : 0;
+    const colorBar = p => p >= 100 ? '#059669' : p >= 70 ? '#D97706' : '#DC2626';
 
-    // KPIs mes actual
     const pctOrd = metaMes ? pct(ordenesMes, metaMes.meta_ordenes) : null;
     const pctIng = metaMes ? pct(ingresosMes, metaMes.meta_ingresos) : null;
-    const colorBar = p => p >= 100 ? '#059669' : p >= 70 ? '#D97706' : '#DC2626';
 
     const kpisHtml = metaMes ? `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
@@ -82,10 +76,9 @@ async function cargarDashboardMetas() {
       </div>
       ${metaMes.nota ? `<div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400E;margin-bottom:20px"><strong>Nota del contador:</strong> ${metaMes.nota}</div>` : ''}
     ` : `<div style="background:var(--gris-bg);border:1px dashed var(--gris-borde);border-radius:8px;padding:20px;text-align:center;color:var(--gris-mid);margin-bottom:20px;font-size:13px">
-      No hay meta cargada para este mes. Sube el CSV del contador abajo.
+      No hay meta cargada para este mes. Descarga la plantilla, el contador la completa y la sube aquí.
     </div>`;
 
-    // Historial de metas
     const historialHtml = metas.length ? `
       <div class="dash-panel" style="margin-bottom:20px">
         <div class="dash-panel-titulo">Historial de metas</div>
@@ -111,49 +104,86 @@ async function cargarDashboardMetas() {
       </div>
     ` : '';
 
-    // Uploader CSV
-    const uploaderHtml = `
-      <div class="dash-panel">
-        <div class="dash-panel-titulo">Cargar meta mensual (CSV del contador)</div>
-        <div style="margin-top:12px;font-size:12px;color:var(--gris-mid);margin-bottom:10px">
-          Formato esperado del CSV: <code style="background:var(--gris-bg);padding:2px 6px;border-radius:4px">mes,ano,meta_ordenes,meta_ingresos,nota</code>
-        </div>
-        <div class="upload-zone" onclick="document.getElementById('csv-meta-input').click()" style="padding:20px">
-          <input type="file" id="csv-meta-input" accept=".csv" style="display:none" onchange="procesarCSVMeta(this)">
-          <svg width="24" height="24" fill="none" stroke="var(--gris-mid)" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <p style="margin:0;font-size:13px;color:var(--gris-mid)">Clic para subir CSV de metas</p>
-        </div>
-      </div>`;
+    // Mes siguiente para la plantilla
+    const mesSig       = new Date(ahora.getFullYear(), ahora.getMonth()+1, 1);
+    const mesSigNombre = mesesNombres[mesSig.getMonth()];
+    const mesSigNum    = mesSig.getMonth()+1;
+    const mesSigAnio   = mesSig.getFullYear();
 
     cont.innerHTML = `
-      <div style="margin-bottom:16px">
-        <div style="font-size:18px;font-weight:700;color:var(--texto);margin-bottom:4px">
-          ${mesActual.charAt(0).toUpperCase()+mesActual.slice(1)} ${ahora.getFullYear()}
+      <div style="margin-bottom:16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:18px;font-weight:700;color:var(--texto);margin-bottom:4px">${mesActualNombre} ${anioActual}</div>
+          <div style="font-size:13px;color:var(--gris-mid)">Seguimiento de metas según análisis del contador</div>
         </div>
-        <div style="font-size:13px;color:var(--gris-mid)">Seguimiento de metas según análisis del contador</div>
       </div>
       ${kpisHtml}
       ${historialHtml}
-      ${uploaderHtml}
+
+      <div class="dash-panel">
+        <div class="dash-panel-titulo">Cargar meta mensual</div>
+        <div style="font-size:12px;color:var(--gris-mid);margin:10px 0 14px">
+          El contador descarga la plantilla, completa los valores del mes y la sube aquí.
+        </div>
+
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" onclick="descargarPlantillaCSV()" style="display:flex;align-items:center;gap:6px;font-size:13px">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Descargar plantilla (${mesSigNombre} ${mesSigAnio})
+          </button>
+        </div>
+
+        <div style="font-size:11px;background:var(--gris-bg);border:1px solid var(--gris-borde);border-radius:6px;padding:10px 14px;color:var(--gris-mid);margin-bottom:16px;font-family:'DM Mono',monospace">
+          Formato CSV: mes, mes_num, ano, meta_ordenes, meta_ingresos, nota
+        </div>
+
+        <div class="upload-zone" onclick="document.getElementById('csv-meta-input').click()">
+          <input type="file" id="csv-meta-input" accept=".csv" style="display:none" onchange="procesarCSVMeta(this)">
+          <svg width="22" height="22" fill="none" stroke="var(--gris-mid)" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p style="margin:0;font-size:13px;color:var(--gris-mid)">Clic para subir CSV de metas</p>
+        </div>
+      </div>
     `;
   } catch(e) {
     cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
   }
 }
 
+function descargarPlantillaCSV() {
+  const ahora    = new Date();
+  const mesSig   = new Date(ahora.getFullYear(), ahora.getMonth()+1, 1);
+  const mesesNombres = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                        'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const mesNombre = mesesNombres[mesSig.getMonth()];
+  const mesNum    = mesSig.getMonth() + 1;
+  const anio      = mesSig.getFullYear();
+
+  const cabecera = 'mes,mes_num,ano,meta_ordenes,meta_ingresos,nota';
+  const fila     = `${mesNombre},${mesNum},${anio},0,0,Nota del contador aquí`;
+  const blob     = new Blob([cabecera+'\n'+fila], { type:'text/csv;charset=utf-8;' });
+  const url      = URL.createObjectURL(blob);
+  const a        = document.createElement('a');
+  a.href         = url;
+  a.download     = `meta_${mesNombre.toLowerCase()}_${anio}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Plantilla descargada ✓');
+}
+
 async function procesarCSVMeta(input) {
   const file = input.files[0];
   if (!file) return;
-  const text = await file.text();
-  const lines = text.trim().split('\n').filter(l=>l.trim());
+  const text    = await file.text();
+  const lines   = text.trim().split('\n').filter(l=>l.trim());
   const headers = lines[0].split(',').map(h=>h.trim().toLowerCase());
-
-  const rows = lines.slice(1).map(line => {
+  const rows    = lines.slice(1).map(line => {
     const vals = line.split(',').map(v=>v.trim());
-    const obj = {};
-    headers.forEach((h,i)=>obj[h]=vals[i]||'');
+    const obj  = {};
+    headers.forEach((h,i) => obj[h] = vals[i]||'');
     return obj;
-  }).filter(r=>r.mes&&r.ano);
+  }).filter(r => r.mes && r.ano);
 
   if (!rows.length) { toast('CSV vacío o formato incorrecto','err'); return; }
 
@@ -164,14 +194,14 @@ async function procesarCSVMeta(input) {
 
   try {
     for (const r of rows) {
-      const mesNum = mesesMap[r.mes?.toLowerCase()] || parseInt(r.mes_num||r.mes) || null;
+      const mesNum = parseInt(r.mes_num) || mesesMap[r.mes?.toLowerCase()] || null;
       await api('/metas_taller', 'POST', {
-        mes:       r.mes,
-        mes_num:   mesNum,
-        ano:       parseInt(r.ano),
-        meta_ordenes:  parseInt(r.meta_ordenes)||0,
-        meta_ingresos: parseFloat(r.meta_ingresos)||0,
-        nota:      r.nota || null
+        mes:           r.mes,
+        mes_num:       mesNum,
+        ano:           parseInt(r.ano),
+        meta_ordenes:  parseInt(r.meta_ordenes)  || 0,
+        meta_ingresos: parseFloat(r.meta_ingresos) || 0,
+        nota:          r.nota || null
       }, { Prefer:'resolution=merge-duplicates,return=minimal' });
     }
     toast(`${rows.length} meta(s) cargada(s) ✓`);
