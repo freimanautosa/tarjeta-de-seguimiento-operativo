@@ -62,9 +62,12 @@
         <div class="capacidad-donut-wrap">
           <svg width="80" height="80" viewBox="0 0 80 80">
             <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="8"/>
-            <circle id="cap-fill" cx="40" cy="40" r="30" fill="none" stroke="#EAB308" stroke-width="8"
+            <circle id="cap-fill-activas" cx="40" cy="40" r="30" fill="none" stroke="#EAB308" stroke-width="8"
               stroke-linecap="round" stroke-dasharray="0 188.5"
               transform="rotate(-90 40 40)" style="transition:stroke-dasharray 0.5s,stroke 0.5s"/>
+            <circle id="cap-fill-pulmon" cx="40" cy="40" r="30" fill="none" stroke="#D97706" stroke-width="8"
+              stroke-linecap="round" stroke-dasharray="0 188.5"
+              transform="rotate(-90 40 40)" style="transition:stroke-dasharray 0.5s,stroke 0.5s;display:none"/>
             <text id="cap-pct" x="40" y="45" text-anchor="middle" font-size="14" font-weight="700" fill="white">0%</text>
           </svg>
           <div class="capacidad-sub" id="cap-sub">0 de 34 cupos</div>

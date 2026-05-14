@@ -392,7 +392,7 @@ async function abrirOrden(id) {
               <div>${invHtml}</div>
             </div>
           </div>
-          ${orden.tipo_cliente === 'aseguradora' ? `<div id="pulmon-card" class="pulmon-card ${orden.pulmon?'':'inactivo'}">` : `<div id="pulmon-card" style="display:none">`}
+          ${`<div id="pulmon-card" class="pulmon-card ${orden.pulmon?'':'inactivo'}">`}
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
               <div style="font-size:12px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;color:${orden.pulmon?'var(--amarillo)':'var(--gris-mid)'}">Pulmón</div>
               <button class="btn btn-sm ${orden.pulmon?'btn-ghost':'btn-ghost'}" id="btn-pulmon" onclick="togglePulmon()">
@@ -1439,24 +1439,17 @@ async function guardarAprobacion() {
 // ============================================================
 async function togglePulmon() {
   const enPulmon = ordenActual.pulmon;
-  const ahora = new Date().toISOString();
-  const patch = enPulmon ? { pulmon: false, pulmon_desde: null } : { pulmon: true, pulmon_desde: ahora };
-  try {
-    await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', patch);
-    ordenActual.pulmon = patch.pulmon;
-    ordenActual.pulmon_desde = patch.pulmon_desde;
-    const card = document.getElementById('pulmon-card');
-    const badge = document.getElementById('d-pulmon-badge');
-    const btn = document.getElementById('btn-pulmon');
-    if (patch.pulmon) {
-      if (card) card.classList.remove('inactivo');
-      if (badge) {
-        badge.textContent = `En pulmón desde ${formatFecha(ahora)}`;
-        badge.style.color = 'var(--amarillo)';
-      }
-      if (btn) btn.textContent = 'Sacar de pulmón';
-      toast('Orden en pulmón ✓');
-    } else {
+
+  // Si está en pulmón, solo desactivar
+  if (enPulmon) {
+    const patch = { pulmon: false, pulmon_desde: null };
+    try {
+      await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', patch);
+      ordenActual.pulmon = false;
+      ordenActual.pulmon_desde = null;
+      const card = document.getElementById('pulmon-card');
+      const badge = document.getElementById('d-pulmon-badge');
+      const btn = document.getElementById('btn-pulmon');
       if (card) card.classList.add('inactivo');
       if (badge) {
         badge.textContent = 'Sin pulmón activo';
@@ -1464,8 +1457,95 @@ async function togglePulmon() {
       }
       if (btn) btn.textContent = 'Activar Pulmón';
       toast('Pulmón desactivado ✓');
+    } catch(e) { toast('Error: ' + e.message, 'err'); }
+  } else {
+    // Si no está en pulmón, mostrar diálogo de ubicación
+    showPulmonLocationDialog();
+  }
+}
+
+async function showPulmonLocationDialog() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); z-index: 9998;
+    display: flex; align-items: center; justify-content: center;
+  `;
+
+  const dialog = document.createElement('div');
+  dialog.style.cssText = `
+    background: var(--bg-card); border-radius: 12px; padding: 28px;
+    max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    font-family: inherit; z-index: 9999; border: 1px solid rgba(255,255,255,0.1);
+  `;
+
+  dialog.innerHTML = `
+    <div style="margin-bottom: 6px; font-size: 18px; font-weight: 700; color: var(--texto)">
+      ¿Dónde se ubicará?
+    </div>
+    <div style="margin-bottom: 24px; font-size: 13px; color: var(--gris-mid); line-height: 1.5">
+      <div>Selecciona si está dentro o fuera del taller</div>
+      <div style="margin-top: 8px; opacity: 0.7; font-size: 12px">• Interno: ocupa espacio en capacidad</div>
+      <div style="opacity: 0.7; font-size: 12px">• Externo: sin afectar capacidad</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px">
+      <button class="btn btn-primary" style="padding: 12px 16px; font-size: 14px; font-weight: 600" onclick="activarPulmonCon('interno')">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display: inline; margin-right: 8px; vertical-align: -4px">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        Interno (en el taller)
+      </button>
+      <button class="btn btn-ghost" style="padding: 12px 16px; font-size: 14px; font-weight: 600" onclick="activarPulmonCon('externo')">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display: inline; margin-right: 8px; vertical-align: -4px">
+          <path d="M5 12a7 7 0 1014 0 7 7 0 01-14 0z"/>
+        </svg>
+        Externo (fuera del taller)
+      </button>
+    </div>
+    <button class="btn btn-ghost btn-sm" style="width: 100%; padding: 10px 16px; color: var(--gris-mid)" onclick="cerrarPulmonDialog()">
+      Cancelar
+    </button>
+  `;
+
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+  window._pulmonOverlay = overlay;
+}
+
+async function activarPulmonCon(ubicacion) {
+  cerrarPulmonDialog();
+  const ahora = new Date().toISOString();
+  const patch = {
+    pulmon: true,
+    pulmon_desde: ahora
+  };
+  try {
+    await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', patch);
+    ordenActual.pulmon = true;
+    ordenActual.pulmon_desde = ahora;
+    localStorage.setItem(`pulmon_${ordenActual.id}_ubicacion`, ubicacion);
+
+    const card = document.getElementById('pulmon-card');
+    const badge = document.getElementById('d-pulmon-badge');
+    const btn = document.getElementById('btn-pulmon');
+    if (card) card.classList.remove('inactivo');
+    if (badge) {
+      badge.textContent = `En pulmón desde ${formatFecha(ahora)}`;
+      badge.style.color = 'var(--amarillo)';
     }
+    if (btn) btn.textContent = 'Sacar de pulmón';
+    toast(`Orden en pulmón (${ubicacion}) ✓`);
+
+    cargarDashboard();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+function cerrarPulmonDialog() {
+  if (window._pulmonOverlay) {
+    window._pulmonOverlay.remove();
+    window._pulmonOverlay = null;
+    window._pulmonDialogAbierto = false;
+  }
 }
 
 // ============================================================
@@ -1587,10 +1667,12 @@ function montarJefe() {
   cargarMecanicos().finally(() => {
     navJefe('ordenes');
   });
-  
+
   // Cargar capacidad al inicio
-  api('/ordenes?estado=eq.Activa&pulmon=eq.false&select=id,pulmon').then(data => {
-    actualizarCapacidad((data || []).length);
+  api('/ordenes?estado=eq.Activa&select=id,pulmon').then(data => {
+    const activas = (data || []).filter(o => !o.pulmon).length;
+    const enPulmon = (data || []).filter(o => o.pulmon).length;
+    actualizarCapacidad(activas, enPulmon);
   }).catch(() => {});
 
   // Activar Realtime
