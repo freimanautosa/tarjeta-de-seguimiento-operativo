@@ -62,12 +62,18 @@
         <div class="capacidad-donut-wrap">
           <svg width="80" height="80" viewBox="0 0 80 80">
             <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="8"/>
-            <circle id="cap-fill" cx="40" cy="40" r="30" fill="none" stroke="#EAB308" stroke-width="8"
+            <!-- amarillo (abajo): activas normales -->
+            <circle id="cap-fill-activas" cx="40" cy="40" r="30" fill="none" stroke="#EAB308" stroke-width="8"
               stroke-linecap="round" stroke-dasharray="0 188.5"
-              transform="rotate(-90 40 40)" style="transition:stroke-dasharray 0.5s,stroke 0.5s"/>
+              transform="rotate(-90 40 40)" style="transition:stroke-dasharray 0.5s"/>
+            <!-- naranja (encima): pulmón interno, tapa el inicio del amarillo -->
+            <circle id="cap-fill-pulmon" cx="40" cy="40" r="30" fill="none" stroke="#F97316" stroke-width="8"
+              stroke-linecap="round" stroke-dasharray="0 188.5"
+              transform="rotate(-90 40 40)" style="transition:stroke-dasharray 0.5s"/>
             <text id="cap-pct" x="40" y="45" text-anchor="middle" font-size="14" font-weight="700" fill="white">0%</text>
           </svg>
           <div class="capacidad-sub" id="cap-sub">0 de 34 cupos</div>
+          <div id="cap-pulmon-sub" style="font-size:11px;color:#F97316;margin-top:2px;display:none"></div>
         </div>
       </div>
       <button class="btn-logout" onclick="logout()">
@@ -294,18 +300,19 @@
               <div class="inv-item" onclick="toggleInv(this,'tapetes')"><input type="checkbox" value="tapetes"> Tapetes</div>
               <div class="inv-item" onclick="toggleInv(this,'herramientas')"><input type="checkbox" value="herramientas"> Herramientas</div>
               <div class="inv-item" onclick="toggleInv(this,'extintor')"><input type="checkbox" value="extintor"> Extintor</div>
-            </div>
-
-            <div style="margin-top:12px;border-top:1px solid var(--gris-borde);padding-top:10px">
-              <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gris-mid);margin-bottom:8px">Nivel de combustible</div>
-              <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <div class="comb-chip" onclick="toggleCombustible(this,'vacio')"><input type="radio" name="n-combustible" value="vacio" style="display:none">⬜ Vacío</div>
-                <div class="comb-chip" onclick="toggleCombustible(this,'1/4')"><input type="radio" name="n-combustible" value="1/4" style="display:none">🟥 1/4</div>
-                <div class="comb-chip" onclick="toggleCombustible(this,'1/2')"><input type="radio" name="n-combustible" value="1/2" style="display:none">🟨 1/2</div>
-                <div class="comb-chip" onclick="toggleCombustible(this,'3/4')"><input type="radio" name="n-combustible" value="3/4" style="display:none">🟩 3/4</div>
-                <div class="comb-chip" onclick="toggleCombustible(this,'lleno')"><input type="radio" name="n-combustible" value="lleno" style="display:none">🟦 Lleno</div>
+              <div class="inv-item" id="inv-combustible-item" onclick="abrirDropdownCombustible(event,this)">
+                <input type="checkbox" style="display:none">
+                <span id="inv-combustible-label">⛽ Combustible</span>
+                <svg style="margin-left:auto;flex-shrink:0;opacity:.5" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
               </div>
-              <input type="hidden" id="n-combustible-val">
+            </div>
+            <input type="hidden" id="n-combustible-val">
+            <div id="comb-dropdown" class="comb-dropdown">
+              <div class="comb-option" onclick="seleccionarCombustible('vacio')">⬜ Vacío</div>
+              <div class="comb-option" onclick="seleccionarCombustible('1/4')">🟥 1/4</div>
+              <div class="comb-option" onclick="seleccionarCombustible('1/2')">🟨 1/2</div>
+              <div class="comb-option" onclick="seleccionarCombustible('3/4')">🟩 3/4</div>
+              <div class="comb-option" onclick="seleccionarCombustible('lleno')">🟦 Lleno</div>
             </div>
 
             <div class="field" style="margin-top:12px"><label>Observaciones de inventario</label>
@@ -589,6 +596,41 @@
       </div>
     </div>
   </div>
+
+<!-- MODAL: TIPO DE PULMÓN -->
+<div class="modal-overlay" id="modal-pulmon-tipo">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div>
+        <h2 style="margin-bottom:2px">Activar Pulmón</h2>
+        <p style="font-size:12px;color:var(--gris-mid);margin:0;font-weight:400">¿El vehículo está físicamente en el taller?</p>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="cerrarModalPulmonTipo()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="padding:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <button class="pulmon-tipo-card" onclick="activarPulmonCon('interno')">
+          <div class="pulmon-tipo-icon" style="background:rgba(234,179,8,0.1);color:#b45309">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="pulmon-tipo-titulo">Interno</div>
+          <div class="pulmon-tipo-desc">El carro está en el taller y ocupa un cupo de capacidad</div>
+          <div class="pulmon-tipo-tag" style="background:rgba(234,179,8,0.12);color:#92400e">Ocupa cupo</div>
+        </button>
+        <button class="pulmon-tipo-card" onclick="activarPulmonCon('externo')">
+          <div class="pulmon-tipo-icon" style="background:rgba(37,99,235,0.08);color:var(--azul-mid)">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          </div>
+          <div class="pulmon-tipo-titulo">Externo</div>
+          <div class="pulmon-tipo-desc">El carro no está en el taller, pero la orden sigue activa</div>
+          <div class="pulmon-tipo-tag" style="background:rgba(37,99,235,0.08);color:var(--azul-mid)">Sin cupo</div>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

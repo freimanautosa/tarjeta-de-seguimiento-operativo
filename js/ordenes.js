@@ -20,6 +20,7 @@ function setFiltroPulmon(btn) {
 }
 
 async function cargarOrdenes() {
+  if (filtroEstado === null) return; // tab pulmón activo, no aplica
   const lista = document.getElementById('lista-ordenes');
   if (!lista) return;
   lista.innerHTML = '<div class="loading-state">Cargando órdenes...</div>';
@@ -392,15 +393,17 @@ async function abrirOrden(id) {
               <div>${invHtml}</div>
             </div>
           </div>
-          ${orden.tipo_cliente === 'aseguradora' ? `<div id="pulmon-card" class="pulmon-card ${orden.pulmon?'':'inactivo'}">` : `<div id="pulmon-card" style="display:none">`}
+          <div id="pulmon-card" class="pulmon-card ${orden.pulmon?'':'inactivo'}">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
               <div style="font-size:12px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;color:${orden.pulmon?'var(--amarillo)':'var(--gris-mid)'}">Pulmón</div>
-              <button class="btn btn-sm ${orden.pulmon?'btn-ghost':'btn-ghost'}" id="btn-pulmon" onclick="togglePulmon()">
+              <button class="btn btn-sm btn-ghost" id="btn-pulmon" onclick="togglePulmon()">
                 ${orden.pulmon ? 'Sacar de pulmón' : 'Activar Pulmón'}
               </button>
             </div>
             <div id="d-pulmon-badge" style="font-size:13px;color:${orden.pulmon?'var(--amarillo)':'var(--gris-mid)'}">
-              ${orden.pulmon ? `En pulmón desde ${formatFecha(orden.pulmon_desde)}` : 'Sin pulmón activo'}
+              ${orden.pulmon
+                ? `En pulmón${orden.pulmon_tipo ? ` · ${orden.pulmon_tipo.charAt(0).toUpperCase()+orden.pulmon_tipo.slice(1)}` : ''} desde ${formatFecha(orden.pulmon_desde)}`
+                : 'Sin pulmón activo'}
             </div>
           </div>
           <div class="sidebar-card">
@@ -1516,36 +1519,72 @@ async function guardarAprobacion() {
 }
 
 // ============================================================
+// CAPACIDAD (helper)
+// ============================================================
+function _refrescarCapacidad() {
+  const ok = [true, true];
+  Promise.all([
+    api('/ordenes?estado=eq.Activa&pulmon=eq.false&select=id').catch(() => { ok[0] = false; return []; }),
+    api('/ordenes?pulmon=eq.true&pulmon_tipo=eq.interno&select=id').catch(() => { ok[1] = false; return []; })
+  ]).then(([activas, pulmonInterno]) => {
+    if (ok[0] && ok[1]) actualizarCapacidad(activas.length, pulmonInterno.length);
+  });
+}
+
+function _setPulmonUI(activo, tipo) {
+  const card  = document.getElementById('pulmon-card');
+  const badge = document.getElementById('d-pulmon-badge');
+  const btn   = document.getElementById('btn-pulmon');
+  if (card)  card.classList.toggle('inactivo', !activo);
+  if (badge) {
+    badge.textContent = activo
+      ? `En pulmón · ${tipo.charAt(0).toUpperCase()+tipo.slice(1)} desde ${formatFecha(ordenActual.pulmon_desde)}`
+      : 'Sin pulmón activo';
+    badge.style.color = activo ? 'var(--amarillo)' : 'var(--gris-mid)';
+  }
+  if (btn) btn.textContent = activo ? 'Sacar de pulmón' : 'Activar Pulmón';
+}
+
+// ============================================================
 // PULMÓN
 // ============================================================
-async function togglePulmon() {
-  const enPulmon = ordenActual.pulmon;
+function togglePulmon() {
+  if (ordenActual.pulmon) {
+    _desactivarPulmon();
+  } else {
+    document.getElementById('modal-pulmon-tipo')?.classList.add('show');
+  }
+}
+
+function cerrarModalPulmonTipo() {
+  document.getElementById('modal-pulmon-tipo')?.classList.remove('show');
+}
+
+async function activarPulmonCon(tipo) {
+  cerrarModalPulmonTipo();
   const ahora = new Date().toISOString();
-  const patch = enPulmon ? { pulmon: false, pulmon_desde: null } : { pulmon: true, pulmon_desde: ahora };
+  const patch = { pulmon: true, pulmon_desde: ahora, pulmon_tipo: tipo };
   try {
     await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', patch);
-    ordenActual.pulmon = patch.pulmon;
-    ordenActual.pulmon_desde = patch.pulmon_desde;
-    const card = document.getElementById('pulmon-card');
-    const badge = document.getElementById('d-pulmon-badge');
-    const btn = document.getElementById('btn-pulmon');
-    if (patch.pulmon) {
-      if (card) card.classList.remove('inactivo');
-      if (badge) {
-        badge.textContent = `En pulmón desde ${formatFecha(ahora)}`;
-        badge.style.color = 'var(--amarillo)';
-      }
-      if (btn) btn.textContent = 'Sacar de pulmón';
-      toast('Orden en pulmón ✓');
-    } else {
-      if (card) card.classList.add('inactivo');
-      if (badge) {
-        badge.textContent = 'Sin pulmón activo';
-        badge.style.color = 'var(--gris-mid)';
-      }
-      if (btn) btn.textContent = 'Activar Pulmón';
-      toast('Pulmón desactivado ✓');
-    }
+    ordenActual.pulmon = true;
+    ordenActual.pulmon_desde = ahora;
+    ordenActual.pulmon_tipo = tipo;
+    _setPulmonUI(true, tipo);
+    toast(`Orden en pulmón ${tipo.charAt(0).toUpperCase()+tipo.slice(1)} ✓`);
+    _refrescarCapacidad();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+async function _desactivarPulmon() {
+  const patch = { pulmon: false, pulmon_desde: null, pulmon_tipo: null };
+  try {
+    await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', patch);
+    ordenActual.pulmon = false;
+    ordenActual.pulmon_desde = null;
+    ordenActual.pulmon_tipo = null;
+    _setPulmonUI(false, '');
+    toast('Pulmón desactivado ✓');
+    _refrescarCapacidad();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
 
@@ -1670,9 +1709,7 @@ function montarJefe() {
   });
   
   // Cargar capacidad al inicio
-  api('/ordenes?estado=eq.Activa&pulmon=eq.false&select=id,pulmon').then(data => {
-    actualizarCapacidad((data || []).length);
-  }).catch(() => {});
+  _refrescarCapacidad();
 
   // Activar Realtime
   iniciarRealtime();
@@ -2524,13 +2561,35 @@ async function guardarEdicionOrden() {
     if (btn) { btn.disabled = false; btn.textContent = 'Guardar cambios'; }
   }
 }
-// ── Combustible (chips compactos) ───────────────────────────
-function toggleCombustible(el, valor) {
-  document.querySelectorAll('.comb-chip').forEach(c => c.classList.remove('checked'));
-  el.classList.add('checked');
+// ── Combustible (dropdown en inventario) ─────────────────────
+const _COMB_LABELS = { vacio:'⬜ Vacío', '1/4':'🟥 1/4', '1/2':'🟨 1/2', '3/4':'🟩 3/4', lleno:'🟦 Lleno' };
+
+function abrirDropdownCombustible(e, el) {
+  e.stopPropagation();
+  const dd = document.getElementById('comb-dropdown');
+  if (!dd) return;
+  const rect = el.getBoundingClientRect();
+  const scrollY = window.scrollY || document.documentElement.scrollTop;
+  dd.style.top      = (rect.bottom + scrollY + 4) + 'px';
+  dd.style.left     = rect.left + 'px';
+  dd.style.minWidth = rect.width + 'px';
+  dd.classList.toggle('open');
+}
+
+function seleccionarCombustible(valor) {
+  const item   = document.getElementById('inv-combustible-item');
+  const label  = document.getElementById('inv-combustible-label');
   const hidden = document.getElementById('n-combustible-val');
   if (hidden) hidden.value = valor;
+  if (label)  label.textContent = _COMB_LABELS[valor] || '⛽ Combustible';
+  if (item)   item.classList.add('checked');
+  document.getElementById('comb-dropdown')?.classList.remove('open');
 }
+
+document.addEventListener('click', () => {
+  const dd = document.getElementById('comb-dropdown');
+  if (dd?.classList.contains('open')) dd.classList.remove('open');
+});
 
 // ── Reset nueva orden ────────────────────────────────────────
 function resetNuevaOrden() {
@@ -2542,7 +2601,10 @@ function resetNuevaOrden() {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.querySelectorAll('.inv-item.checked').forEach(el => el.classList.remove('checked'));
-  document.querySelectorAll('.comb-chip.checked').forEach(el => el.classList.remove('checked'));
+  const _ci = document.getElementById('inv-combustible-item');
+  const _cl = document.getElementById('inv-combustible-label');
+  if (_ci) _ci.classList.remove('checked');
+  if (_cl) _cl.textContent = '⛽ Combustible';
   document.querySelectorAll('.tipo-cliente-btn.selected').forEach(el => el.classList.remove('selected'));
   ['n-wrap-particular','n-wrap-aseg','n-wrap-flot','n-wrap-empresa'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = 'none';
