@@ -92,14 +92,16 @@
     <div class="content">
       <!-- PÁGINAS (contenedores vacíos, JS llena el contenido) -->
       <div class="pagina" id="pag-dashboard">
-  <div style="display:flex;gap:8px;margin-bottom:16px">
-    <button class="filtro-btn active" id="dash-tab-operativo" onclick="switchDashTab('operativo')">Estado del taller</button>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="filtro-btn active" id="dash-tab-mes" onclick="switchDashTab('mes')">📅 Mes actual</button>
+    <button class="filtro-btn" id="dash-tab-operativo" onclick="switchDashTab('operativo')">General</button>
     <button class="filtro-btn" id="dash-tab-financiero" onclick="switchDashTab('financiero')">Financiero</button>
-          <button class="filtro-btn" id="dash-tab-metas" onclick="switchDashTab('metas')">Metas</button>
+    <button class="filtro-btn" id="dash-tab-metas" onclick="switchDashTab('metas')">Metas</button>
   </div>
-  <div id="dash-contenido"></div>
+  <div id="dash-mes-contenido"></div>
+  <div id="dash-contenido" style="display:none"></div>
   <div id="dash-financiero-contenido" style="display:none"></div>
-      <div id="dash-metas-contenido" style="display:none"></div>
+  <div id="dash-metas-contenido" style="display:none"></div>
 </div>
       <div class="pagina" id="pag-ordenes">
         <div class="filtros-bar" id="filtros-bar">
@@ -117,6 +119,7 @@
       </div>
       <div class="pagina" id="pag-nueva">
         <div class="card" style="padding:28px">
+
           <div class="form-section">
             <div class="form-section-titulo">Identificación del vehículo</div>
             <div style="display:flex;gap:8px">
@@ -137,46 +140,174 @@
           </div>
 
           <div class="form-section">
+            <div class="form-section-titulo">Tipo de persona</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+              <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1.5px solid var(--gris-borde);border-radius:7px;cursor:pointer;font-size:13px;font-weight:500">
+                <input type="radio" name="n-tipo-persona" value="natural" checked onchange="toggleTipoPersonaNueva('natural')">
+                Persona natural
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;padding:10px;border:1.5px solid var(--gris-borde);border-radius:7px;cursor:pointer;font-size:13px;font-weight:500">
+                <input type="radio" name="n-tipo-persona" value="empresa" onchange="toggleTipoPersonaNueva('empresa')">
+                Empresa
+              </label>
+            </div>
+          </div>
+
+          <div class="form-section">
             <div class="form-section-titulo">Datos del vehículo</div>
             <div class="grid-2">
               <div class="field"><label>Marca</label><input id="n-marca" placeholder="Toyota"></div>
               <div class="field"><label>Línea</label><input id="n-linea" placeholder="Hilux"></div>
               <div class="field"><label>Modelo (año)</label><input id="n-modelo" placeholder="2021" maxlength="4"></div>
               <div class="field"><label>Color</label><input id="n-color" placeholder="Blanco"></div>
-              <div class="field"><label>Propietario</label><input id="n-propietario" placeholder="Nombre completo"></div>
-              <div class="field"><label>Teléfono</label><input id="n-telefono" placeholder="3134753389" type="tel"></div>
-              <div class="field full"><label>Cédula del cliente</label><input id="n-cedula-cliente" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')"></div>
+              <div class="field full"><label>VIN <span style="font-weight:400;color:var(--gris-mid);font-size:11px">(17 caracteres, opcional)</span></label>
+                <input id="n-vin" placeholder="WBA3A5C50DF256145" maxlength="17" style="font-family:'DM Mono',monospace;letter-spacing:1px" oninput="this.value=this.value.toUpperCase()">
+              </div>
             </div>
           </div>
 
           <div class="form-section">
-            <div class="form-section-titulo">Datos de la orden</div>
+            <div class="form-section-titulo">Datos del propietario</div>
             <div class="grid-2">
-              <div class="field"><label>Tipo de cliente *</label>
-                <select id="n-tipo-cliente">
-                  <option value="">— Seleccionar —</option>
-                  <option value="aseguradora">Aseguradora</option>
-                  <option value="flotilla">Flotilla</option>
-                  <option value="particular">Particular</option>
-                </select>
+              <div class="field full"><label id="lbl-n-propietario">Nombre completo *</label><input id="n-propietario" placeholder="Nombre completo"></div>
+              <div class="field"><label>Teléfono</label><input id="n-telefono" placeholder="3134753389" type="tel"></div>
+              <div class="field"><label id="lbl-n-cedula">Cédula</label><input id="n-cedula-cliente" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')"></div>
+              <div class="field full"><label>Correo electrónico</label><input id="n-correo-cliente" placeholder="correo@ejemplo.com" type="email"></div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-titulo">Tipo de cliente</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+              <label class="tipo-cliente-btn" id="tcb-particular" onclick="selTipoCliente(this,'particular')">
+                <span style="font-size:20px">👤</span>
+                <span>Particular</span>
+              </label>
+              <label class="tipo-cliente-btn" id="tcb-aseguradora" onclick="selTipoCliente(this,'aseguradora')">
+                <span style="font-size:20px">🏢</span>
+                <span>Aseguradora</span>
+              </label>
+              <label class="tipo-cliente-btn" id="tcb-flotilla" onclick="selTipoCliente(this,'flotilla')">
+                <span style="font-size:20px">🚛</span>
+                <span>Flotilla</span>
+              </label>
+              <label class="tipo-cliente-btn" id="tcb-empresa" onclick="selTipoCliente(this,'empresa')">
+                <span style="font-size:20px">🏭</span>
+                <span>Empresa</span>
+              </label>
+            </div>
+            <input type="hidden" id="n-tipo-cliente">
+
+            <!-- BLOQUE ASEGURADORA -->
+            <div id="n-wrap-aseg" style="display:none">
+              <div class="grid-2" style="margin-bottom:8px">
+                <div class="field">
+                  <label>Aseguradora *</label>
+                  <div style="display:flex;gap:6px">
+                    <select id="n-aseguradora-sel" style="flex:1" onchange="toggleNuevaAseg(this.value)"><option value="">— Seleccionar —</option></select>
+                    <button class="btn btn-ghost btn-sm" onclick="agregarNuevaAsegNueva()" title="Agregar nueva">+</button>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Cliente que trae el vehículo *</label>
+                  <input id="n-propietario-aseg" placeholder="Nombre completo">
+                </div>
+                <div class="field">
+                  <label>Teléfono cliente</label>
+                  <input id="n-telefono-aseg" type="tel" placeholder="3001234567">
+                </div>
+                <div class="field">
+                  <label>Cédula cliente</label>
+                  <input id="n-cedula-aseg" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')">
+                </div>
               </div>
-              <div class="field"><label>Aseguradora</label>
-                <select id="n-aseguradora">
-                  <option value="">— Ninguna —</option>
-                  <option>HDI</option><option>AXA</option><option>Sura</option>
-                  <option>Bolívar</option><option>Allianz</option><option>Liberty</option>
-                </select>
+              <div id="n-wrap-aseg-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde);margin-top:4px">
+                <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nueva aseguradora</div>
+                <div class="grid-2">
+                  <div class="field"><label>Nombre</label><input id="n-aseg-nombre" placeholder="HDI Seguros, Sura..."></div>
+                  <div class="field"><label>NIT</label><input id="n-aseg-nit" placeholder="900123456-7"></div>
+                </div>
               </div>
-              <div class="field"><label>Nivel de daño</label>
-                <select id="n-dano">
-                  <option value="">— Seleccionar —</option>
-                  <option>Leve</option><option>Moderado</option><option>Fuerte</option><option>Pérdida Total</option>
-                </select>
+            </div>
+
+            <!-- BLOQUE FLOTILLA -->
+            <div id="n-wrap-flot" style="display:none">
+              <div class="field" style="margin-bottom:8px">
+                <label>Flotilla *</label>
+                <div style="display:flex;gap:6px">
+                  <select id="n-flotilla-sel" style="flex:1" onchange="toggleNuevaFlot(this.value)"><option value="">— Seleccionar —</option></select>
+                  <button class="btn btn-ghost btn-sm" onclick="agregarNuevaFlotNueva()" title="Agregar nueva">+</button>
+                </div>
               </div>
+              <div id="n-wrap-flot-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde);margin-top:4px">
+                <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nueva flotilla</div>
+                <div class="grid-2">
+                  <div class="field"><label>Nombre</label><input id="n-flot-nombre" placeholder="Transportes XYZ S.A.S."></div>
+                  <div class="field"><label>NIT</label><input id="n-flot-nit" placeholder="900123456-7"></div>
+                  <div class="field" style="grid-column:1/-1"><label>Dirección</label><input id="n-flot-dir" placeholder="Cra 10 #20-30"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BLOQUE EMPRESA -->
+            <div id="n-wrap-empresa" style="display:none">
+              <div class="grid-2" style="margin-bottom:8px">
+                <div class="field">
+                  <label>Empresa *</label>
+                  <div style="display:flex;gap:6px">
+                    <select id="n-empresa-sel" style="flex:1" onchange="toggleNuevaEmpresa(this.value)"><option value="">— Seleccionar —</option></select>
+                    <button class="btn btn-ghost btn-sm" onclick="agregarNuevaEmpresaNueva()" title="Agregar nueva">+</button>
+                  </div>
+                </div>
+                <div class="field"><label>Teléfono empresa</label><input id="n-empresa-tel" type="tel" placeholder="6011234567"></div>
+              </div>
+              <div id="n-wrap-empresa-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde);margin-top:4px">
+                <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nueva empresa</div>
+                <div class="grid-2">
+                  <div class="field"><label>Razón social</label><input id="n-emp-nombre" placeholder="Empresa S.A.S."></div>
+                  <div class="field"><label>NIT</label><input id="n-emp-nit" placeholder="900123456-7"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CAMPOS COMUNES -->
+            <div class="grid-2" style="margin-top:12px">
               <div class="field"><label>Kilometraje</label><input id="n-km" placeholder="45000" type="number" min="0"></div>
               <div class="field"><label>Fecha Entrega 1</label><input id="n-fecha1" type="date"></div>
               <div class="field"><label>Fecha Entrega 2</label><input id="n-fecha2" type="date"></div>
             </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-titulo">Nivel de combustible al ingreso</div>
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+              <label class="combustible-opcion" onclick="setCombustible(this,'vacio')">
+                <input type="radio" name="n-combustible" value="vacio" style="display:none">
+                <div class="combustible-barra" style="--pct:5%"></div>
+                <span>Vacío</span>
+              </label>
+              <label class="combustible-opcion" onclick="setCombustible(this,'1/4')">
+                <input type="radio" name="n-combustible" value="1/4" style="display:none">
+                <div class="combustible-barra" style="--pct:25%"></div>
+                <span>1/4</span>
+              </label>
+              <label class="combustible-opcion" onclick="setCombustible(this,'1/2')">
+                <input type="radio" name="n-combustible" value="1/2" style="display:none">
+                <div class="combustible-barra" style="--pct:50%"></div>
+                <span>1/2</span>
+              </label>
+              <label class="combustible-opcion" onclick="setCombustible(this,'3/4')">
+                <input type="radio" name="n-combustible" value="3/4" style="display:none">
+                <div class="combustible-barra" style="--pct:75%"></div>
+                <span>3/4</span>
+              </label>
+              <label class="combustible-opcion" onclick="setCombustible(this,'lleno')">
+                <input type="radio" name="n-combustible" value="lleno" style="display:none">
+                <div class="combustible-barra" style="--pct:100%"></div>
+                <span>Lleno</span>
+              </label>
+            </div>
+            <input type="hidden" id="n-combustible-val">
           </div>
 
           <div class="form-section">

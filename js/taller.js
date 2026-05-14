@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════
-// PANTALLA TALLER — Estilo tablero de aeropuerto
+// PANTALLA TALLER — Lista TV + panel derecho + audio desbloqueado
 // ═══════════════════════════════════════════════════════════
 
-// IDs de órdenes completadas que ya sonaron — persiste en la sesión
 const _tallerOrdenesNotificadas = new Set();
+let _tallerGridSnapshot   = new Set();
+let _tallerOverlayTimer   = null;
+let _tallerAudioDesbloqueado = false;
 
 function montarTaller() {
   const sidebar   = document.getElementById('sidebar');
@@ -19,257 +21,708 @@ function montarTaller() {
   if (hamburger) hamburger.style.display = 'none';
   if (bottomNav) bottomNav.style.display = 'none';
   if (topbar)    topbar.style.display    = 'none';
-  if (main)      main.style.marginLeft   = '0';
-  if (content)   { content.style.padding = '0'; content.style.maxWidth = '100%'; }
+  if (main)      { main.style.marginLeft = '0'; main.style.height = '100vh'; main.style.overflow = 'hidden'; }
+  if (content)   { content.style.padding = '0'; content.style.maxWidth = '100%'; content.style.height = '100%'; }
 
-  document.body.style.background = '#0A0F1A';
+  document.body.style.background = '#060B14';
+  document.body.style.overflow   = 'hidden';
+  document.body.style.height     = '100vh';
 
-  // Precargar audio
-  if (!document.getElementById('taller-audio')) {
-    const audio = document.createElement('audio');
-    audio.id  = 'taller-audio';
-    audio.src = 'motor.mp3';
-    audio.preload = 'auto';
-    document.body.appendChild(audio);
+  if (!document.getElementById('taller-tv-styles')) {
+    const st = document.createElement('style');
+    st.id = 'taller-tv-styles';
+    st.textContent = `
+      @keyframes pulse-dot  { 0%,100%{opacity:1} 50%{opacity:.35} }
+      @keyframes flash-row  {
+        0%,100%{background:transparent}
+        30%,70%{background:rgba(245,158,11,.08)}
+      }
+      @keyframes overlay-in {
+        from{opacity:0;transform:scale(.95)}
+        to{opacity:1;transform:scale(1)}
+      }
+      @keyframes slide-in-right {
+        from{opacity:0;transform:translateX(1vw)}
+        to{opacity:1;transform:translateX(0)}
+      }
+      #pag-taller {
+        background:#060B14;height:100vh;overflow:hidden;
+        display:flex;flex-direction:column;font-size:1vw;
+      }
+      .tv-shell {
+        display:flex;flex-direction:column;height:100vh;overflow:hidden;position:relative;
+      }
+
+      /* ── PANTALLA DE ACTIVACIÓN ── */
+      .tv-activate-screen {
+        position:fixed;inset:0;background:#060B14;z-index:100;
+        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vh;
+      }
+      .tv-activate-logo {
+        width:12vw;opacity:.4;filter:grayscale(1) brightness(2);
+      }
+      .tv-activate-title {
+        font-family:'DM Mono',monospace;font-size:1.2vw;color:rgba(255,255,255,.5);
+        letter-spacing:.2em;text-transform:uppercase;
+      }
+      .tv-activate-btn {
+        font-family:'DM Mono',monospace;font-size:1.1vw;font-weight:700;
+        letter-spacing:.12em;text-transform:uppercase;
+        background:#22C55E;color:#060B14;border:none;cursor:pointer;
+        padding:1.2vh 3vw;border-radius:.5vw;
+        transition:transform .15s,box-shadow .15s;
+      }
+      .tv-activate-btn:hover {
+        transform:scale(1.03);
+        box-shadow:0 0 2vw rgba(34,197,94,.4);
+      }
+      .tv-activate-sub {
+        font-size:.7vw;color:rgba(255,255,255,.25);letter-spacing:.1em;text-transform:uppercase;
+      }
+
+      /* ── HEADER ── */
+      .tv-header {
+        background:#060B14;border-bottom:1px solid rgba(255,255,255,.1);
+        padding:0 2vw;height:6vh;flex-shrink:0;
+        display:flex;align-items:center;justify-content:space-between;
+      }
+      .tv-brand { display:flex;align-items:center;gap:.8vw; }
+      .tv-brand-dot {
+        width:.6vw;height:.6vw;border-radius:50%;background:#22C55E;
+        animation:pulse-dot 2s infinite;
+      }
+      .tv-brand-name {
+        font-family:'DM Mono',monospace;font-size:.65vw;
+        letter-spacing:.18em;color:rgba(255,255,255,.4);text-transform:uppercase;
+      }
+      .tv-clock {
+        font-family:'DM Mono',monospace;font-size:2vw;font-weight:700;
+        letter-spacing:.06em;color:#FFFFFF;
+      }
+      .tv-date {
+        font-family:'DM Mono',monospace;font-size:.7vw;
+        letter-spacing:.08em;color:#FFFFFF;text-align:right;text-transform:uppercase;
+      }
+
+      /* ── KPI STRIP ── */
+      .tv-kpi-strip {
+        display:grid;grid-template-columns:repeat(4,1fr);
+        border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;
+      }
+      .tv-kpi {
+        padding:.8vh 2vw;border-right:1px solid rgba(255,255,255,.08);
+        display:flex;align-items:center;gap:.8vw;
+      }
+      .tv-kpi:last-child { border-right:none; }
+      .tv-kpi-num {
+        font-family:'DM Mono',monospace;font-size:3.2vw;font-weight:700;line-height:1;
+      }
+      .tv-kpi-label {
+        font-size:.75vw;font-weight:600;text-transform:uppercase;
+        letter-spacing:.09em;color:rgba(255,255,255,.38);line-height:1.4;
+      }
+
+      /* ── BODY ── */
+      .tv-body {
+        flex:1;overflow:hidden;display:flex;
+      }
+      .tv-list-wrap {
+        flex:1;overflow:hidden;display:flex;flex-direction:column;
+      }
+      .tv-table-wrap {
+        flex:1;overflow:hidden;
+      }
+      .tv-table {
+        width:100%;border-collapse:collapse;table-layout:fixed;
+      }
+      .tv-thead th {
+        padding:.6vh 1.4vw;font-size:.6vw;font-weight:700;
+        letter-spacing:.15em;text-transform:uppercase;
+        color:rgba(255,255,255,.28);text-align:left;
+        background:rgba(255,255,255,.03);
+        border-bottom:1px solid rgba(255,255,255,.07);
+        white-space:nowrap;
+      }
+      .tv-tbody tr {
+        border-bottom:1px solid rgba(255,255,255,.05);
+        transition:background .15s;
+      }
+      .tv-tbody tr:hover { background:rgba(255,255,255,.03); }
+      .tv-tbody tr.flash { animation:flash-row 1.5s ease-in-out; }
+      .tv-tbody td {
+        padding:.9vh 1.4vw;vertical-align:middle;
+      }
+      .tv-col-placa   { width:12%; }
+      .tv-col-etapas  { width:42%; }
+      .tv-col-tec     { width:14%; }
+      .tv-col-timer   { width:10%; }
+      .tv-col-entrega { width:8%; }
+      .tv-col-estado  { width:14%; }
+
+      .tv-placa {
+        font-family:'DM Mono',monospace;font-size:1.6vw;font-weight:700;
+        color:#FFFFFF;letter-spacing:.04em;line-height:1;
+      }
+      .tv-vehiculo { font-size:.65vw;color:rgba(255,255,255,.32);margin-top:.2vh; }
+
+      /* ── CHIPS DE ETAPA ── */
+      .etapas-chips { display:flex;flex-wrap:wrap;gap:.3vw;align-items:center; }
+      .chip {
+        display:inline-flex;align-items:center;gap:.25vw;
+        padding:.2vh .5vw;border-radius:.3vw;
+        font-size:.62vw;font-weight:700;white-space:nowrap;border:1px solid transparent;
+      }
+      .chip-approved { background:rgba(34,197,94,.15);color:#4ADE80;border-color:rgba(34,197,94,.35); }
+      .chip-done     { background:rgba(34,197,94,.07);color:rgba(74,222,128,.55);border-color:rgba(34,197,94,.18); }
+      .chip-active   { background:rgba(245,158,11,.15);color:#FCD34D;border-color:rgba(245,158,11,.35); }
+      .chip-waiting  { background:rgba(245,158,11,.06);color:rgba(252,211,77,.45);border-color:rgba(245,158,11,.15); }
+      .chip-pending  { background:rgba(255,255,255,.04);color:rgba(255,255,255,.22);border-color:rgba(255,255,255,.07); }
+      .chip-dot { width:.45vw;height:.45vw;border-radius:50%;flex-shrink:0; }
+      .chip-dot.approved { background:#22C55E; }
+      .chip-dot.done     { background:rgba(34,197,94,.45); }
+      .chip-dot.active   { background:#F59E0B; }
+      .chip-dot.waiting  { background:transparent;border:.8px solid rgba(245,158,11,.5); }
+      .chip-dot.pending  { background:transparent;border:.8px solid rgba(255,255,255,.15); }
+
+      .tv-tec { font-size:.75vw;color:rgba(255,255,255,.45); }
+      .tv-timer-val {
+        font-family:'DM Mono',monospace;font-size:.85vw;font-weight:700;color:#FCD34D;
+      }
+      .tv-entrega-chip { font-family:'DM Mono',monospace;font-size:.75vw;font-weight:700; }
+
+      .tv-badge {
+        font-family:'DM Mono',monospace;font-size:.6vw;font-weight:700;
+        padding:.25vh .6vw;border-radius:.3vw;
+        text-transform:uppercase;letter-spacing:.07em;border:1px solid;white-space:nowrap;
+      }
+      .tv-badge-blue   { background:rgba(59,130,246,.13);color:#93C5FD;border-color:rgba(59,130,246,.3); }
+      .tv-badge-amber  { background:rgba(245,158,11,.13);color:#FCD34D;border-color:rgba(245,158,11,.3); }
+      .tv-badge-red    { background:rgba(248,113,113,.13);color:#F87171;border-color:rgba(248,113,113,.3); }
+      .tv-badge-gray   { background:rgba(255,255,255,.07);color:rgba(255,255,255,.45);border-color:rgba(255,255,255,.12); }
+
+      /* ── PANEL DERECHO ── */
+      .tv-panel-right {
+        width:17vw;flex-shrink:0;
+        border-left:1px solid rgba(255,255,255,.08);
+        display:flex;flex-direction:column;overflow:hidden;
+      }
+      .tv-panel-title {
+        font-family:'DM Mono',monospace;font-size:.6vw;font-weight:700;
+        letter-spacing:.18em;text-transform:uppercase;
+        color:rgba(255,255,255,.35);
+        padding:.7vh 1.2vw;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;
+      }
+      .tv-panel-list {
+        flex:1;overflow:hidden;padding:.4vh .5vw;
+        display:flex;flex-direction:column;gap:.35vh;
+      }
+      .tv-panel-item {
+        border-radius:.4vw;padding:.55vh .8vw;
+        display:flex;align-items:center;gap:.6vw;
+        animation:slide-in-right .4s ease;flex-shrink:0;cursor:pointer;
+      }
+      .tv-panel-item.listo {
+        background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);
+      }
+      .tv-panel-item.entregado {
+        background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.18);
+      }
+      .tv-panel-dot { width:.5vw;height:.5vw;border-radius:50%;flex-shrink:0; }
+      .tv-panel-dot.listo    { background:#FCD34D; }
+      .tv-panel-dot.entregado{ background:#4ADE80; }
+      .tv-panel-info { flex:1;min-width:0; }
+      .tv-panel-placa {
+        font-family:'DM Mono',monospace;font-size:.95vw;font-weight:700;
+        color:#FFFFFF;letter-spacing:.04em;line-height:1;
+      }
+      .tv-panel-status {
+        font-size:.6vw;font-weight:500;margin-top:.15vh;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      }
+      .tv-panel-status.listo    { color:rgba(252,211,77,.65); }
+      .tv-panel-status.entregado{ color:rgba(74,222,128,.65); }
+      .tv-panel-time {
+        font-family:'DM Mono',monospace;font-size:.6vw;color:rgba(255,255,255,.25);
+      }
+      .tv-panel-empty {
+        font-size:.7vw;color:rgba(255,255,255,.15);
+        font-style:italic;padding:1vh 0;text-align:center;
+      }
+
+      /* ── OVERLAY ── */
+      .tv-update-overlay {
+        position:absolute;inset:0;background:rgba(6,11,20,.88);
+        z-index:30;display:flex;align-items:center;justify-content:center;padding:2vw;
+      }
+      .tv-overlay-card {
+        background:#0C1220;border:0.15vw solid #F59E0B;border-radius:.8vw;
+        width:26vw;overflow:hidden;animation:overlay-in .3s ease;
+      }
+      .tv-overlay-card.green-border { border-color:#22C55E; }
+      .tv-overlay-badge {
+        background:#F59E0B;color:#060B14;
+        font-family:'DM Mono',monospace;font-size:.7vw;font-weight:700;
+        letter-spacing:.18em;text-transform:uppercase;
+        padding:.6vh 1.5vw;text-align:center;
+      }
+      .tv-overlay-badge.green-bg { background:#22C55E; }
+      .tv-overlay-head {
+        padding:1.2vh 1.5vw .8vh;border-bottom:1px solid rgba(255,255,255,.08);
+      }
+      .tv-overlay-placa {
+        font-family:'DM Mono',monospace;font-size:2.5vw;font-weight:700;
+        color:#FFFFFF;letter-spacing:.04em;line-height:1;
+      }
+      .tv-overlay-veh { font-size:.8vw;color:rgba(255,255,255,.35);margin-top:.3vh; }
+      .tv-overlay-body { padding:.8vh 1.5vw; }
+      .tv-overlay-row {
+        display:flex;align-items:center;gap:.7vw;padding:.5vh 0;
+        border-bottom:1px solid rgba(255,255,255,.05);
+      }
+      .tv-overlay-row:last-child { border-bottom:none; }
+      .tv-odot        { width:.7vw;height:.7vw;border-radius:50%;flex-shrink:0; }
+      .tv-odot.approved{ background:#22C55E; }
+      .tv-odot.done   { background:rgba(34,197,94,.4);border:1px solid rgba(34,197,94,.5); }
+      .tv-odot.active { background:#F59E0B; }
+      .tv-odot.pending{ background:transparent;border:1px solid rgba(255,255,255,.15); }
+      .tv-oname       { font-size:.9vw;flex:1; }
+      .tv-oname.approved{ color:rgba(74,222,128,.85); }
+      .tv-oname.done  { color:rgba(255,255,255,.48); }
+      .tv-oname.active{ color:#FCD34D;font-weight:700; }
+      .tv-oname.pending{ color:rgba(255,255,255,.2); }
+      .tv-otime       { font-family:'DM Mono',monospace;font-size:.8vw;font-weight:700; }
+      .tv-otime.approved{ color:rgba(74,222,128,.7); }
+      .tv-otime.active{ color:#FCD34D; }
+      .tv-otime.done  { color:rgba(255,255,255,.28); }
+      .tv-overlay-foot {
+        padding:.8vh 1.5vw;border-top:1px solid rgba(255,255,255,.08);
+        display:flex;justify-content:space-between;align-items:center;
+      }
+      .tv-overlay-tec { font-size:.8vw;color:rgba(255,255,255,.45); }
+      .tv-overlay-entrega { font-size:.8vw;font-weight:700; }
+      .tv-overlay-countdown {
+        font-family:'DM Mono',monospace;font-size:.6vw;
+        color:rgba(255,255,255,.22);text-align:center;
+        padding:.5vh;border-top:1px solid rgba(255,255,255,.05);
+      }
+      .tv-watermark {
+        position:fixed;top:50%;left:50%;
+        transform:translate(-50%,-50%);
+        width:36vw;height:36vw;pointer-events:none;z-index:0;
+      }
+    `;
+    document.head.appendChild(st);
   }
 
+  const pagTaller = document.getElementById('pag-taller');
+  if (pagTaller) pagTaller.style.cssText = 'display:flex;flex-direction:column;height:100vh;overflow:hidden;background:#060B14';
+
   mostrarPagina('pag-taller');
-  renderTallerShell();
-  cargarPantallaTaller();
-  iniciarRelojTaller();
-  setInterval(() => { if (sesion?.perfil === 'taller') cargarPantallaTaller(); }, 30000);
+  _mostrarPantallaActivacion();
 }
 
-function renderTallerShell() {
+// ── Pantalla de activación de audio ─────────────────────────
+function _mostrarPantallaActivacion() {
   const cont = document.getElementById('taller-contenido');
   if (!cont) return;
 
-  // Header
-  const header = document.createElement('div');
-  header.id = 'taller-header';
-  header.style.cssText = 'background:#060B14;border-bottom:1px solid #94A3B8;padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:10';
-  header.innerHTML = `
-    <div style="display:flex;align-items:center;gap:16px">
-      <div style="width:8px;height:8px;border-radius:50%;background:#22C55E;box-shadow:0 0 8px #22C55E;animation:pulse 2s infinite"></div>
-      <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:3px;color:#E2E8F0;text-transform:uppercase">Freimanautos · Sistema Operativo</div>
-    </div>
-    <div id="taller-reloj" style="font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:#E2E8F0;letter-spacing:4px"></div>
-    <div id="taller-fecha" style="font-family:'DM Mono',monospace;font-size:11px;color:#E2E8F0;letter-spacing:2px;text-align:right"></div>
-  `;
-  cont.parentElement.insertBefore(header, cont);
+  cont.innerHTML = `
+    <div class="tv-activate-screen" id="tv-activate-screen">
+      <img src="Logo_Fondo_Taller.png" class="tv-activate-logo" alt="">
+      <div class="tv-activate-title">Freimanautos · Sistema Operativo</div>
+      <button class="tv-activate-btn" onclick="_activarPantallaTaller()">
+        ▶ &nbsp; Iniciar pantalla del taller
+      </button>
+      <div class="tv-activate-sub">Presiona una vez para activar el audio y comenzar</div>
+    </div>`;
+}
+
+async function _activarPantallaTaller() {
+  // Desbloquear audio con interacción del usuario
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    await ctx.resume();
+    window._tvAudioCtx = ctx;
+    _tallerAudioDesbloqueado = true;
+  } catch(e) { console.warn('AudioContext:', e); }
+
+  // También pre-cargar el archivo mp3
+  try {
+    const audio = new Audio('motor.mp3');
+    await audio.play().catch(()=>{});
+    audio.pause();
+    audio.currentTime = 0;
+    window._tvAudio = audio;
+  } catch(e) { console.warn('Audio preload:', e); }
+
+  // Quitar pantalla de activación y arrancar
+  const screen = document.getElementById('tv-activate-screen');
+  if (screen) screen.remove();
+
+  cargarPantallaTaller();
+  iniciarRelojTaller();
+  setInterval(() => { if (sesion?.perfil === 'taller') cargarPantallaTaller(); }, 10000);
+}
+
+function _tvSonar() {
+  try {
+    if (window._tvAudio) {
+      window._tvAudio.currentTime = 0;
+      window._tvAudio.play().catch(()=>{});
+      return;
+    }
+    const audio = new Audio('motor.mp3');
+    audio.play().catch(()=>{});
+  } catch(e) { console.warn('Sound error:', e); }
 }
 
 function iniciarRelojTaller() {
   function tick() {
     const reloj = document.getElementById('taller-reloj');
-    const fecha = document.getElementById('taller-fecha');
-    const now = new Date();
-    if (reloj) reloj.textContent = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-    if (fecha) fecha.innerHTML = now.toLocaleDateString('es-CO', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase();
+    const fecha  = document.getElementById('taller-fecha');
+    const now    = new Date();
+    if (reloj) reloj.textContent = now.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+    if (fecha)  fecha.innerHTML  = now.toLocaleDateString('es-CO', { weekday:'long', day:'2-digit', month:'long', year:'numeric' }).toUpperCase();
   }
   tick();
   setInterval(tick, 1000);
 }
 
+function _tvTimerStr(inicioISO) {
+  if (!inicioISO) return '';
+  const secs = Math.floor((Date.now() - new Date(inicioISO)) / 1000);
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  const pad = n => String(n).padStart(2,'0');
+  return pad(h)+':'+pad(m)+':'+pad(s);
+}
+
+function _tvHoraStr(isoStr) {
+  if (!isoStr) return '';
+  return new Date(isoStr).toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', hour12:false });
+}
+
+function _tvEntregaInfo(orden) {
+  if (!orden.fecha_entrega_1) return { color:'rgba(255,255,255,.3)', label:'Sin fecha' };
+  const dias = Math.round((new Date(orden.fecha_entrega_1) - new Date()) / 86400000);
+  if (dias < 0)   return { color:'#F87171', label:`${Math.abs(dias)}d vencida` };
+  if (dias === 0) return { color:'#FCD34D', label:'Hoy' };
+  if (dias <= 2)  return { color:'#FCD34D', label:`${dias}d` };
+  return { color:'#4ADE80', label:`${dias}d` };
+}
+
+function _tvMostrarOverlay(orden, etapasOrden, badge, esVerde, aprobadas) {
+  if (_tallerOverlayTimer) clearInterval(_tallerOverlayTimer);
+  const { color: entColor, label: entLabel } = _tvEntregaInfo(orden);
+  const tecnico = etapasOrden.find(e => e.inicio && !e.fin)?.tecnico
+    || etapasOrden.filter(e => e.tecnico).slice(-1)[0]?.tecnico || '';
+
+  const etapasHtml = etapasOrden.map(e => {
+    const isApproved = !!e.fin && aprobadas?.has(e.id);
+    const cls = isApproved ? 'approved' : e.fin ? 'done' : (e.inicio && !e.fin ? 'active' : 'pending');
+    const tiempo = cls === 'active' ? _tvTimerStr(e.inicio) : (isApproved ? '✓✓' : e.fin ? '✓' : '');
+    return `<div class="tv-overlay-row">
+      <div class="tv-odot ${cls}"></div>
+      <span class="tv-oname ${cls}">${e.etapa||'—'}</span>
+      <span class="tv-otime ${cls}">${tiempo}</span>
+    </div>`;
+  }).join('');
+
+  const overlayHtml = `
+    <div class="tv-update-overlay" id="tv-overlay" onclick="this.remove()">
+      <div class="tv-overlay-card${esVerde?' green-border':''}" onclick="event.stopPropagation()">
+        <div class="tv-overlay-badge${esVerde?' green-bg':''}">${badge}</div>
+        <div class="tv-overlay-head">
+          <div class="tv-overlay-placa">${orden.placa}</div>
+          <div class="tv-overlay-veh">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
+        </div>
+        <div class="tv-overlay-body">${etapasHtml}</div>
+        <div class="tv-overlay-foot">
+          <span class="tv-overlay-tec">${tecnico||'—'}</span>
+          <span class="tv-overlay-entrega" style="color:${esVerde?'#4ADE80':entColor}">${esVerde?'✓ Listo para entrega':entLabel}</span>
+        </div>
+        <div class="tv-overlay-countdown" id="tv-overlay-cd">Cerrando en 5s — toca para cerrar</div>
+      </div>
+    </div>`;
+
+  const shell = document.querySelector('.tv-shell');
+  if (!shell) return;
+  const existing = document.getElementById('tv-overlay');
+  if (existing) existing.remove();
+  shell.insertAdjacentHTML('beforeend', overlayHtml);
+
+  let countdown = 5;
+  _tallerOverlayTimer = setInterval(() => {
+    countdown--;
+    const cd = document.getElementById('tv-overlay-cd');
+    if (cd) cd.textContent = `Cerrando en ${countdown}s — toca para cerrar`;
+    if (countdown <= 0) {
+      clearInterval(_tallerOverlayTimer);
+      const ov = document.getElementById('tv-overlay');
+      if (ov) ov.remove();
+    }
+  }, 1000);
+}
+
 async function cargarPantallaTaller() {
   const cont = document.getElementById('taller-contenido');
-  if (!cont) return;
+  if (!cont || document.getElementById('tv-activate-screen')) return;
 
   try {
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    const manana = new Date(hoy);
-    manana.setDate(manana.getDate() + 1);
+    const hoy    = new Date(); hoy.setHours(0,0,0,0);
+    const manana = new Date(hoy); manana.setDate(manana.getDate()+1);
     const hoyISO = hoy.toISOString().split('T')[0];
 
-    const [todasOrdenes, etapasActivas] = await Promise.all([
-      api(`/ordenes?estado=eq.Activa&order=fecha_entrega_1.asc`).catch(() => []) || [],
-      api(`/etapas?fin=is.null&inicio=not.is.null&select=id,orden_id,etapa,servicio,mecanico_id,tecnico,inicio`).catch(() => []) || []
+    const [ordenesActivas, entregadasHoy, etapasActivas, etapasTodas, aprobacionesTodas] = await Promise.all([
+      api(`/ordenes?estado=eq.Activa&order=fecha_entrega_1.asc`).catch(()=>[]) || [],
+      api(`/ordenes?estado=eq.Entregada&entregada_en=gte.${hoy.toISOString()}&order=entregada_en.desc`).catch(()=>[]) || [],
+      api(`/etapas?fin=is.null&inicio=not.is.null&select=id,orden_id,etapa,servicio,mecanico_id,tecnico,inicio`).catch(()=>[]) || [],
+      api(`/etapas?select=id,orden_id,etapa,servicio,inicio,fin,tecnico&order=creado_en.asc`).catch(()=>[]) || [],
+      api(`/aprobaciones_etapa?estado=eq.aprobado&select=etapa_id`).catch(()=>[]) || []
     ]);
 
-    const creadasHoy  = todasOrdenes.filter(o => new Date(o.creado_en) >= hoy && new Date(o.creado_en) < manana);
-    const entregarHoy = todasOrdenes.filter(o => {
-      const f1 = o.fecha_entrega_1?.split('T')[0];
-      const f2 = o.fecha_entrega_2?.split('T')[0];
-      return f1 === hoyISO || f2 === hoyISO;
+    const aprobadas = new Set(aprobacionesTodas.map(a => a.etapa_id));
+
+    // ── Clasificar órdenes ───────────────────────────────────
+    const ordenesListas = ordenesActivas.filter(o => {
+      const ets = etapasTodas.filter(e => e.orden_id === o.id);
+      return ets.length > 0 && ets.every(e => e.fin);
     });
-    const enProceso   = todasOrdenes.filter(o => etapasActivas.some(e => e.orden_id === o.id));
+    const listasIds = new Set(ordenesListas.map(o => o.id));
 
-    // ── Órdenes recién completadas ────────────────────────────────────────────
-    // Una orden está "recién completada" si tiene etapas pero ninguna activa en este momento.
-    // Consultamos etapas de todas las órdenes activas para detectarlo.
-    const todasEtapas = await api(
-      `/etapas?orden_id=in.(${todasOrdenes.map(o=>o.id).join(',')})&select=orden_id,fin`
-    ).catch(() => []) || [];
-
-    const recienCompletadas = todasOrdenes.filter(o => {
-      const ets = todasEtapas.filter(e => e.orden_id === o.id);
-      if (!ets.length) return false;                          // sin etapas → no aplica
-      const tieneActiva = etapasActivas.some(e => e.orden_id === o.id);
-      const todasFinalizadas = ets.every(e => e.fin);
-      return !tieneActiva && todasFinalizadas;
+    const ordenesEnGrid = ordenesActivas.filter(o => {
+      if (listasIds.has(o.id)) return false;
+      const ets = etapasTodas.filter(e => e.orden_id === o.id);
+      if (!ets.length) return true;
+      return ets.some(e => !e.fin);
     });
 
-    // Disparar audio + registrar para no repetir
-    const nuevasCompletadas = recienCompletadas.filter(o => !_tallerOrdenesNotificadas.has(o.id));
-    if (nuevasCompletadas.length) {
-      nuevasCompletadas.forEach(o => _tallerOrdenesNotificadas.add(o.id));
-      const audio = document.getElementById('taller-audio');
-      if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
+    const creadasHoy  = ordenesEnGrid.filter(o => new Date(o.creado_en) >= hoy && new Date(o.creado_en) < manana);
+    const entregarHoy = ordenesEnGrid.filter(o => o.fecha_entrega_1?.split('T')[0] === hoyISO || o.fecha_entrega_2?.split('T')[0] === hoyISO);
+    const enProceso   = ordenesEnGrid.filter(o => etapasActivas.some(e => e.orden_id === o.id));
+
+    // ── Sonido para nuevas entregas ──────────────────────────
+    const nuevasEntregadas = entregadasHoy.filter(o => !_tallerOrdenesNotificadas.has('ent_'+o.id));
+    if (nuevasEntregadas.length) {
+      nuevasEntregadas.forEach(o => _tallerOrdenesNotificadas.add('ent_'+o.id));
+      _tvSonar();
+      const oEnt = nuevasEntregadas[0];
+      const ets  = etapasTodas.filter(e => e.orden_id === oEnt.id);
+      setTimeout(() => _tvMostrarOverlay(oEnt, ets, '✓ ORDEN ENTREGADA', true, aprobadas), 600);
     }
 
-    const srvColor  = { latoneria: '#EF4444', pintura: '#F59E0B', mecanica: '#3B82F6', adicionales: '#10B981' };
-    const srvLabel  = { latoneria: 'LAT', pintura: 'PIN', mecanica: 'MEC', adicionales: 'ADI' };
-
-    function tiempoEnEtapa(e) {
-      if (!e.inicio) return '';
-      const mins = Math.round((new Date() - new Date(e.inicio)) / 60000);
-      if (mins < 60) return `${mins}m`;
-      return `${Math.floor(mins/60)}h ${mins%60}m`;
+    // ── Sonido para nuevas listas ────────────────────────────
+    const nuevasListas = ordenesListas.filter(o =>
+      !_tallerOrdenesNotificadas.has('lst_'+o.id) &&
+      (_tallerGridSnapshot.size === 0 || _tallerGridSnapshot.has(o.id))
+    );
+    if (nuevasListas.length && !nuevasEntregadas.length) {
+      nuevasListas.forEach(o => _tallerOrdenesNotificadas.add('lst_'+o.id));
+      _tvSonar();
+      const oLst = nuevasListas[0];
+      const ets  = etapasTodas.filter(e => e.orden_id === oLst.id);
+      setTimeout(() => _tvMostrarOverlay(oLst, ets, '✓ LISTO PARA ENTREGA', true, aprobadas), 600);
     }
 
-    function urgencyColor(o) {
-      if (!o.fecha_entrega_1) return '#E2E8F0';
-      const dias = Math.round((new Date(o.fecha_entrega_1) - new Date()) / 86400000);
-      if (dias < 0)  return '#EF4444';
-      if (dias === 0) return '#F59E0B';
-      if (dias <= 2)  return '#EAB308';
-      return '#22C55E';
+    // ── Sonido para nueva etapa activa ───────────────────────
+    const snapshotNuevo = {};
+    etapasActivas.forEach(e => { snapshotNuevo[e.orden_id] = e.id; });
+    let ordenCambiada = null; let badgeOverlay = 'ETAPA ACTUALIZADA';
+    Object.entries(snapshotNuevo).forEach(([oid, eid]) => {
+      if (_tallerGridSnapshot.size && window._tvSnapshotEtapas?.[oid] && window._tvSnapshotEtapas[oid] !== eid) {
+        ordenCambiada = ordenesEnGrid.find(o => o.id === parseInt(oid));
+      }
+    });
+    window._tvSnapshotEtapas = snapshotNuevo;
+    _tallerGridSnapshot = new Set(ordenesEnGrid.map(o => o.id));
+
+    // ── Render fila de tabla ─────────────────────────────────
+    function renderFila(orden) {
+      const etsOrden     = etapasTodas.filter(e => e.orden_id === orden.id);
+      const etapasActOrden = etapasActivas.filter(e => e.orden_id === orden.id);
+      const { color: entColor, label: entLabel } = _tvEntregaInfo(orden);
+
+      const esIngreso = creadasHoy.some(o => o.id === orden.id);
+      const esEntrega = entregarHoy.some(o => o.id === orden.id);
+      const dias      = orden.fecha_entrega_1
+        ? Math.round((new Date(orden.fecha_entrega_1) - new Date()) / 86400000) : null;
+
+      let badge = '';
+      if (esEntrega && dias !== null && dias < 0)
+        badge = `<span class="tv-badge tv-badge-red">${Math.abs(dias)}d vencida</span>`;
+      else if (esEntrega)
+        badge = `<span class="tv-badge tv-badge-amber">Entrega hoy</span>`;
+      else if (esIngreso)
+        badge = `<span class="tv-badge tv-badge-blue">Nuevo hoy</span>`;
+      else if (dias !== null && dias < 0)
+        badge = `<span class="tv-badge tv-badge-red">${Math.abs(dias)}d vencida</span>`;
+      else if (dias !== null && dias <= 2)
+        badge = `<span class="tv-badge tv-badge-amber">${dias}d</span>`;
+      else
+        badge = `<span class="tv-badge tv-badge-gray">${dias !== null ? dias+'d' : 'Sin fecha'}</span>`;
+
+      // Chips de etapas
+      const chips = etsOrden.map((e, idx) => {
+        const isApproved = !!e.fin && aprobadas.has(e.id);
+        const done       = !!e.fin;
+        const active     = !!e.inicio && !e.fin;
+        const prevDone   = idx > 0 && !!etsOrden[idx-1]?.fin;
+        const waiting    = !done && !active && prevDone;
+        const cls        = isApproved ? 'approved' : done ? 'done' : active ? 'active' : waiting ? 'waiting' : 'pending';
+        const label      = isApproved ? `${e.etapa} ✓✓` : done ? `${e.etapa} ✓` : active ? `${e.etapa} ●` : waiting ? `${e.etapa} →` : e.etapa;
+        return `<span class="chip chip-${cls}"><span class="chip-dot ${cls}"></span>${label||'—'}</span>`;
+      }).join('');
+
+      // Técnico(s) — puede ser múltiple si hay simultáneas
+      const tecnicos = [...new Set(etapasActOrden.map(e => e.tecnico).filter(Boolean))];
+      const tecHtml  = tecnicos.length
+        ? tecnicos.map(t => `<div class="tv-tec">${t}</div>`).join('')
+        : `<div class="tv-tec" style="color:rgba(255,255,255,.18)">—</div>`;
+
+      // Timer(es)
+      const timerHtml = etapasActOrden.length
+        ? etapasActOrden.map(e =>
+            `<div class="tv-timer-val" id="tv-et-${e.id}">${_tvTimerStr(e.inicio)}</div>`
+          ).join('')
+        : `<div style="font-size:.7vw;color:rgba(255,255,255,.18)">—</div>`;
+
+      return `<tr id="tv-row-${orden.id}" onclick="_tvVerDetalle(${orden.id})" style="cursor:pointer">
+        <td>
+          <div class="tv-placa">${orden.placa}</div>
+          <div class="tv-vehiculo">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
+        </td>
+        <td><div class="etapas-chips">${chips}</div></td>
+        <td>${tecHtml}</td>
+        <td>${timerHtml}</td>
+        <td><span class="tv-entrega-chip" style="color:${entColor}">${entLabel}</span></td>
+        <td>${badge}</td>
+      </tr>`;
     }
 
-    function renderSeccionCompletadas(ordenes) {
-      return `
-        <div style="margin-bottom:2px">
-          <div style="display:grid;grid-template-columns:130px 1fr 180px 120px 80px 90px;align-items:center;gap:0;padding:0 32px;height:36px;background:#22C55E18;border-left:3px solid #22C55E">
-            <div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;letter-spacing:3px;color:#22C55E;grid-column:1/-1">
-              <svg width="12" height="12" fill="none" stroke="#22C55E" stroke-width="2.5" viewBox="0 0 24 24" style="display:inline-block;vertical-align:-1px;margin-right:6px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              COMPLETADAS — LISTAS PARA ENTREGAR <span style="opacity:0.6">(${ordenes.length})</span>
+    // ── Panel derecho ────────────────────────────────────────
+    const panelItems = [
+      ...ordenesListas.map(o  => ({ orden:o, tipo:'listo'    })),
+      ...entregadasHoy.map(o  => ({ orden:o, tipo:'entregado' }))
+    ];
+    const panelHtml = panelItems.length
+      ? panelItems.map(({orden, tipo}) => {
+          const hora = tipo === 'entregado' ? _tvHoraStr(orden.entregada_en) : '';
+          const statusTxt = tipo === 'listo' ? 'Listo para entrega' : '✓ Entregado';
+          return `<div class="tv-panel-item ${tipo}" onclick="_tvVerDetalle(${orden.id})">
+            <div class="tv-panel-dot ${tipo}"></div>
+            <div class="tv-panel-info">
+              <div class="tv-panel-placa">${orden.placa}</div>
+              <div class="tv-panel-status ${tipo}">${statusTxt}</div>
             </div>
-          </div>
-          <div style="display:grid;grid-template-columns:130px 1fr 180px 120px 80px 90px;padding:4px 32px 4px;border-bottom:1px solid #0D1B2E">
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">PLACA</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">VEHÍCULO</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">PROPIETARIO</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase"></div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">ENTREGA</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">ESTADO</div>
-          </div>
-          ${ordenes.map(o => {
-            const color = urgencyColor(o);
-            const dias  = o.fecha_entrega_1 ? Math.round((new Date(o.fecha_entrega_1) - new Date()) / 86400000) : null;
-            const diasLabel = dias === null ? '—' : dias < 0 ? 'VENCIDA' : dias === 0 ? 'HOY' : `${dias}d`;
-            const esNueva = nuevasCompletadas.some(n => n.id === o.id);
-            return `<div class="${esNueva ? 'fila-completada' : ''}" style="display:grid;grid-template-columns:130px 1fr 180px 120px 80px 90px;align-items:center;gap:0;padding:0 32px;height:60px;border-bottom:1px solid #0D1B2E">
-              <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;letter-spacing:3px;color:#22C55E">${o.placa}</div>
-              <div style="font-size:13px;font-weight:500;color:#94A3B8">${[o.marca,o.linea].filter(Boolean).join(' ')||'—'}</div>
-              <div style="font-size:12px;color:#64748B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.propietario||'—'}</div>
-              <div></div>
-              <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:${color}">${diasLabel}</div>
-              <div><span style="background:#22C55E22;color:#22C55E;border:1px solid #22C55E44;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px">LISTA</span></div>
-            </div>`;
-          }).join('')}
-        </div>`;
-    }
+            ${hora ? `<div class="tv-panel-time">${hora}</div>` : ''}
+          </div>`;
+        }).join('')
+      : '<div class="tv-panel-empty">Sin terminados hoy</div>';
 
-    function renderFila(o, tipo) {
-      const ets   = etapasActivas.filter(e => e.orden_id === o.id);
-      const color = urgencyColor(o);
-      const dias  = o.fecha_entrega_1 ? Math.round((new Date(o.fecha_entrega_1) - new Date()) / 86400000) : null;
-      const diasLabel = dias === null ? '—' : dias < 0 ? 'VENCIDA' : dias === 0 ? 'HOY' : `${dias}d`;
-      const etaLabel  = ets.length
-        ? ets.map(e => `<span style="background:${srvColor[e.servicio]||'#E2E8F0'}22;color:${srvColor[e.servicio]||'#E2E8F0'};border:1px solid ${srvColor[e.servicio]||'#E2E8F0'}44;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;margin-right:4px">${srvLabel[e.servicio]||'—'} ${e.etapa||''}</span>`).join('')
-        : '<span style="color:#E2E8F0;font-size:11px">Sin etapa activa</span>';
-      const tecLabel  = [...new Set(ets.filter(e=>e.tecnico).map(e=>e.tecnico))].join(', ') || '—';
-      const tiempoLabel = ets.length ? tiempoEnEtapa(ets[0]) : '—';
-
-      return `<div class="taller-fila" style="display:grid;grid-template-columns:130px 1fr 180px 120px 80px 90px;align-items:center;gap:0;padding:0 32px;height:60px;border-bottom:1px solid #0D1B2E;transition:background 0.2s" onmouseover="this.style.background='#0D1B2E'" onmouseout="this.style.background='transparent'">
-        <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;letter-spacing:3px;color:#E2E8F0">${o.placa}</div>
-        <div>
-          <div style="font-size:13px;font-weight:500;color:#94A3B8;margin-bottom:4px">${[o.marca,o.linea].filter(Boolean).join(' ')||'—'}</div>
-          <div>${etaLabel}</div>
-        </div>
-        <div style="font-size:12px;color:#64748B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${tecLabel}"> ${tecLabel}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:12px;color:#64748B">${tiempoLabel}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:${color}">${diasLabel}</div>
-        <div>
-          ${tipo === 'entrega' ? `<span style="background:#22C55E22;color:#22C55E;border:1px solid #22C55E44;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px">ENTREGA HOY</span>` : ''}
-          ${tipo === 'ingreso' ? `<span style="background:#3B82F622;color:#3B82F6;border:1px solid #3B82F644;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px">NUEVO HOY</span>` : ''}
-          ${tipo === 'activa' ? `<span style="background:#F59E0B22;color:#F59E0B;border:1px solid #F59E0B44;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px">EN PROCESO</span>` : ''}
-        </div>
-      </div>`;
-    }
-
-    function renderSeccion(titulo, color, icono, ordenes, tipo) {
-      if (!ordenes.length) return '';
-      return `
-        <div style="margin-bottom:2px">
-          <div style="display:grid;grid-template-columns:130px 1fr 180px 120px 80px 90px;align-items:center;gap:0;padding:0 32px;height:36px;background:${color}18;border-left:3px solid ${color}">
-            <div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;letter-spacing:3px;color:${color};grid-column:1/-1">${icono} ${titulo} <span style="opacity:0.6">(${ordenes.length})</span></div>
-          </div>
-          <div style="display:grid;grid-template-columns:130px 1fr 180px 120px 80px 90px;padding:4px 32px 4px;border-bottom:1px solid #0D1B2E">
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">PLACA</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">VEHÍCULO / ETAPA ACTUAL</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">TÉCNICO</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">TIEMPO ETAPA</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">ENTREGA</div>
-            <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#94A3B8;text-transform:uppercase">ESTADO</div>
-          </div>
-          ${ordenes.map(o => renderFila(o, tipo)).join('')}
-        </div>`;
-    }
-
-    // Stats bar
-    const statsHtml = `
-      <div style="display:flex;align-items:center;gap:40px;padding:12px 32px;background:#060B14;border-bottom:1px solid #0D1B2E">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:#3B82F6">${todasOrdenes.length}</div>
-          <div style="font-size:10px;color:#E2E8F0;letter-spacing:1px;text-transform:uppercase">Órdenes<br>activas</div>
-        </div>
-        <div style="width:1px;height:36px;background:#94A3B8"></div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:#22C55E">${entregarHoy.length}</div>
-          <div style="font-size:10px;color:#E2E8F0;letter-spacing:1px;text-transform:uppercase">Entregan<br>hoy</div>
-        </div>
-        <div style="width:1px;height:36px;background:#94A3B8"></div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:#3B82F6">${creadasHoy.length}</div>
-          <div style="font-size:10px;color:#E2E8F0;letter-spacing:1px;text-transform:uppercase">Ingresaron<br>hoy</div>
-        </div>
-        <div style="width:1px;height:36px;background:#94A3B8"></div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="font-family:'DM Mono',monospace;font-size:28px;font-weight:700;color:#F59E0B">${enProceso.length}</div>
-          <div style="font-size:10px;color:#E2E8F0;letter-spacing:1px;text-transform:uppercase">En proceso<br>ahora</div>
-        </div>
-        <div style="flex:1"></div>
-        <div style="font-size:10px;color:#94A3B8;font-family:'DM Mono',monospace"></div>
-      </div>`;
+    // ── Render completo ──────────────────────────────────────
+    const filasHtml = ordenesEnGrid.map(renderFila).join('');
 
     cont.innerHTML = `
-      <style>
-        @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        @keyframes flash  {
-          0%,100% { background: transparent; }
-          20%,60% { background: #22C55E18; box-shadow: inset 0 0 0 1px #22C55E44; }
-          40%,80% { background: #22C55E08; }
-        }
-        .fila-completada { animation: flash 1s ease-in-out 4; }
-        #pag-taller { background:#0A0F1A; min-height:100vh; }
-      </style>
-      ${statsHtml}
-      ${recienCompletadas.length ? renderSeccionCompletadas(recienCompletadas) : ''}
-      ${renderSeccion('ENTREGAS DEL DÍA', '#22C55E', '', entregarHoy, 'entrega')}
-      ${renderSeccion('INGRESOS DE HOY', '#3B82F6', '', creadasHoy, 'ingreso')}
-      ${renderSeccion('EN PROCESO', '#F59E0B', '', enProceso.filter(o => !entregarHoy.includes(o) && !creadasHoy.includes(o)), 'activa')}
-      ${!recienCompletadas.length && !entregarHoy.length && !creadasHoy.length && !enProceso.length
-        ? `<div style="text-align:center;padding:80px 0;color:#94A3B8;font-family:'DM Mono',monospace;font-size:14px;letter-spacing:2px">SIN ACTIVIDAD HOY</div>`
-        : ''}
-      <!-- Watermark logo -->
-      <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:420px;height:420px;pointer-events:none;z-index:0">
-        <img src="Logo_Fondo_Taller.png" style="width:100%;height:100%;object-fit:contain;opacity:0.07;filter:grayscale(1) brightness(3)" alt="">
+      <div class="tv-shell">
+        <div class="tv-header">
+          <div class="tv-brand">
+            <div class="tv-brand-dot"></div>
+            <span class="tv-brand-name">Freimanautos · Sistema Operativo</span>
+          </div>
+          <div id="taller-reloj" class="tv-clock"></div>
+          <div id="taller-fecha" class="tv-date"></div>
+        </div>
+
+        <div class="tv-kpi-strip">
+          <div class="tv-kpi">
+            <div class="tv-kpi-num" style="color:#93C5FD">${ordenesActivas.length}</div>
+            <div class="tv-kpi-label">Órdenes<br>activas</div>
+          </div>
+          <div class="tv-kpi">
+            <div class="tv-kpi-num" style="color:#4ADE80">${entregadasHoy.length}</div>
+            <div class="tv-kpi-label">Entregadas<br>hoy</div>
+          </div>
+          <div class="tv-kpi">
+            <div class="tv-kpi-num" style="color:#93C5FD">${creadasHoy.length}</div>
+            <div class="tv-kpi-label">Ingresaron<br>hoy</div>
+          </div>
+          <div class="tv-kpi">
+            <div class="tv-kpi-num" style="color:#FCD34D">${enProceso.length}</div>
+            <div class="tv-kpi-label">En proceso<br>ahora</div>
+          </div>
+        </div>
+
+        <div class="tv-body">
+          <div class="tv-list-wrap">
+            <div class="tv-table-wrap">
+              <table class="tv-table">
+                <thead class="tv-thead">
+                  <tr>
+                    <th class="tv-col-placa">Placa</th>
+                    <th class="tv-col-etapas">Etapas del proceso</th>
+                    <th class="tv-col-tec">Técnico</th>
+                    <th class="tv-col-timer">Tiempo</th>
+                    <th class="tv-col-entrega">Entrega</th>
+                    <th class="tv-col-estado">Estado</th>
+                  </tr>
+                </thead>
+                <tbody class="tv-tbody">
+                  ${filasHtml || `<tr><td colspan="6" style="text-align:center;padding:3vh;color:rgba(255,255,255,.15);font-size:.8vw;letter-spacing:.1em">SIN ÓRDENES ACTIVAS</td></tr>`}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tv-panel-right">
+            <div class="tv-panel-title">Listos hoy</div>
+            <div class="tv-panel-list">${panelHtml}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tv-watermark">
+        <img src="Logo_Fondo_Taller.png"
+          style="width:100%;height:100%;object-fit:contain;opacity:0.04;filter:grayscale(1) brightness(3)" alt="">
       </div>
     `;
+
+    // Guardar referencias globales
+    window._tvEtapasTodas    = etapasTodas;
+    window._tvOrdenesActivas = ordenesActivas;
+    window._tvEntregadasHoy  = entregadasHoy;
+    window._tvAprobadas      = aprobadas;
+
+    iniciarRelojTaller();
+
+    // Timers en vivo
+    if (window._tallerTimerInterval) clearInterval(window._tallerTimerInterval);
+    window._tallerTimerInterval = setInterval(() => {
+      etapasActivas.forEach(e => {
+        const el = document.getElementById(`tv-et-${e.id}`);
+        if (el) el.textContent = _tvTimerStr(e.inicio);
+      });
+    }, 1000);
+
+    // Overlay por cambio de etapa
+    if (ordenCambiada && !nuevasEntregadas.length && !nuevasListas.length) {
+      const ets = etapasTodas.filter(e => e.orden_id === ordenCambiada.id);
+      setTimeout(() => _tvMostrarOverlay(ordenCambiada, ets, 'ETAPA ACTUALIZADA', false, aprobadas), 400);
+      const rowEl = document.getElementById(`tv-row-${ordenCambiada.id}`);
+      if (rowEl) { rowEl.classList.remove('flash'); void rowEl.offsetWidth; rowEl.classList.add('flash'); }
+    }
+
   } catch(e) {
-    const cont2 = document.getElementById('taller-contenido');
-    if (cont2) cont2.innerHTML = `<div style="color:#EF4444;padding:40px;font-family:'DM Mono',monospace">ERROR: ${e.message}</div>`;
+    if (!document.getElementById('tv-activate-screen'))
+      cont.innerHTML = `<div style="color:#F87171;padding:4vh 3vw;font-family:'DM Mono',monospace;font-size:1.2vw">ERROR: ${e.message}</div>`;
   }
+}
+
+function _tvVerDetalle(ordenId) {
+  const todas  = [...(window._tvOrdenesActivas||[]), ...(window._tvEntregadasHoy||[])];
+  const orden  = todas.find(o => o.id === ordenId);
+  if (!orden) return;
+  const ets    = (window._tvEtapasTodas||[]).filter(e => e.orden_id === ordenId);
+  const esEnt  = (window._tvEntregadasHoy||[]).some(o => o.id === ordenId);
+  _tvMostrarOverlay(orden, ets, esEnt ? '✓ ENTREGADA HOY' : 'DETALLE DE ORDEN', esEnt, window._tvAprobadas);
 }

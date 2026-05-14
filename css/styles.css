@@ -1543,3 +1543,80 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 #srv-drag-container { display: flex; flex-direction: column; gap: 0; }
 .etapa-card.etapa-drag-over { border: 2px dashed var(--azul-mid); background: var(--azul-light); }
 .etapa-card.dragging { opacity: 0.5; }
+/* ═══════════════════════════════════════════════════════════
+   COMBUSTIBLE — Nueva orden
+═══════════════════════════════════════════════════════════ */
+.combustible-opcion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: var(--radio);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gris-texto);
+  transition: all 0.15s;
+  text-align: center;
+  background: white;
+}
+.combustible-opcion:hover {
+  border-color: var(--azul-mid);
+  background: var(--azul-light);
+}
+.combustible-opcion.selected {
+  border-color: var(--azul-mid);
+  background: var(--azul-light);
+  color: var(--azul);
+}
+.combustible-barra {
+  width: 100%;
+  height: 8px;
+  background: var(--gris-borde);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.combustible-barra::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: var(--pct);
+  background: linear-gradient(90deg, #F59E0B, #16A34A);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TIPO CLIENTE — Botones visuales nueva orden
+═══════════════════════════════════════════════════════════ */
+.tipo-cliente-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 8px;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: var(--radio);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gris-texto);
+  transition: all 0.15s;
+  text-align: center;
+  background: white;
+  user-select: none;
+}
+.tipo-cliente-btn:hover {
+  border-color: var(--azul-mid);
+  background: var(--azul-light);
+  color: var(--azul);
+}
+.tipo-cliente-btn.selected {
+  border-color: var(--azul-mid);
+  background: var(--azul-light);
+  color: var(--azul);
+  box-shadow: 0 0 0 3px rgba(42,82,152,0.12);
+}

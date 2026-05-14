@@ -590,17 +590,23 @@ async function cargarDashboardFinanciero() {
 // TABS DEL DASHBOARD
 // ═══════════════════════════════════════════════════════════
 function switchDashTab(tab) {
+  const mesCont = document.getElementById('dash-mes-contenido');
   const opCont  = document.getElementById('dash-contenido');
   const finCont = document.getElementById('dash-financiero-contenido');
   const metCont = document.getElementById('dash-metas-contenido');
+  const btnMes  = document.getElementById('dash-tab-mes');
   const btnOp   = document.getElementById('dash-tab-operativo');
   const btnFin  = document.getElementById('dash-tab-financiero');
   const btnMet  = document.getElementById('dash-tab-metas');
 
-  [opCont, finCont, metCont].forEach(c => { if (c) c.style.display = 'none'; });
-  [btnOp, btnFin, btnMet].forEach(b => { if (b) b.classList.remove('active'); });
+  [mesCont, opCont, finCont, metCont].forEach(c => { if (c) c.style.display = 'none'; });
+  [btnMes, btnOp, btnFin, btnMet].forEach(b => { if (b) b.classList.remove('active'); });
 
-  if (tab === 'operativo') {
+  if (tab === 'mes') {
+    if (mesCont) { mesCont.style.display = ''; }
+    if (btnMes)  btnMes.classList.add('active');
+    if (!mesCont?.innerHTML?.trim() || mesCont.innerHTML.includes('loading-state')) cargarDashboardMes();
+  } else if (tab === 'operativo') {
     if (opCont)  { opCont.style.display  = ''; }
     if (btnOp)   btnOp.classList.add('active');
     if (!opCont?.innerHTML?.trim() || opCont.innerHTML.includes('loading-state')) cargarDashboard();
@@ -612,5 +618,450 @@ function switchDashTab(tab) {
     if (metCont) { metCont.style.display = ''; }
     if (btnMet)  btnMet.classList.add('active');
     if (typeof cargarDashboardMetas === 'function') cargarDashboardMetas();
+  }
+}
+// ═══════════════════════════════════════════════════════════
+// DASHBOARD MES ACTUAL — Tab por defecto
+// ═══════════════════════════════════════════════════════════
+async function cargarDashboardMes() {
+  const cont = document.getElementById('dash-mes-contenido');
+  if (!cont) return;
+  cont.innerHTML = '<div class="loading-state">Cargando mes actual...</div>';
+
+  try {
+    const ahora      = new Date();
+    const inicioMes  = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString();
+    const finMes     = new Date(ahora.getFullYear(), ahora.getMonth()+1, 0, 23, 59, 59).toISOString();
+    const hoy        = new Date(); hoy.setHours(0,0,0,0);
+
+    const mesesNombres = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                          'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const mesNombre  = mesesNombres[ahora.getMonth()];
+    const anioActual = ahora.getFullYear();
+
+    const [ordenesActivas, ordenesEntregadasMes, etapasActivas, etapasMes] = await Promise.all([
+      api(`/ordenes?estado=eq.Activa&pulmon=eq.false&select=id,placa,marca,linea,propietario,fecha_entrega_1,creado_en`).catch(()=>[]) || [],
+      api(`/ordenes?estado=eq.Entregada&creado_en=gte.${inicioMes}&select=id,placa,creado_en,entregada_en`).catch(()=>[]) || [],
+      api(`/etapas?fin=is.null&inicio=not.is.null&select=orden_id,etapa,servicio,tecnico`).catch(()=>[]) || [],
+      api(`/etapas?fin=gte.${inicioMes}&select=orden_id,servicio,valor`).catch(()=>[]) || []
+    ]);
+
+    const hoyISO       = hoy.toISOString().split('T')[0];
+    const ingresadasHoy = ordenesActivas.filter(o => new Date(o.creado_en) >= hoy).length;
+    const entregandoHoy = ordenesActivas.filter(o => o.fecha_entrega_1?.split('T')[0] === hoyISO).length;
+    const enProceso     = new Set(etapasActivas.map(e => e.orden_id)).size;
+    const ingresosMes   = etapasMes.reduce((s,e) => s+(e.valor||0), 0);
+
+    const fmt = n => n != null
+      ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n)
+      : '—';
+
+    // Próximas entregas del mes (ordenesActivas con fecha_entrega_1 en este mes)
+    const proximasEntregas = ordenesActivas
+      .filter(o => {
+        if (!o.fecha_entrega_1) return false;
+        const d = new Date(o.fecha_entrega_1);
+        return d >= hoy;
+      })
+      .map(o => {
+        const dias = Math.round((new Date(o.fecha_entrega_1) - hoy) / 86400000);
+        return { ...o, dias };
+      })
+      .sort((a,b) => a.dias - b.dias)
+      .slice(0, 6);
+
+    const colorBar = p => p >= 100 ? 'var(--verde)' : p >= 70 ? '#D97706' : 'var(--rojo)';
+
+    // Servicios del mes
+    const srvColor  = { latoneria:'#DC2626', pintura:'#D97706', mecanica:'#2563EB', adicionales:'#059669' };
+    const conteoPorSrv = {};
+    etapasMes.forEach(e => {
+      const s = e.servicio || 'otro';
+      conteoPorSrv[s] = (conteoPorSrv[s]||0) + 1;
+    });
+    const maxSrv = Math.max(...Object.values(conteoPorSrv), 1);
+
+    const srvHtml = Object.entries(conteoPorSrv).sort((a,b)=>b[1]-a[1]).map(([srv, cnt]) => {
+      const color = srvColor[srv] || '#6B7280';
+      const pct   = Math.round((cnt/maxSrv)*100);
+      return `<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;font-weight:600;color:${color}">${CATALOGO[srv]?.nombre||srv}</span>
+          <span style="font-size:12px;color:var(--gris-mid)">${cnt} etapas</span>
+        </div>
+        <div style="height:6px;background:var(--gris-borde);border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${color};border-radius:99px;transition:width .6s"></div>
+        </div>
+      </div>`;
+    }).join('') || '<div style="font-size:13px;color:var(--gris-mid)">Sin datos aún.</div>';
+
+    // Próximas entregas html
+    const entregasHtml = proximasEntregas.length
+      ? proximasEntregas.map(o => {
+          const urgente = o.dias <= 0;
+          const pronto  = o.dias > 0 && o.dias <= 2;
+          const color   = urgente ? 'var(--rojo)' : pronto ? '#D97706' : 'var(--verde)';
+          const bg      = urgente ? 'var(--rojo-bg)' : pronto ? '#FEF3C7' : 'var(--verde-bg)';
+          const label   = urgente
+            ? (o.dias === 0 ? 'Hoy' : `${Math.abs(o.dias)}d vencida`)
+            : o.dias === 1 ? 'Mañana' : `${o.dias}d`;
+          return `<div class="dash-entrega-row" onclick="abrirOrden(${o.id})" style="cursor:pointer">
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'DM Mono',monospace;font-weight:600;font-size:13px;letter-spacing:1px">${o.placa}</div>
+              <div style="font-size:11px;color:var(--gris-mid);margin-top:1px">${[o.marca,o.linea].filter(Boolean).join(' ')||'—'} · ${o.propietario||'—'}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:12px;font-weight:700;color:${color};background:${bg};padding:3px 8px;border-radius:99px">${label}</div>
+              <div style="font-size:10px;color:var(--gris-mid);margin-top:2px">${new Date(o.fecha_entrega_1).toLocaleDateString('es-CO')}</div>
+            </div>
+          </div>`;
+        }).join('')
+      : '<div style="font-size:13px;color:var(--gris-mid);padding:8px 0">No hay fechas de entrega registradas.</div>';
+
+    cont.innerHTML = `
+      <div style="margin-bottom:16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:20px;font-weight:700;color:var(--texto)">${mesNombre} ${anioActual}</div>
+          <div style="font-size:13px;color:var(--gris-mid);margin-top:2px">Resumen operativo del mes en curso</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-ghost btn-sm" onclick="abrirModalReporte('dia')" style="font-size:12px;display:flex;align-items:center;gap:5px">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Reporte por día
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="abrirModalReporte('semana')" style="font-size:12px;display:flex;align-items:center;gap:5px">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Reporte por semana
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="generarReporteMes()" style="font-size:12px;display:flex;align-items:center;gap:5px">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Reporte del mes
+          </button>
+        </div>
+      </div>
+
+      <div class="dash-grid" style="margin-bottom:16px">
+        <div class="dash-card">
+          <div class="dash-card-icon" style="background:#EBF2FF;color:#2563EB">
+            <svg width="22" height="22" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/></svg>
+          </div>
+          <div class="dash-card-val" style="color:var(--azul)">${ordenesActivas.length}</div>
+          <div class="dash-card-label">Órdenes activas</div>
+          <div class="dash-card-sub">${ingresadasHoy} ingresaron hoy</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-icon" style="background:#E6F5EF;color:#059669">
+            <svg width="22" height="22" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div class="dash-card-val" style="color:var(--verde)">${ordenesEntregadasMes.length}</div>
+          <div class="dash-card-label">Entregadas este mes</div>
+          <div class="dash-card-sub">${entregandoHoy} entregan hoy</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-icon" style="background:#FEF3C7;color:#D97706">
+            <svg width="22" height="22" fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="dash-card-val" style="color:#D97706">${enProceso}</div>
+          <div class="dash-card-label">En proceso ahora</div>
+          <div class="dash-card-sub">Etapas activas</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-icon" style="background:#E6F5EF;color:#059669">
+            <svg width="22" height="22" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div class="dash-card-val" style="color:var(--verde);font-size:18px">${fmt(ingresosMes)}</div>
+          <div class="dash-card-label">Ingresos del mes</div>
+          <div class="dash-card-sub">Mano de obra completada</div>
+        </div>
+      </div>
+
+      <div class="dash-row-2">
+        <div class="dash-panel">
+          <div class="dash-panel-titulo">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Próximas entregas
+          </div>
+          <div class="dash-entregas">${entregasHtml}</div>
+        </div>
+        <div class="dash-panel">
+          <div class="dash-panel-titulo">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Servicios del mes
+          </div>
+          ${srvHtml}
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// REPORTES — Mes, semana y día
+// ═══════════════════════════════════════════════════════════
+
+function abrirModalReporte(tipo) {
+  const modal = document.getElementById('modal-reporte');
+  if (!modal) {
+    // Crear modal si no existe
+    const div = document.createElement('div');
+    div.id = 'modal-reporte';
+    div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center';
+    div.innerHTML = `<div style="background:var(--blanco);border-radius:12px;width:380px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+      <div style="padding:20px 24px;border-bottom:1px solid var(--gris-borde);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:15px;font-weight:700;color:var(--texto)" id="modal-rep-titulo">Reporte</div>
+        <button onclick="cerrarModalReporte()" style="background:none;border:none;cursor:pointer;color:var(--gris-mid);font-size:18px">✕</button>
+      </div>
+      <div style="padding:20px 24px" id="modal-rep-body"></div>
+      <div style="padding:14px 24px;border-top:1px solid var(--gris-borde);display:flex;justify-content:flex-end;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="cerrarModalReporte()">Cancelar</button>
+        <button class="btn btn-primary btn-sm" id="modal-rep-btn" onclick="">Generar</button>
+      </div>
+    </div>`;
+    document.body.appendChild(div);
+  }
+
+  const ahora = new Date();
+  const titulo = document.getElementById('modal-rep-titulo');
+  const body   = document.getElementById('modal-rep-body');
+  const btn    = document.getElementById('modal-rep-btn');
+  const m = document.getElementById('modal-reporte');
+  m.style.display = 'flex';
+
+  if (tipo === 'dia') {
+    titulo.textContent = 'Reporte por día';
+    body.innerHTML = `
+      <div class="field">
+        <label>Selecciona el día</label>
+        <input type="date" id="rep-fecha-dia" value="${ahora.toISOString().split('T')[0]}" max="${ahora.toISOString().split('T')[0]}">
+      </div>`;
+    btn.onclick = () => { generarReporteDia(document.getElementById('rep-fecha-dia')?.value); };
+  } else if (tipo === 'semana') {
+    // Calcular inicio de semana actual (lunes)
+    const lunes = new Date(ahora);
+    lunes.setDate(ahora.getDate() - ((ahora.getDay() + 6) % 7));
+    titulo.textContent = 'Reporte por semana';
+    body.innerHTML = `
+      <div class="field" style="margin-bottom:12px">
+        <label>Fecha inicio (lunes)</label>
+        <input type="date" id="rep-fecha-ini" value="${lunes.toISOString().split('T')[0]}" max="${ahora.toISOString().split('T')[0]}">
+      </div>
+      <div class="field">
+        <label>Fecha fin (domingo)</label>
+        <input type="date" id="rep-fecha-fin" value="${ahora.toISOString().split('T')[0]}" max="${ahora.toISOString().split('T')[0]}">
+      </div>`;
+    btn.onclick = () => {
+      const ini = document.getElementById('rep-fecha-ini')?.value;
+      const fin = document.getElementById('rep-fecha-fin')?.value;
+      generarReporteSemana(ini, fin);
+    };
+  }
+}
+
+function cerrarModalReporte() {
+  const m = document.getElementById('modal-reporte');
+  if (m) m.style.display = 'none';
+}
+
+async function generarReporteMes() {
+  const ahora     = new Date();
+  const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString();
+  const mesesNombres = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const mesNombre = mesesNombres[ahora.getMonth()];
+  const titulo    = `Reporte ${mesNombre} ${ahora.getFullYear()}`;
+  await _generarReporte(inicioMes, new Date(ahora.getFullYear(), ahora.getMonth()+1, 0, 23, 59, 59).toISOString(), titulo);
+}
+
+async function generarReporteDia(fecha) {
+  if (!fecha) { toast('Selecciona una fecha', 'err'); return; }
+  cerrarModalReporte();
+  const ini = new Date(fecha + 'T00:00:00');
+  const fin = new Date(fecha + 'T23:59:59');
+  const fmt = d => d.toLocaleDateString('es-CO', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+  await _generarReporte(ini.toISOString(), fin.toISOString(), `Reporte del ${fmt(ini)}`);
+}
+
+async function generarReporteSemana(fechaIni, fechaFin) {
+  if (!fechaIni || !fechaFin) { toast('Selecciona las fechas', 'err'); return; }
+  cerrarModalReporte();
+  const ini = new Date(fechaIni + 'T00:00:00');
+  const fin = new Date(fechaFin + 'T23:59:59');
+  const fmtCorto = d => d.toLocaleDateString('es-CO', { day:'2-digit', month:'short' });
+  await _generarReporte(ini.toISOString(), fin.toISOString(), `Reporte semana ${fmtCorto(ini)} – ${fmtCorto(fin)}`);
+}
+
+async function _generarReporte(desde, hasta, titulo) {
+  toast('Generando reporte...');
+  try {
+    const [ordenesEnt, etapasPeriodo, ordenesActivas] = await Promise.all([
+      api(`/ordenes?estado=eq.Entregada&entregada_en=gte.${desde}&entregada_en=lte.${hasta}&select=id,placa,marca,linea,propietario,aseguradora,entregada_en,fecha_entrega_1`).catch(()=>[]) || [],
+      api(`/etapas?fin=gte.${desde}&fin=lte.${hasta}&select=orden_id,etapa,servicio,valor,tecnico,inicio,fin`).catch(()=>[]) || [],
+      api(`/ordenes?estado=eq.Activa&creado_en=gte.${desde}&creado_en=lte.${hasta}&select=id,placa,marca,linea,propietario,aseguradora,creado_en`).catch(()=>[]) || []
+    ]);
+
+    const ingresos  = etapasPeriodo.reduce((s,e) => s+(e.valor||0), 0);
+    const fmt       = n => n != null ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : '$0';
+    const fmtFecha  = d => d ? new Date(d).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    const fmtHora   = d => d ? new Date(d).toLocaleString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}) : '—';
+
+    // Agrupar etapas por servicio
+    const srvCount = {};
+    etapasPeriodo.forEach(e => {
+      const s = e.servicio || 'otro';
+      srvCount[s] = (srvCount[s]||0) + 1;
+    });
+
+    // Agrupar por técnico
+    const tecCount = {};
+    etapasPeriodo.forEach(e => {
+      if (!e.tecnico) return;
+      tecCount[e.tecnico] = (tecCount[e.tecnico]||0) + 1;
+    });
+
+    // Construir HTML del reporte
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>${titulo}</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family: Arial, sans-serif; color: #1a1a1a; background: #fff; font-size: 13px; }
+  .page { max-width: 900px; margin: 0 auto; padding: 32px; }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #1E3A5F; padding-bottom:16px; margin-bottom:24px; }
+  .logo-txt { font-size:22px; font-weight:700; color:#1E3A5F; letter-spacing:1px; }
+  .logo-sub { font-size:11px; color:#666; margin-top:3px; }
+  .rep-titulo { font-size:14px; font-weight:600; color:#333; text-align:right; }
+  .rep-fecha  { font-size:11px; color:#888; margin-top:3px; text-align:right; }
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+  .kpi-box { border:1px solid #e5e7eb; border-radius:8px; padding:14px 16px; }
+  .kpi-val { font-size:22px; font-weight:700; color:#1E3A5F; margin-bottom:4px; }
+  .kpi-lbl { font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.5px; }
+  .section { margin-bottom:24px; }
+  .section-title { font-size:12px; font-weight:700; color:#1E3A5F; text-transform:uppercase; letter-spacing:.8px; border-bottom:1px solid #e5e7eb; padding-bottom:8px; margin-bottom:12px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { background:#f3f4f6; padding:8px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:#666; font-weight:600; }
+  td { padding:7px 10px; border-bottom:1px solid #f3f4f6; color:#333; }
+  tr:last-child td { border-bottom:none; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:600; }
+  .pill-blue { background:#EBF2FF; color:#1E3A5F; }
+  .pill-green { background:#E6F5EF; color:#0D7A4E; }
+  .total-row { font-weight:700; background:#f9fafb; }
+  .footer { margin-top:32px; border-top:1px solid #e5e7eb; padding-top:12px; font-size:10px; color:#aaa; text-align:center; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="logo-txt">FREIMANAUTOS</div>
+      <div class="logo-sub">Simplemente profesional</div>
+    </div>
+    <div>
+      <div class="rep-titulo">${titulo}</div>
+      <div class="rep-fecha">Generado: ${new Date().toLocaleString('es-CO',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-box">
+      <div class="kpi-val">${ordenesEnt.length}</div>
+      <div class="kpi-lbl">Órdenes entregadas</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val">${ordenesActivas.length}</div>
+      <div class="kpi-lbl">Órdenes ingresadas</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val">${etapasPeriodo.length}</div>
+      <div class="kpi-lbl">Etapas completadas</div>
+    </div>
+    <div class="kpi-box">
+      <div class="kpi-val" style="font-size:16px">${fmt(ingresos)}</div>
+      <div class="kpi-lbl">Ingresos generados</div>
+    </div>
+  </div>
+
+  ${ordenesEnt.length ? `
+  <div class="section">
+    <div class="section-title">Órdenes entregadas</div>
+    <table>
+      <thead><tr><th>Placa</th><th>Vehículo</th><th>Propietario</th><th>Aseguradora</th><th>Fecha entrega</th></tr></thead>
+      <tbody>
+        ${ordenesEnt.map(o => `<tr>
+          <td><strong>${o.placa}</strong></td>
+          <td>${[o.marca,o.linea].filter(Boolean).join(' ')||'—'}</td>
+          <td>${o.propietario||'—'}</td>
+          <td>${o.aseguradora||'Particular'}</td>
+          <td>${fmtHora(o.entregada_en)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>` : ''}
+
+  ${ordenesActivas.length ? `
+  <div class="section">
+    <div class="section-title">Órdenes ingresadas</div>
+    <table>
+      <thead><tr><th>Placa</th><th>Vehículo</th><th>Propietario</th><th>Aseguradora</th><th>Fecha ingreso</th></tr></thead>
+      <tbody>
+        ${ordenesActivas.map(o => `<tr>
+          <td><strong>${o.placa}</strong></td>
+          <td>${[o.marca,o.linea].filter(Boolean).join(' ')||'—'}</td>
+          <td>${o.propietario||'—'}</td>
+          <td>${o.aseguradora||'Particular'}</td>
+          <td>${fmtFecha(o.creado_en)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>` : ''}
+
+  ${Object.keys(srvCount).length ? `
+  <div class="section">
+    <div class="section-title">Etapas por servicio</div>
+    <table>
+      <thead><tr><th>Servicio</th><th>Etapas completadas</th></tr></thead>
+      <tbody>
+        ${Object.entries(srvCount).sort((a,b)=>b[1]-a[1]).map(([srv,cnt]) => `<tr>
+          <td>${srv.charAt(0).toUpperCase()+srv.slice(1)}</td>
+          <td><span class="pill pill-blue">${cnt}</span></td>
+        </tr>`).join('')}
+        <tr class="total-row"><td>Total</td><td>${etapasPeriodo.length}</td></tr>
+      </tbody>
+    </table>
+  </div>` : ''}
+
+  ${Object.keys(tecCount).length ? `
+  <div class="section">
+    <div class="section-title">Productividad por técnico</div>
+    <table>
+      <thead><tr><th>Técnico</th><th>Etapas completadas</th></tr></thead>
+      <tbody>
+        ${Object.entries(tecCount).sort((a,b)=>b[1]-a[1]).map(([tec,cnt]) => `<tr>
+          <td>${tec}</td>
+          <td><span class="pill pill-green">${cnt}</span></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>` : ''}
+
+  <div class="footer">
+    Freimanautos · Sistema Operativo · Reporte generado automáticamente
+  </div>
+</div>
+</body>
+</html>`;
+
+    // Abrir en nueva pestaña y disparar impresión/descarga
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      setTimeout(() => win.print(), 600);
+    }
+    toast('Reporte generado ✓');
+  } catch(e) {
+    toast('Error generando reporte: ' + e.message, 'err');
   }
 }
