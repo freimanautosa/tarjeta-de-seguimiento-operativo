@@ -221,21 +221,21 @@ function _calcularMetricas(etapas, ordenes, novedades, ordenesEntregadas, ordene
     t.servicios[s] = (t.servicios[s]||0)+1;
   });
   const tecnicos = Object.entries(tecMap).map(([tec, d]) => {
-    const eficiencia = d.horasEst > 0
+    const eficienciaEst = d.horasEst > 0
       ? Math.round((d.horasEst / Math.max(d.totalHrs, 0.1)) * 100)
       : null;
     return {
-      tecnico:        tec,
-      etapas:         d.etapas,
-      completadas:    d.completadas,
-      horasReales:    Math.round(d.totalHrs*10)/10,
-      horasEstimadas: Math.round(d.horasEst*10)/10,
-      horasFacturadas:Math.round(d.horasFact*10)/10,
-      horasAdicionales:Math.round(d.horasAdi*10)/10,
-      ingresos:       d.totalVal,
-      eficiencia:     eficiencia, // >100 = más rápido que estimado
-      promedioHrEtapa:d.durs.length ? Math.round((d.totalHrs/d.durs.length)*10)/10 : 0,
-      servicioTop:    Object.entries(d.servicios).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—'
+      tecnico:               tec,
+      etapas:                d.etapas,
+      completadas:           d.completadas,
+      horasReales:           Math.round(d.totalHrs*10)/10,   // Tiempo real calculado inicio→fin
+      horasEstimadas:        Math.round(d.horasEst*10)/10,   // Tiempo estimado del campo horas_estimadas
+      horasFacturadas:       Math.round(d.horasFact*10)/10,  // Horas facturadas al cliente
+      horasAdicionales:      Math.round(d.horasAdi*10)/10,   // Horas adicionales registradas
+      ingresos:              d.totalVal,
+      eficiencia:            eficienciaEst, // >100% = más rápido que estimado (basado en horas_estimadas)
+      promedioHrEtapa:       d.durs.length ? Math.round((d.totalHrs/d.durs.length)*10)/10 : 0,
+      servicioTop:           Object.entries(d.servicios).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—'
     };
   }).sort((a,b) => b.completadas - a.completadas);
 
@@ -482,11 +482,16 @@ function _generarPDF(d, titulo, subtitulo) {
 
   <!-- EFICIENCIA POR TÉCNICO -->
   <div class="section">
-    <div class="section-title">👷 Eficiencia por técnico</div>
+    <div class="section-title">👷 Rendimiento por técnico</div>
+    <div style="font-size:10px;color:#888;margin-bottom:10px;font-style:italic">
+      * Los tiempos estimados provienen del campo horas_estimadas por etapa. 
+      La eficiencia estimada compara el tiempo real vs el estimado (>100% = más rápido que lo previsto).
+      Los tiempos reales se calculan de inicio a fin de cada etapa.
+    </div>
     <table>
       <thead><tr>
-        <th>Técnico</th><th>Etapas</th><th>Hrs reales</th><th>Hrs estimadas</th>
-        <th>Eficiencia</th><th>Hrs/etapa prom.</th><th>Ingresos</th><th>Horas adicionales</th>
+        <th>Técnico</th><th>Etapas</th><th>Tiempo real (h)</th><th>Tiempo estimado (h)</th>
+        <th>Eficiencia est.</th><th>Prom. tiempo/etapa</th><th>Ingresos</th><th>Tiempo adicional (h)</th>
       </tr></thead>
       <tbody>
         ${tecnicos.map(t => {
@@ -625,7 +630,7 @@ function _generarExcel(d, titulo) {
   XLSX.utils.book_append_sheet(wb, ws2, 'Por Servicio');
 
   // ── Hoja 3: Técnicos ──
-  const tecHeader = ['Técnico','Etapas completadas','Hrs reales','Hrs estimadas','Eficiencia (%)','Hrs/etapa prom.','Ingresos (COP)','Hrs adicionales','Servicio top'];
+  const tecHeader = ['Técnico','Etapas completadas','Tiempo real (h)','Tiempo estimado (h)','Eficiencia estimada (%)','Prom. tiempo/etapa (h)','Ingresos (COP)','Tiempo adicional (h)','Servicio top'];
   const tecRows   = tecnicos.map(t => [t.tecnico, t.completadas, t.horasReales, t.horasEstimadas, t.eficiencia, t.promedioHrEtapa, t.ingresos, t.horasAdicionales, t.servicioTop]);
   const ws3 = XLSX.utils.aoa_to_sheet([tecHeader, ...tecRows]);
   ws3['!cols'] = [{wch:20},{wch:18},{wch:12},{wch:15},{wch:14},{wch:16},{wch:18},{wch:16},{wch:14}];

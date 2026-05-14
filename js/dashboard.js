@@ -48,7 +48,8 @@ async function cargarDashboard() {
     const entregadas = ordenes.filter(o => o.estado === 'Entregada').length;
     const total      = ordenes.length;
 
-    actualizarCapacidad(activas + pulmon);
+    // Pulmón NO cuenta en la capacidad operativa del taller
+    actualizarCapacidad(activas);
 
     const etapasActivas = todasEtapas.filter(e => e.inicio && !e.fin);
 
@@ -724,19 +725,22 @@ async function cargarDashboardMes() {
           <div style="font-size:20px;font-weight:700;color:var(--texto)">${mesNombre} ${anioActual}</div>
           <div style="font-size:13px;color:var(--gris-mid);margin-top:2px">Resumen operativo del mes en curso</div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <button class="btn btn-ghost btn-sm" onclick="abrirModalReporte('dia')" style="font-size:12px;display:flex;align-items:center;gap:5px">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Reporte por día
-          </button>
-          <button class="btn btn-ghost btn-sm" onclick="abrirModalReporte('semana')" style="font-size:12px;display:flex;align-items:center;gap:5px">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Reporte por semana
-          </button>
-          <button class="btn btn-primary btn-sm" onclick="generarReporteMes()" style="font-size:12px;display:flex;align-items:center;gap:5px">
+        <div style="position:relative;display:inline-block" id="rep-dropdown-wrap">
+          <button class="btn btn-primary btn-sm" onclick="toggleRepDropdown()" style="font-size:12px;display:flex;align-items:center;gap:6px">
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Reporte del mes
+            Generar reporte ▾
           </button>
+          <div id="rep-dropdown" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:white;border:1px solid var(--gris-borde);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:100;min-width:180px;overflow:hidden">
+            <button onclick="generarReporteMes();toggleRepDropdown()" style="width:100%;text-align:left;padding:10px 14px;font-size:13px;border:none;background:none;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--texto)" onmouseover="this.style.background='var(--gris-bg)'" onmouseout="this.style.background='none'">
+              📅 Reporte del mes
+            </button>
+            <button onclick="abrirModalReporte('semana');toggleRepDropdown()" style="width:100%;text-align:left;padding:10px 14px;font-size:13px;border:none;background:none;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--texto);border-top:1px solid var(--gris-borde)" onmouseover="this.style.background='var(--gris-bg)'" onmouseout="this.style.background='none'">
+              📆 Reporte por semana
+            </button>
+            <button onclick="abrirModalReporte('dia');toggleRepDropdown()" style="width:100%;text-align:left;padding:10px 14px;font-size:13px;border:none;background:none;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--texto);border-top:1px solid var(--gris-borde)" onmouseover="this.style.background='var(--gris-bg)'" onmouseout="this.style.background='none'">
+              🗓 Reporte por día
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1063,5 +1067,22 @@ async function _generarReporte(desde, hasta, titulo) {
     toast('Reporte generado ✓');
   } catch(e) {
     toast('Error generando reporte: ' + e.message, 'err');
+  }
+}
+
+function toggleRepDropdown() {
+  const dd = document.getElementById('rep-dropdown');
+  if (!dd) return;
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+  // Cerrar al hacer clic fuera
+  if (dd.style.display === 'block') {
+    setTimeout(() => {
+      document.addEventListener('click', function _close(e) {
+        if (!document.getElementById('rep-dropdown-wrap')?.contains(e.target)) {
+          dd.style.display = 'none';
+          document.removeEventListener('click', _close);
+        }
+      });
+    }, 10);
   }
 }
