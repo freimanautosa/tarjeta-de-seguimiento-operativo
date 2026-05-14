@@ -1621,7 +1621,59 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   box-shadow: 0 0 0 3px rgba(42,82,152,0.12);
 }
 
-/* ── Combustible compacto (chip) ── */
+/* ── Modal pulmón tipo (tarjetas interno/externo) ── */
+.pulmon-tipo-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+.pulmon-tipo-card:hover {
+  border-color: var(--azul-mid);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+.pulmon-tipo-card:active { transform: translateY(0); }
+.pulmon-tipo-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.pulmon-tipo-titulo { font-size: 15px; font-weight: 700; color: var(--texto); line-height: 1; }
+.pulmon-tipo-desc   { font-size: 12px; color: var(--gris-mid); line-height: 1.4; font-weight: 400; }
+.pulmon-tipo-tag    { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 20px; margin-top: 2px; }
+
+/* ── Combustible dropdown ── */
+.comb-dropdown {
+  display: none;
+  position: absolute;
+  z-index: 999;
+  background: white;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  overflow: hidden;
+  min-width: 140px;
+}
+.comb-dropdown.open { display: block; }
+.comb-option {
+  padding: 10px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.comb-option:hover { background: var(--azul-light); color: var(--azul); }
+
+/* ── Combustible compacto (chip, legacy) ── */
 .comb-chip {
   display: inline-flex;
   align-items: center;
