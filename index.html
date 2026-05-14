@@ -62,18 +62,12 @@
         <div class="capacidad-donut-wrap">
           <svg width="80" height="80" viewBox="0 0 80 80">
             <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="8"/>
-            <!-- amarillo (capa abajo): activas normales -->
-            <circle id="cap-fill-activas" cx="40" cy="40" r="30" fill="none" stroke="#EAB308" stroke-width="8"
+            <circle id="cap-fill" cx="40" cy="40" r="30" fill="none" stroke="#EAB308" stroke-width="8"
               stroke-linecap="round" stroke-dasharray="0 188.5"
-              transform="rotate(-90 40 40)" style="transition:stroke-dasharray 0.5s"/>
-            <!-- naranja (capa encima): pulmón interno, tapa el inicio del amarillo -->
-            <circle id="cap-fill-pulmon" cx="40" cy="40" r="30" fill="none" stroke="#F97316" stroke-width="8"
-              stroke-linecap="round" stroke-dasharray="0 188.5"
-              transform="rotate(-90 40 40)" style="transition:stroke-dasharray 0.5s"/>
+              transform="rotate(-90 40 40)" style="transition:stroke-dasharray 0.5s,stroke 0.5s"/>
             <text id="cap-pct" x="40" y="45" text-anchor="middle" font-size="14" font-weight="700" fill="white">0%</text>
           </svg>
           <div class="capacidad-sub" id="cap-sub">0 de 34 cupos</div>
-          <div id="cap-pulmon-sub" style="font-size:11px;color:#F97316;margin-top:2px;display:none"></div>
         </div>
       </div>
       <button class="btn-logout" onclick="logout()">
@@ -160,25 +154,6 @@
           </div>
 
 
-
-          <div class="form-section">
-            <div class="form-section-titulo">Datos del vehículo</div>
-            <div class="grid-2">
-              <div class="field"><label>Marca</label><input id="n-marca" placeholder="Toyota"></div>
-              <div class="field"><label>Línea</label><input id="n-linea" placeholder="Hilux"></div>
-              <div class="field"><label>Modelo (año)</label><input id="n-modelo" placeholder="2021" maxlength="4"></div>
-              <div class="field"><label>Color</label><input id="n-color" placeholder="Blanco"></div>
-              <div class="field full"><label>VIN <span style="font-weight:400;color:var(--gris-mid);font-size:11px">(17 caracteres, opcional)</span></label>
-                <input id="n-vin" placeholder="WBA3A5C50DF256145" maxlength="17" style="font-family:'DM Mono',monospace;letter-spacing:1px" oninput="this.value=this.value.toUpperCase()">
-              </div>
-            </div>
-          </div>
-
-          <div class="form-section">
-            <div class="form-section-titulo">Datos del propietario</div>
-            <div class="grid-2">
-            </div>
-          </div>
 
           <!-- ═══ TIPO DE CLIENTE ═══ -->
           <div class="form-section">
@@ -319,19 +294,18 @@
               <div class="inv-item" onclick="toggleInv(this,'tapetes')"><input type="checkbox" value="tapetes"> Tapetes</div>
               <div class="inv-item" onclick="toggleInv(this,'herramientas')"><input type="checkbox" value="herramientas"> Herramientas</div>
               <div class="inv-item" onclick="toggleInv(this,'extintor')"><input type="checkbox" value="extintor"> Extintor</div>
-              <div class="inv-item" id="inv-combustible-item" onclick="abrirDropdownCombustible(event,this)" style="position:relative">
-                <input type="checkbox" style="display:none">
-                <span id="inv-combustible-label">⛽ Combustible</span>
-                <svg style="margin-left:auto;flex-shrink:0;opacity:.5" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-              </div>
             </div>
-            <input type="hidden" id="n-combustible-val">
-            <div id="comb-dropdown" class="comb-dropdown">
-              <div class="comb-option" onclick="seleccionarCombustible('vacio')">⬜ Vacío</div>
-              <div class="comb-option" onclick="seleccionarCombustible('1/4')">🟥 1/4</div>
-              <div class="comb-option" onclick="seleccionarCombustible('1/2')">🟨 1/2</div>
-              <div class="comb-option" onclick="seleccionarCombustible('3/4')">🟩 3/4</div>
-              <div class="comb-option" onclick="seleccionarCombustible('lleno')">🟦 Lleno</div>
+
+            <div style="margin-top:12px;border-top:1px solid var(--gris-borde);padding-top:10px">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gris-mid);margin-bottom:8px">Nivel de combustible</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <div class="comb-chip" onclick="toggleCombustible(this,'vacio')"><input type="radio" name="n-combustible" value="vacio" style="display:none">⬜ Vacío</div>
+                <div class="comb-chip" onclick="toggleCombustible(this,'1/4')"><input type="radio" name="n-combustible" value="1/4" style="display:none">🟥 1/4</div>
+                <div class="comb-chip" onclick="toggleCombustible(this,'1/2')"><input type="radio" name="n-combustible" value="1/2" style="display:none">🟨 1/2</div>
+                <div class="comb-chip" onclick="toggleCombustible(this,'3/4')"><input type="radio" name="n-combustible" value="3/4" style="display:none">🟩 3/4</div>
+                <div class="comb-chip" onclick="toggleCombustible(this,'lleno')"><input type="radio" name="n-combustible" value="lleno" style="display:none">🟦 Lleno</div>
+              </div>
+              <input type="hidden" id="n-combustible-val">
             </div>
 
             <div class="field" style="margin-top:12px"><label>Observaciones de inventario</label>
