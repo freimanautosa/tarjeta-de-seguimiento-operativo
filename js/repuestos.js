@@ -163,7 +163,7 @@ async function cargarRepuestosJefe() {
               <div>
                 <div style="font-weight:700;font-size:15px;margin-bottom:3px">${s.repuesto}</div>
                 <div style="font-size:12px;color:var(--gris-mid)">${s.unidades} und · Solicitado por <strong>${s.solicitado_por}</strong> · ${formatTS(s.creado_en)}</div>
-                ${orden.placa ? `<div style="font-size:12px;color:var(--azul);margin-top:2px;font-family:'DM Mono',monospace">${orden.placa} ${[orden.marca,orden.linea].filter(Boolean).join(' ')}</div>` : ''}
+                ${orden.placa ? `<div style="font-size:12px;color:var(--azul);margin-top:2px;font-family:'DM Mono',monospace">${orden.placa} ${[orden.marca,orden.linea].filter(Boolean).join(' ')} · <span style="color:var(--gris-mid)">Orden #${s.orden_id}</span></div>` : ''}
                 ${s.observaciones ? `<div style="font-size:12px;color:var(--gris-mid);margin-top:4px;font-style:italic">${s.observaciones}</div>` : ''}
               </div>
               <span class="badge ${estado.cls}">${estado.txt}</span>

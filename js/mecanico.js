@@ -105,11 +105,10 @@ async function cargarEtapasMecanico() {
               ${e.fin ? ' · Fin: ' + formatTS(e.fin) : ''}
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px">
             <span class="badge badge-${bCls}">${badge}</span>
             ${acc}
             ${!e.fin ? `<button class="btn btn-ghost btn-xs" onclick="abrirMecDetalle(${e.id},${oid})">Fotos / novedades</button>` : ''}
-            <button class="btn btn-ghost btn-xs" onclick="abrirModalSolicitudRepuesto(${oid},${e.id},'Orden #${oid}')" style="font-size:11px">+ Repuesto</button>
           </div>
         </div>`;
       }).join('');
@@ -143,6 +142,15 @@ async function mecIniciarEtapa(eid, nombre, oid) {
 
 async function mecFinalizarEtapa(eid, nombre, servicio, oid) {
   try {
+    // Verificar repuestos pendientes de esta etapa
+    const repPendientes = await api(
+      `/solicitudes_repuesto?etapa_id=eq.${eid}&estado=in.(pendiente_jefe,enviado_repuestos,cotizado,pedido)&select=id,repuesto,estado`
+    ).catch(()=>[]) || [];
+    if (repPendientes.length) {
+      const lista = repPendientes.map(r => `• ${r.repuesto} (${r.estado.replace('_',' ')})`).join('\n');
+      toast(`No puedes finalizar. Hay ${repPendientes.length} repuesto(s) pendiente(s):\n${lista}`, 'err');
+      return;
+    }
     await api(`/etapas?id=eq.${eid}`, 'PATCH', { fin: new Date().toISOString() });
     toast(`${nombre} finalizada ✓`);
     
@@ -371,49 +379,58 @@ async function cargarRepuestosMecanico() {
   if (!cont) return;
   cont.innerHTML = '<div class="loading-state">Cargando...</div>';
   try {
-    const etapas = await api(`/etapas?mecanico_id=eq.${sesion.id}&fin=is.null&select=orden_id`).catch(()=>[]) || [];
-    const oids = [...new Set(etapas.map(e=>e.orden_id))];
-    const ordenes = oids.length ? await api(`/ordenes?id=in.(${oids.join(',')})&select=id,placa,propietario`).catch(()=>[]) || [] : [];
-    const solicitudes = await api(`/repuestos_solicitud?solicitado_por=eq.${encodeURIComponent(sesion.nombre)}&order=creado_en.desc&limit=20`).catch(()=>[]) || [];
-    const estadoColor = { pendiente:'#D97706', aprobado:'#2563EB', enviado:'#7C3AED', recibido:'#059669', rechazado:'#DC2626' };
-    const estadoBg   = { pendiente:'#FEF3C7', aprobado:'#EBF2FF', enviado:'#EDE9FE', recibido:'#E6F5EF',  rechazado:'#FEE2E2' };
+    // Solicitudes del mecánico usando la nueva tabla solicitudes_repuesto
+    const solicitudes = await api(
+      `/solicitudes_repuesto?solicitado_por=eq.${encodeURIComponent(sesion.nombre)}&order=creado_en.desc&limit=30&select=*`
+    ).catch(()=>[]) || [];
 
-    _mecRepItems = [0];
+    const ordenIds = [...new Set(solicitudes.map(s=>s.orden_id).filter(Boolean))];
+    const ordenes  = ordenIds.length
+      ? await api(`/ordenes?id=in.(${ordenIds.join(',')})&select=id,placa,marca,linea,propietario`).catch(()=>[]) || []
+      : [];
+    const ordenMap = {};
+    ordenes.forEach(o => { ordenMap[o.id] = o; });
+
+    const estadoInfo = {
+      pendiente_jefe:    { label:'Pendiente revisión del jefe', color:'#D97706', bg:'#FEF3C7' },
+      enviado_repuestos: { label:'En gestión de repuestos',     color:'#7C3AED', bg:'#EDE9FE' },
+      cotizado:          { label:'Cotizado — esperando decisión',color:'#2563EB', bg:'#EBF2FF' },
+      pedido:            { label:'Pedido al proveedor',          color:'#0891B2', bg:'#E0F2FE' },
+      entregado:         { label:'Entregado ✓',                  color:'#059669', bg:'#E6F5EF' },
+      rechazado:         { label:'Rechazado',                    color:'#DC2626', bg:'#FEE2E2' },
+    };
+
+    if (!solicitudes.length) {
+      cont.innerHTML = `
+        <div class="seccion-titulo" style="margin-bottom:10px">Mis solicitudes de repuesto</div>
+        <div style="font-size:13px;color:var(--gris-mid);padding:12px 0">Sin solicitudes registradas.</div>`;
+      return;
+    }
+
     cont.innerHTML = `
-      ${solicitudes.length ? `<div style="margin-bottom:20px">
-        <div class="seccion-titulo" style="margin-bottom:10px">Mis solicitudes</div>
+      <div class="seccion-titulo" style="margin-bottom:12px">Mis solicitudes de repuesto</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
         ${solicitudes.map(s => {
-          const o = ordenes.find(ord=>ord.id===s.orden_id)||{};
-          const color = estadoColor[s.estado]||'#6B7280';
-          const bg = estadoBg[s.estado]||'#F3F4F6';
-          const puedeRecibir = s.estado === 'enviado';
-          return `<div style="border:1px solid var(--gris-borde);border-radius:8px;padding:12px;margin-bottom:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${puedeRecibir?'10px':'0'}">
+          const orden  = ordenMap[s.orden_id] || {};
+          const info   = estadoInfo[s.estado] || { label: s.estado, color:'#6B7280', bg:'#F3F4F6' };
+          const esEntregado = s.estado === 'entregado';
+          return `<div style="border:1px solid var(--gris-borde);border-radius:10px;padding:14px;background:white">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px">
               <div>
-                <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:14px">${o.placa||'—'}</div>
-                <div style="font-size:11px;color:var(--gris-mid);margin-top:2px">${formatTS(s.creado_en)}</div>
+                <div style="font-weight:700;font-size:14px;margin-bottom:2px">${s.repuesto}</div>
+                <div style="font-size:11px;color:var(--gris-mid)">${s.unidades} und · ${formatTS(s.creado_en)}</div>
+                ${orden.placa ? `<div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--azul);margin-top:3px">${orden.placa} ${[orden.marca,orden.linea].filter(Boolean).join(' ')} · Orden #${s.orden_id}</div>` : ''}
+                ${s.observaciones ? `<div style="font-size:11px;color:var(--gris-mid);font-style:italic;margin-top:3px">${s.observaciones}</div>` : ''}
               </div>
-              <span style="font-size:11px;font-weight:700;color:${color};background:${bg};padding:3px 12px;border-radius:99px;text-transform:uppercase">${s.estado}</span>
+              <span style="flex-shrink:0;font-size:10px;font-weight:700;color:${info.color};background:${info.bg};padding:3px 10px;border-radius:99px;text-transform:uppercase;white-space:nowrap">${info.label}</span>
             </div>
-            ${puedeRecibir ? `<button class="btn btn-success btn-sm" style="width:100%" onclick="marcarRepuestoRecibido(${s.id})">
-              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
-              Confirmar recibido
-            </button>` : ''}
+            ${s.nota_jefe ? `<div style="font-size:12px;background:var(--gris-bg);border-left:3px solid var(--azul);padding:6px 10px;border-radius:4px;margin-top:6px">
+              <strong>Nota del jefe:</strong> ${s.nota_jefe}
+            </div>` : ''}
+            ${esEntregado ? `<div style="font-size:12px;color:#059669;font-weight:600;margin-top:6px">✓ Repuesto recibido y listo para usar</div>` : ''}
           </div>`;
         }).join('')}
-      </div>` : ''}
-      <div class="seccion-titulo" style="margin-bottom:10px">Nueva solicitud</div>
-      ${!oids.length ? '<div style="font-size:13px;color:var(--gris-mid);padding:12px 0">No tenés órdenes activas asignadas.</div>' : `
-        <div class="field" style="margin-bottom:12px"><label>Orden de trabajo *</label>
-          <select id="mec-rep-orden">
-            <option value="">— Seleccioná la orden —</option>
-            ${ordenes.map(o=>`<option value="${o.id}">${o.placa} · ${o.propietario||'—'}</option>`).join('')}
-          </select>
-        </div>
-        <div id="mec-rep-items">${renderMecRepItem(0)}</div>
-        <button class="btn btn-ghost btn-sm" onclick="agregarMecRepItem()" style="margin-top:4px;margin-bottom:16px">+ Agregar pieza</button>
-        <div class="btn-row"><button class="btn btn-primary" onclick="enviarMecRepuestos()">Enviar solicitud</button></div>
-      `}`;
+      </div>`;
   } catch(e) { cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`; }
 }
 

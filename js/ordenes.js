@@ -519,13 +519,7 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
         </div>
       </div>
       <div class="etapa-body" id="eb-${k}">
-        <div class="etapa-actions" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          ${acc}
-          <button class="btn btn-ghost btn-sm" onclick="abrirModalSolicitudRepuesto(${e.orden_id||ordenActual?.id},${eid},'${ordenActual?.placa||""}')" style="font-size:12px;display:flex;align-items:center;gap:5px">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-            Solicitar repuesto
-          </button>
-        </div>
+        <div class="etapa-actions">${acc}</div>
         <div class="timestamps">
           <div class="ts-chip">Inicio: <strong>${e.inicio?formatTS(e.inicio):'—'}</strong></div>
           <div class="ts-chip">Fin: <strong>${e.fin?formatTS(e.fin):'—'}</strong></div>
@@ -1684,15 +1678,6 @@ function montarJefe() {
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
         Mecánicos
       </button>
-      <button class="nav-item" id="nav-repuestos" onclick="navJefe('repuestos')" style="position:relative">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-        Repuestos
-        <span id="badge-repuestos" style="display:none;position:absolute;top:6px;right:8px;background:var(--rojo);color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;align-items:center;justify-content:center">0</span>
-      </button>
-      <button class="nav-item" id="nav-reportes" onclick="navJefe('reportes')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        Reportes
-      </button>
     `;
   }
 
@@ -1725,8 +1710,6 @@ function montarJefe() {
   
   // Cargar capacidad al inicio
   _refrescarCapacidad();
-  // Badge repuestos pendientes
-  setTimeout(() => { if (typeof actualizarBadgeRepuestos === 'function') actualizarBadgeRepuestos(); }, 1000);
 
   // Activar Realtime
   iniciarRealtime();
@@ -1734,7 +1717,7 @@ function montarJefe() {
 
 function navJefe(pag) {
   // Actualizar clases active en sidebar y bottom nav
-  const pages = ['ordenes', 'nueva', 'dashboard', 'cotizaciones', 'calendario', 'mecanicos', 'repuestos', 'reportes'];
+  const pages = ['ordenes', 'nueva', 'dashboard', 'cotizaciones', 'calendario', 'mecanicos'];
   pages.forEach(p => {
     const navBtn = document.getElementById('nav-' + p);
     const bnavBtn = document.getElementById('bnav-' + p);
@@ -1785,16 +1768,6 @@ function navJefe(pag) {
       pagId = 'pag-mecanicos';
       titulo = 'Mecánicos';
       cargarMecanicosVista();
-      break;
-    case 'repuestos':
-      pagId = 'pag-repuestos-jefe';
-      titulo = 'Repuestos';
-      setTimeout(() => { if (typeof cargarRepuestosJefe === 'function') cargarRepuestosJefe(); }, 50);
-      break;
-    case 'reportes':
-      pagId = 'pag-reportes';
-      titulo = 'Reportes';
-      setTimeout(() => { if (typeof montarReportes === 'function') montarReportes(); }, 50);
       break;
     default:
       pagId = 'pag-ordenes';
@@ -2659,4 +2632,220 @@ async function recargarListasNuevaOrden() {
     if (sel) sel.innerHTML = '<option value="">— Seleccionar —</option>' +
       lista.map(x => `<option value="${x.nombre}">${x.nombre}</option>`).join('');
   });
+}
+// ═══════════════════════════════════════════════════════════
+// PRELIQUIDACIÓN — PDF con resumen de la orden
+// ═══════════════════════════════════════════════════════════
+async function generarPreliquidacion(ordenId) {
+  try {
+    toast('Generando preliquidación...');
+
+    const [orden, etapas, novedades] = await Promise.all([
+      api(`/ordenes?id=eq.${ordenId}`).then(r => r?.[0]).catch(()=>null),
+      api(`/etapas?orden_id=eq.${ordenId}&order=creado_en.asc&select=*`).catch(()=>[]) || [],
+      api(`/novedades?orden_id=eq.${ordenId}&select=*`).catch(()=>[]) || []
+    ]);
+
+    if (!orden) { toast('No se encontró la orden', 'err'); return; }
+
+    const fmt = n => n != null
+      ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n)
+      : '$0';
+    const fmtFecha = iso => iso
+      ? new Date(iso).toLocaleDateString('es-CO',{day:'2-digit',month:'long',year:'numeric'})
+      : '—';
+    const fmtHora = iso => iso
+      ? new Date(iso).toLocaleString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false})
+      : '—';
+    const durMin = (ini, fin) => {
+      if (!ini || !fin) return '—';
+      const m = Math.round((new Date(fin) - new Date(ini)) / 60000);
+      return `${Math.floor(m/60)}h ${m%60}m`;
+    };
+
+    const totalManoObra = etapas.reduce((s,e) => s+(e.valor||0), 0);
+    const totalHorasFact = etapas.reduce((s,e) => s+(e.horas_facturadas||0), 0);
+    const totalHorasAdi  = etapas.reduce((s,e) => s+(e.horas_adicionales||0), 0);
+
+    // Agrupar etapas por servicio
+    const servicios = {};
+    etapas.forEach(e => {
+      const s = e.servicio || 'adicionales';
+      if (!servicios[s]) servicios[s] = [];
+      servicios[s].push(e);
+    });
+
+    const srvNombres = { latoneria:'Latonería', pintura:'Pintura', mecanica:'Mecánica', adicionales:'Adicionales' };
+    const srvColor   = { latoneria:'#DC2626', pintura:'#D97706', mecanica:'#2563EB', adicionales:'#059669' };
+
+    const etapasHtml = Object.entries(servicios).map(([srv, ets]) => `
+      <div style="margin-bottom:20px">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:${srvColor[srv]||'#374151'};border-bottom:2px solid ${srvColor[srv]||'#374151'};padding-bottom:5px;margin-bottom:10px">
+          ${srvNombres[srv]||srv}
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:#F8FAFC">
+              <th style="padding:7px 10px;text-align:left;color:#64748B;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #E2E8F0">Etapa</th>
+              <th style="padding:7px 10px;text-align:left;color:#64748B;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #E2E8F0">Técnico</th>
+              <th style="padding:7px 10px;text-align:center;color:#64748B;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #E2E8F0">Duración</th>
+              <th style="padding:7px 10px;text-align:center;color:#64748B;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #E2E8F0">H. Fact.</th>
+              <th style="padding:7px 10px;text-align:right;color:#64748B;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #E2E8F0">Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ets.map(e => `
+              <tr style="border-bottom:1px solid #F1F5F9">
+                <td style="padding:8px 10px;font-weight:600;color:#1E293B">${e.etapa||'—'}</td>
+                <td style="padding:8px 10px;color:#64748B">${e.tecnico||'—'}</td>
+                <td style="padding:8px 10px;text-align:center;color:#64748B;font-family:monospace">${durMin(e.inicio,e.fin)}</td>
+                <td style="padding:8px 10px;text-align:center;color:#64748B">${e.horas_facturadas||'—'}</td>
+                <td style="padding:8px 10px;text-align:right;font-weight:600;color:#1E293B;font-family:monospace">${fmt(e.valor)}</td>
+              </tr>`).join('')}
+            <tr style="background:#F8FAFC;font-weight:700">
+              <td colspan="4" style="padding:8px 10px;color:#374151;font-size:12px">Subtotal ${srvNombres[srv]||srv}</td>
+              <td style="padding:8px 10px;text-align:right;color:${srvColor[srv]||'#374151'};font-family:monospace">${fmt(ets.reduce((s,e)=>s+(e.valor||0),0))}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`).join('');
+
+    const novedadesHtml = novedades.length ? `
+      <div style="margin-bottom:20px">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#DC2626;border-bottom:2px solid #DC2626;padding-bottom:5px;margin-bottom:10px">Novedades</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:#FEF2F2">
+            <th style="padding:7px 10px;text-align:left;color:#DC2626;font-size:10px;text-transform:uppercase;border-bottom:1px solid #FECACA">Tipo</th>
+            <th style="padding:7px 10px;text-align:left;color:#DC2626;font-size:10px;text-transform:uppercase;border-bottom:1px solid #FECACA">Motivo</th>
+            <th style="padding:7px 10px;text-align:left;color:#DC2626;font-size:10px;text-transform:uppercase;border-bottom:1px solid #FECACA">Responsable</th>
+            <th style="padding:7px 10px;text-align:left;color:#DC2626;font-size:10px;text-transform:uppercase;border-bottom:1px solid #FECACA">Fecha</th>
+          </tr></thead>
+          <tbody>
+            ${novedades.map(n=>`<tr style="border-bottom:1px solid #FEE2E2">
+              <td style="padding:7px 10px;font-weight:600">${n.tipo||'—'}</td>
+              <td style="padding:7px 10px;color:#64748B">${n.motivo||'—'}</td>
+              <td style="padding:7px 10px;color:#64748B">${n.responsable||'—'}</td>
+              <td style="padding:7px 10px;color:#64748B;font-size:11px">${fmtHora(n.creado_en)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : '';
+
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Preliquidación ${orden.placa}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;color:#1E293B;background:#fff;font-size:13px;line-height:1.5}
+  .page{max-width:900px;margin:0 auto;padding:32px 36px}
+  @media print{body{font-size:12px}.page{padding:20px 24px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ENCABEZADO -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1E3A5F;padding-bottom:18px;margin-bottom:24px">
+    <div>
+      <div style="font-size:24px;font-weight:800;color:#1E3A5F;letter-spacing:1px">FREIMANAUTOS</div>
+      <div style="font-size:11px;color:#94A3B8;margin-top:3px">Simplemente profesional</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:18px;font-weight:700;color:#1E3A5F">PRELIQUIDACIÓN</div>
+      <div style="font-family:monospace;font-size:20px;font-weight:800;color:#1E3A5F;letter-spacing:3px;margin-top:4px">${orden.placa}</div>
+      <div style="font-size:11px;color:#94A3B8;margin-top:4px">Generada: ${fmtHora(new Date().toISOString())}</div>
+    </div>
+  </div>
+
+  <!-- DATOS VEHÍCULO Y CLIENTE -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+    <div style="background:#F8FAFC;border-radius:8px;padding:14px 16px;border:1px solid #E2E8F0">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94A3B8;margin-bottom:10px">Vehículo</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+        <div><div style="color:#94A3B8;font-size:10px">Marca</div><div style="font-weight:600">${orden.marca||'—'}</div></div>
+        <div><div style="color:#94A3B8;font-size:10px">Línea</div><div style="font-weight:600">${orden.linea||'—'}</div></div>
+        <div><div style="color:#94A3B8;font-size:10px">Modelo</div><div style="font-weight:600">${orden.modelo||'—'}</div></div>
+        <div><div style="color:#94A3B8;font-size:10px">Color</div><div style="font-weight:600">${orden.color||'—'}</div></div>
+        <div><div style="color:#94A3B8;font-size:10px">Kilometraje</div><div style="font-weight:600">${orden.km ? orden.km+' km' : '—'}</div></div>
+        <div><div style="color:#94A3B8;font-size:10px">VIN</div><div style="font-weight:600;font-family:monospace;font-size:10px">${orden.vin||'—'}</div></div>
+      </div>
+    </div>
+    <div style="background:#F8FAFC;border-radius:8px;padding:14px 16px;border:1px solid #E2E8F0">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94A3B8;margin-bottom:10px">Cliente</div>
+      <div style="display:grid;gap:6px;font-size:12px">
+        <div><div style="color:#94A3B8;font-size:10px">Propietario</div><div style="font-weight:600">${orden.propietario||'—'}</div></div>
+        <div><div style="color:#94A3B8;font-size:10px">Teléfono</div><div style="font-weight:600">${orden.telefono||'—'}</div></div>
+        <div><div style="color:#94A3B8;font-size:10px">Tipo cliente</div><div style="font-weight:600">${orden.tipo_cliente||'Particular'}</div></div>
+        ${orden.aseguradora ? `<div><div style="color:#94A3B8;font-size:10px">Aseguradora</div><div style="font-weight:600">${orden.aseguradora}</div></div>` : ''}
+      </div>
+    </div>
+  </div>
+
+  <!-- FECHAS -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px">
+    <div style="background:#EBF2FF;border-radius:8px;padding:12px 14px;text-align:center">
+      <div style="font-size:10px;color:#2563EB;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Fecha ingreso</div>
+      <div style="font-weight:700;color:#1E3A5F">${fmtFecha(orden.creado_en)}</div>
+    </div>
+    <div style="background:#FEF3C7;border-radius:8px;padding:12px 14px;text-align:center">
+      <div style="font-size:10px;color:#D97706;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Entrega prometida</div>
+      <div style="font-weight:700;color:#92400E">${fmtFecha(orden.fecha_entrega_1)}</div>
+    </div>
+    <div style="background:#E6F5EF;border-radius:8px;padding:12px 14px;text-align:center">
+      <div style="font-size:10px;color:#059669;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Estado</div>
+      <div style="font-weight:700;color:#065F46">${orden.estado||'—'}</div>
+    </div>
+  </div>
+
+  <!-- ETAPAS POR SERVICIO -->
+  ${etapasHtml}
+
+  <!-- NOVEDADES -->
+  ${novedadesHtml}
+
+  <!-- TOTALES -->
+  <div style="border-top:2px solid #E2E8F0;padding-top:16px;margin-top:8px">
+    <div style="display:flex;justify-content:flex-end">
+      <div style="min-width:300px">
+        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F1F5F9;font-size:13px">
+          <span style="color:#64748B">Total horas facturadas</span>
+          <span style="font-weight:600">${totalHorasFact}h</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F1F5F9;font-size:13px">
+          <span style="color:#64748B">Horas adicionales</span>
+          <span style="font-weight:600">${totalHorasAdi}h</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:12px 0 0;font-size:16px;font-weight:800;color:#1E3A5F">
+          <span>TOTAL MANO DE OBRA</span>
+          <span style="font-family:monospace">${fmt(totalManoObra)}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTA -->
+  <div style="margin-top:32px;border-top:1px solid #E2E8F0;padding-top:14px;font-size:10px;color:#94A3B8;display:flex;justify-content:space-between">
+    <span>Freimanautos · Sistema Operativo · Documento preliminar — no constituye factura</span>
+    <span>Generado el ${new Date().toLocaleString('es-CO')}</span>
+  </div>
+
+</div>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      setTimeout(() => win.print(), 700);
+      toast('Preliquidación generada ✓');
+    } else {
+      toast('El navegador bloqueó la ventana emergente. Permite ventanas emergentes para este sitio.', 'err');
+    }
+  } catch(e) {
+    toast('Error generando preliquidación: ' + e.message, 'err');
+    console.error(e);
+  }
 }
