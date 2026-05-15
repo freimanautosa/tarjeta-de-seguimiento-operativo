@@ -293,17 +293,17 @@
               <div class="inv-item" onclick="toggleInv(this,'herramientas')"><input type="checkbox" value="herramientas"> Herramientas</div>
               <div class="inv-item" onclick="toggleInv(this,'extintor')"><input type="checkbox" value="extintor"> Extintor</div>
             </div>
-            <div style="margin-top:14px;border-top:1px solid var(--gris-borde);padding-top:12px">
-              <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gris-mid);margin-bottom:8px">Nivel de combustible</div>
-              <div class="comb-barra-wrap">
-                <div class="comb-seg" id="cs-vacio"  onclick="selCombustible('vacio')">Vacío</div>
-                <div class="comb-seg" id="cs-cuarto" onclick="selCombustible('1/4')">1/4</div>
-                <div class="comb-seg" id="cs-medio"  onclick="selCombustible('1/2')">1/2</div>
-                <div class="comb-seg" id="cs-tres"   onclick="selCombustible('3/4')">3/4</div>
-                <div class="comb-seg" id="cs-lleno"  onclick="selCombustible('lleno')">Lleno</div>
+              <div class="inv-item" style="flex-direction:column;align-items:flex-start;gap:4px;padding:8px 10px">
+                <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gris-mid)">Combustible</span>
+                <select id="n-combustible-val" onclick="event.stopPropagation()" style="width:100%;border:none;background:transparent;font-size:13px;color:var(--texto);cursor:pointer;outline:none;padding:0">
+                  <option value="">— Nivel —</option>
+                  <option value="vacio">Vacío</option>
+                  <option value="1/4">1/4</option>
+                  <option value="1/2">1/2</option>
+                  <option value="3/4">3/4</option>
+                  <option value="lleno">Lleno</option>
+                </select>
               </div>
-              <input type="hidden" id="n-combustible-val">
-            </div>
 
             <div class="field" style="margin-top:12px"><label>Observaciones de inventario</label>
               <textarea id="n-inv-obs" placeholder="Ej: Cargador en guantera, silla bebé en baúl..."></textarea>
