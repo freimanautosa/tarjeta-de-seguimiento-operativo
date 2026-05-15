@@ -164,19 +164,11 @@
           <!-- ═══ TIPO DE CLIENTE ═══ -->
           <div class="form-section">
             <div class="form-section-titulo">Tipo de cliente</div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
-              <label class="tipo-cliente-btn" id="tcb-particular" onclick="selTipoCliente(this,'particular')">
-                <span style="font-size:20px">👤</span><span>Particular</span>
-              </label>
-              <label class="tipo-cliente-btn" id="tcb-aseguradora" onclick="selTipoCliente(this,'aseguradora')">
-                <span style="font-size:20px">🏢</span><span>Aseguradora</span>
-              </label>
-              <label class="tipo-cliente-btn" id="tcb-flotilla" onclick="selTipoCliente(this,'flotilla')">
-                <span style="font-size:20px">🚛</span><span>Flotilla</span>
-              </label>
-              <label class="tipo-cliente-btn" id="tcb-empresa" onclick="selTipoCliente(this,'empresa')">
-                <span style="font-size:20px">🏭</span><span>Empresa</span>
-              </label>
+            <div class="tipo-cliente-tabs">
+              <div class="tipo-cliente-tab" id="tcb-particular"  onclick="selTipoCliente(this,'particular')">Particular</div>
+              <div class="tipo-cliente-tab" id="tcb-aseguradora" onclick="selTipoCliente(this,'aseguradora')">Aseguradora</div>
+              <div class="tipo-cliente-tab" id="tcb-flotilla"    onclick="selTipoCliente(this,'flotilla')">Flotilla</div>
+              <div class="tipo-cliente-tab" id="tcb-empresa"     onclick="selTipoCliente(this,'empresa')">Empresa</div>
             </div>
             <input type="hidden" id="n-tipo-cliente">
 
@@ -300,19 +292,17 @@
               <div class="inv-item" onclick="toggleInv(this,'tapetes')"><input type="checkbox" value="tapetes"> Tapetes</div>
               <div class="inv-item" onclick="toggleInv(this,'herramientas')"><input type="checkbox" value="herramientas"> Herramientas</div>
               <div class="inv-item" onclick="toggleInv(this,'extintor')"><input type="checkbox" value="extintor"> Extintor</div>
-              <div class="inv-item" id="inv-combustible-item" onclick="abrirDropdownCombustible(event,this)">
-                <input type="checkbox" style="display:none">
-                <span id="inv-combustible-label">⛽ Combustible</span>
-                <svg style="margin-left:auto;flex-shrink:0;opacity:.5" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-              </div>
             </div>
-            <input type="hidden" id="n-combustible-val">
-            <div id="comb-dropdown" class="comb-dropdown">
-              <div class="comb-option" onclick="seleccionarCombustible('vacio')">⬜ Vacío</div>
-              <div class="comb-option" onclick="seleccionarCombustible('1/4')">🟥 1/4</div>
-              <div class="comb-option" onclick="seleccionarCombustible('1/2')">🟨 1/2</div>
-              <div class="comb-option" onclick="seleccionarCombustible('3/4')">🟩 3/4</div>
-              <div class="comb-option" onclick="seleccionarCombustible('lleno')">🟦 Lleno</div>
+            <div style="margin-top:14px;border-top:1px solid var(--gris-borde);padding-top:12px">
+              <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gris-mid);margin-bottom:8px">Nivel de combustible</div>
+              <div class="comb-barra-wrap">
+                <div class="comb-seg" id="cs-vacio"  onclick="selCombustible('vacio')">Vacío</div>
+                <div class="comb-seg" id="cs-cuarto" onclick="selCombustible('1/4')">1/4</div>
+                <div class="comb-seg" id="cs-medio"  onclick="selCombustible('1/2')">1/2</div>
+                <div class="comb-seg" id="cs-tres"   onclick="selCombustible('3/4')">3/4</div>
+                <div class="comb-seg" id="cs-lleno"  onclick="selCombustible('lleno')">Lleno</div>
+              </div>
+              <input type="hidden" id="n-combustible-val">
             </div>
 
             <div class="field" style="margin-top:12px"><label>Observaciones de inventario</label>
@@ -361,11 +351,14 @@
         <div id="cliente-contenido">
           <div class="loading-state">Cargando...</div>
         </div>
+        <div id="cliente-repuestos-contenido"></div>
       </div>
       <div class="pagina" id="pag-calendario"></div>
       <div class="pagina" id="pag-mecanicos"></div>
       <div class="pagina" id="pag-taller"><div id="taller-contenido"></div></div>
       <div class="pagina" id="pag-repuestos"><div id="rep-contenido"><div class="loading-state">Cargando...</div></div></div>
+      <div class="pagina" id="pag-repuestos-jefe"><div id="repuestos-jefe-contenido"></div></div>
+      <div class="pagina" id="pag-reportes"><div id="reportes-contenido"></div></div>
     </div>
   </div>
 
