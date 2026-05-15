@@ -105,10 +105,11 @@ async function cargarEtapasMecanico() {
               ${e.fin ? ' · Fin: ' + formatTS(e.fin) : ''}
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span class="badge badge-${bCls}">${badge}</span>
             ${acc}
             ${!e.fin ? `<button class="btn btn-ghost btn-xs" onclick="abrirMecDetalle(${e.id},${oid})">Fotos / novedades</button>` : ''}
+            <button class="btn btn-ghost btn-xs" onclick="abrirModalSolicitudRepuesto(${oid},${e.id},'Orden #${oid}')" style="font-size:11px">+ Repuesto</button>
           </div>
         </div>`;
       }).join('');

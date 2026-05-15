@@ -519,7 +519,13 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
         </div>
       </div>
       <div class="etapa-body" id="eb-${k}">
-        <div class="etapa-actions">${acc}</div>
+        <div class="etapa-actions" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          ${acc}
+          <button class="btn btn-ghost btn-sm" onclick="abrirModalSolicitudRepuesto(${e.orden_id||ordenActual?.id},${eid},'${ordenActual?.placa||""}')" style="font-size:12px;display:flex;align-items:center;gap:5px">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+            Solicitar repuesto
+          </button>
+        </div>
         <div class="timestamps">
           <div class="ts-chip">Inicio: <strong>${e.inicio?formatTS(e.inicio):'—'}</strong></div>
           <div class="ts-chip">Fin: <strong>${e.fin?formatTS(e.fin):'—'}</strong></div>
@@ -951,11 +957,9 @@ function toggleTipoClienteNueva(tipo) {
   if (hidden) hidden.value = tipo;
 }
 
-function selTipoCliente(el, tipo) {
-  document.querySelectorAll('.tipo-cliente-tab, .tipo-cliente-btn').forEach(b => {
-    b.classList.remove('selected', 'active');
-  });
-  el.classList.add('active');
+function selTipoCliente(label, tipo) {
+  document.querySelectorAll('.tipo-cliente-btn').forEach(b => b.classList.remove('selected'));
+  label.classList.add('selected');
   toggleTipoClienteNueva(tipo);
 }
 
@@ -1680,6 +1684,15 @@ function montarJefe() {
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
         Mecánicos
       </button>
+      <button class="nav-item" id="nav-repuestos" onclick="navJefe('repuestos')" style="position:relative">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+        Repuestos
+        <span id="badge-repuestos" style="display:none;position:absolute;top:6px;right:8px;background:var(--rojo);color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;align-items:center;justify-content:center">0</span>
+      </button>
+      <button class="nav-item" id="nav-reportes" onclick="navJefe('reportes')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Reportes
+      </button>
     `;
   }
 
@@ -1712,6 +1725,8 @@ function montarJefe() {
   
   // Cargar capacidad al inicio
   _refrescarCapacidad();
+  // Badge repuestos pendientes
+  setTimeout(() => { if (typeof actualizarBadgeRepuestos === 'function') actualizarBadgeRepuestos(); }, 1000);
 
   // Activar Realtime
   iniciarRealtime();
@@ -1719,7 +1734,7 @@ function montarJefe() {
 
 function navJefe(pag) {
   // Actualizar clases active en sidebar y bottom nav
-  const pages = ['ordenes', 'nueva', 'dashboard', 'cotizaciones', 'calendario', 'mecanicos'];
+  const pages = ['ordenes', 'nueva', 'dashboard', 'cotizaciones', 'calendario', 'mecanicos', 'repuestos', 'reportes'];
   pages.forEach(p => {
     const navBtn = document.getElementById('nav-' + p);
     const bnavBtn = document.getElementById('bnav-' + p);
@@ -1770,6 +1785,16 @@ function navJefe(pag) {
       pagId = 'pag-mecanicos';
       titulo = 'Mecánicos';
       cargarMecanicosVista();
+      break;
+    case 'repuestos':
+      pagId = 'pag-repuestos-jefe';
+      titulo = 'Repuestos';
+      setTimeout(() => { if (typeof cargarRepuestosJefe === 'function') cargarRepuestosJefe(); }, 50);
+      break;
+    case 'reportes':
+      pagId = 'pag-reportes';
+      titulo = 'Reportes';
+      setTimeout(() => { if (typeof montarReportes === 'function') montarReportes(); }, 50);
       break;
     default:
       pagId = 'pag-ordenes';
@@ -2578,7 +2603,15 @@ function abrirDropdownCombustible(e, el) {
   dd.classList.toggle('open');
 }
 
-function seleccionarCombustible(valor) { selCombustible(valor); }
+function seleccionarCombustible(valor) {
+  const item   = document.getElementById('inv-combustible-item');
+  const label  = document.getElementById('inv-combustible-label');
+  const hidden = document.getElementById('n-combustible-val');
+  if (hidden) hidden.value = valor;
+  if (label)  label.textContent = _COMB_LABELS[valor] || '⛽ Combustible';
+  if (item)   item.classList.add('checked');
+  document.getElementById('comb-dropdown')?.classList.remove('open');
+}
 
 document.addEventListener('click', () => {
   const dd = document.getElementById('comb-dropdown');
@@ -2626,21 +2659,4 @@ async function recargarListasNuevaOrden() {
     if (sel) sel.innerHTML = '<option value="">— Seleccionar —</option>' +
       lista.map(x => `<option value="${x.nombre}">${x.nombre}</option>`).join('');
   });
-}
-function selCombustible(valor) {
-  const mapa = {
-    'vacio':  { id: 'cs-vacio',  cls: 'active-vacio'  },
-    '1/4':   { id: 'cs-cuarto', cls: 'active-cuarto' },
-    '1/2':   { id: 'cs-medio',  cls: 'active-medio'  },
-    '3/4':   { id: 'cs-tres',   cls: 'active-tres'   },
-    'lleno': { id: 'cs-lleno',  cls: 'active-lleno'  }
-  };
-  Object.values(mapa).forEach(({ id }) => {
-    const el = document.getElementById(id);
-    if (el) el.classList.remove('active-vacio','active-cuarto','active-medio','active-tres','active-lleno');
-  });
-  const entry = mapa[valor];
-  if (entry) { const el = document.getElementById(entry.id); if (el) el.classList.add(entry.cls); }
-  const hidden = document.getElementById('n-combustible-val');
-  if (hidden) hidden.value = valor;
 }
