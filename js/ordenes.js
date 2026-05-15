@@ -951,9 +951,11 @@ function toggleTipoClienteNueva(tipo) {
   if (hidden) hidden.value = tipo;
 }
 
-function selTipoCliente(label, tipo) {
-  document.querySelectorAll('.tipo-cliente-btn').forEach(b => b.classList.remove('selected'));
-  label.classList.add('selected');
+function selTipoCliente(el, tipo) {
+  document.querySelectorAll('.tipo-cliente-tab, .tipo-cliente-btn').forEach(b => {
+    b.classList.remove('selected', 'active');
+  });
+  el.classList.add('active');
   toggleTipoClienteNueva(tipo);
 }
 
@@ -2576,15 +2578,7 @@ function abrirDropdownCombustible(e, el) {
   dd.classList.toggle('open');
 }
 
-function seleccionarCombustible(valor) {
-  const item   = document.getElementById('inv-combustible-item');
-  const label  = document.getElementById('inv-combustible-label');
-  const hidden = document.getElementById('n-combustible-val');
-  if (hidden) hidden.value = valor;
-  if (label)  label.textContent = _COMB_LABELS[valor] || '⛽ Combustible';
-  if (item)   item.classList.add('checked');
-  document.getElementById('comb-dropdown')?.classList.remove('open');
-}
+function seleccionarCombustible(valor) { selCombustible(valor); }
 
 document.addEventListener('click', () => {
   const dd = document.getElementById('comb-dropdown');
@@ -2632,4 +2626,21 @@ async function recargarListasNuevaOrden() {
     if (sel) sel.innerHTML = '<option value="">— Seleccionar —</option>' +
       lista.map(x => `<option value="${x.nombre}">${x.nombre}</option>`).join('');
   });
+}
+function selCombustible(valor) {
+  const mapa = {
+    'vacio':  { id: 'cs-vacio',  cls: 'active-vacio'  },
+    '1/4':   { id: 'cs-cuarto', cls: 'active-cuarto' },
+    '1/2':   { id: 'cs-medio',  cls: 'active-medio'  },
+    '3/4':   { id: 'cs-tres',   cls: 'active-tres'   },
+    'lleno': { id: 'cs-lleno',  cls: 'active-lleno'  }
+  };
+  Object.values(mapa).forEach(({ id }) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active-vacio','active-cuarto','active-medio','active-tres','active-lleno');
+  });
+  const entry = mapa[valor];
+  if (entry) { const el = document.getElementById(entry.id); if (el) el.classList.add(entry.cls); }
+  const hidden = document.getElementById('n-combustible-val');
+  if (hidden) hidden.value = valor;
 }

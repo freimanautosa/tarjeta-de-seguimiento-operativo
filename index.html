@@ -164,19 +164,11 @@
           <!-- ═══ TIPO DE CLIENTE ═══ -->
           <div class="form-section">
             <div class="form-section-titulo">Tipo de cliente</div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
-              <label class="tipo-cliente-btn" id="tcb-particular" onclick="selTipoCliente(this,'particular')">
-                <span style="font-size:20px">👤</span><span>Particular</span>
-              </label>
-              <label class="tipo-cliente-btn" id="tcb-aseguradora" onclick="selTipoCliente(this,'aseguradora')">
-                <span style="font-size:20px">🏢</span><span>Aseguradora</span>
-              </label>
-              <label class="tipo-cliente-btn" id="tcb-flotilla" onclick="selTipoCliente(this,'flotilla')">
-                <span style="font-size:20px">🚛</span><span>Flotilla</span>
-              </label>
-              <label class="tipo-cliente-btn" id="tcb-empresa" onclick="selTipoCliente(this,'empresa')">
-                <span style="font-size:20px">🏭</span><span>Empresa</span>
-              </label>
+            <div class="tipo-cliente-tabs">
+              <div class="tipo-cliente-tab" id="tcb-particular"  onclick="selTipoCliente(this,'particular')">Particular</div>
+              <div class="tipo-cliente-tab" id="tcb-aseguradora" onclick="selTipoCliente(this,'aseguradora')">Aseguradora</div>
+              <div class="tipo-cliente-tab" id="tcb-flotilla"    onclick="selTipoCliente(this,'flotilla')">Flotilla</div>
+              <div class="tipo-cliente-tab" id="tcb-empresa"     onclick="selTipoCliente(this,'empresa')">Empresa</div>
             </div>
             <input type="hidden" id="n-tipo-cliente">
 
@@ -300,19 +292,17 @@
               <div class="inv-item" onclick="toggleInv(this,'tapetes')"><input type="checkbox" value="tapetes"> Tapetes</div>
               <div class="inv-item" onclick="toggleInv(this,'herramientas')"><input type="checkbox" value="herramientas"> Herramientas</div>
               <div class="inv-item" onclick="toggleInv(this,'extintor')"><input type="checkbox" value="extintor"> Extintor</div>
-              <div class="inv-item" id="inv-combustible-item" onclick="abrirDropdownCombustible(event,this)">
-                <input type="checkbox" style="display:none">
-                <span id="inv-combustible-label">⛽ Combustible</span>
-                <svg style="margin-left:auto;flex-shrink:0;opacity:.5" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+              <div class="inv-item" style="padding:6px 10px;gap:6px;flex-direction:column;align-items:flex-start">
+                <span style="font-size:11px;color:var(--gris-mid);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Combustible</span>
+                <select id="n-combustible-val" style="width:100%;border:none;background:transparent;font-size:13px;color:var(--texto);cursor:pointer;outline:none;padding:0" onclick="event.stopPropagation()">
+                  <option value="">— Nivel —</option>
+                  <option value="vacio">Vacío</option>
+                  <option value="1/4">1/4</option>
+                  <option value="1/2">1/2</option>
+                  <option value="3/4">3/4</option>
+                  <option value="lleno">Lleno</option>
+                </select>
               </div>
-            </div>
-            <input type="hidden" id="n-combustible-val">
-            <div id="comb-dropdown" class="comb-dropdown">
-              <div class="comb-option" onclick="seleccionarCombustible('vacio')">⬜ Vacío</div>
-              <div class="comb-option" onclick="seleccionarCombustible('1/4')">🟥 1/4</div>
-              <div class="comb-option" onclick="seleccionarCombustible('1/2')">🟨 1/2</div>
-              <div class="comb-option" onclick="seleccionarCombustible('3/4')">🟩 3/4</div>
-              <div class="comb-option" onclick="seleccionarCombustible('lleno')">🟦 Lleno</div>
             </div>
 
             <div class="field" style="margin-top:12px"><label>Observaciones de inventario</label>
