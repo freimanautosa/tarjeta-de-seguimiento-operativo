@@ -98,14 +98,16 @@
     <div class="content">
       <!-- PÁGINAS (contenedores vacíos, JS llena el contenido) -->
       <div class="pagina" id="pag-dashboard">
-  <div style="display:flex;gap:8px;margin-bottom:16px">
-    <button class="filtro-btn active" id="dash-tab-operativo" onclick="switchDashTab('operativo')">Estado del taller</button>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="filtro-btn active" id="dash-tab-mes" onclick="switchDashTab('mes')">📅 Mes actual</button>
+    <button class="filtro-btn" id="dash-tab-operativo" onclick="switchDashTab('operativo')">General</button>
     <button class="filtro-btn" id="dash-tab-financiero" onclick="switchDashTab('financiero')">Financiero</button>
-          <button class="filtro-btn" id="dash-tab-metas" onclick="switchDashTab('metas')">Metas</button>
+    <button class="filtro-btn" id="dash-tab-metas" onclick="switchDashTab('metas')">Metas</button>
   </div>
-  <div id="dash-contenido"></div>
+  <div id="dash-mes-contenido"></div>
+  <div id="dash-contenido" style="display:none"></div>
   <div id="dash-financiero-contenido" style="display:none"></div>
-      <div id="dash-metas-contenido" style="display:none"></div>
+  <div id="dash-metas-contenido" style="display:none"></div>
 </div>
       <div class="pagina" id="pag-ordenes">
         <div class="filtros-bar" id="filtros-bar">
