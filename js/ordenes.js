@@ -1,4 +1,17 @@
 // ═══════════════════════════════════════════════════════════
+// POLLING GLOBAL — Actualización automática cada 15s
+// ═══════════════════════════════════════════════════════════
+let _globalPollingInterval = null;
+function iniciarPollingGlobal(fn, seg = 15) {
+  if (window._sesion?.perfil === 'taller') return;
+  if (_globalPollingInterval) clearInterval(_globalPollingInterval);
+  _globalPollingInterval = setInterval(() => { try { fn(); } catch(e) {} }, seg * 1000);
+}
+function detenerPollingGlobal() {
+  if (_globalPollingInterval) { clearInterval(_globalPollingInterval); _globalPollingInterval = null; }
+}
+
+// ═══════════════════════════════════════════════════════════
 // ÓRDENES - LISTA, DETALLE, NUEVA ORDEN, ETAPAS
 // ═══════════════════════════════════════════════════════════
 
@@ -1678,6 +1691,15 @@ function montarJefe() {
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
         Mecánicos
       </button>
+      <button class="nav-item" id="nav-repuestos" onclick="navJefe('repuestos')" style="position:relative">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+        Repuestos
+        <span id="badge-repuestos" style="display:none;position:absolute;top:6px;right:8px;background:var(--rojo);color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;line-height:16px;text-align:center">0</span>
+      </button>
+      <button class="nav-item" id="nav-reportes" onclick="navJefe('reportes')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Reportes
+      </button>
     `;
   }
 
@@ -1710,6 +1732,8 @@ function montarJefe() {
   
   // Cargar capacidad al inicio
   _refrescarCapacidad();
+  // Badge repuestos pendientes
+  setTimeout(() => { if (typeof actualizarBadgeRepuestos === 'function') actualizarBadgeRepuestos(); }, 1500);
 
   // Activar Realtime
   iniciarRealtime();
@@ -1717,7 +1741,7 @@ function montarJefe() {
 
 function navJefe(pag) {
   // Actualizar clases active en sidebar y bottom nav
-  const pages = ['ordenes', 'nueva', 'dashboard', 'cotizaciones', 'calendario', 'mecanicos'];
+  const pages = ['ordenes', 'nueva', 'dashboard', 'cotizaciones', 'calendario', 'mecanicos', 'repuestos', 'reportes'];
   pages.forEach(p => {
     const navBtn = document.getElementById('nav-' + p);
     const bnavBtn = document.getElementById('bnav-' + p);
@@ -1752,7 +1776,7 @@ function navJefe(pag) {
     case 'dashboard':
       pagId = 'pag-dashboard';
       titulo = 'Estado del Taller';
-      cargarDashboard();
+      setTimeout(() => { if (typeof switchDashTab === 'function') switchDashTab('mes'); else cargarDashboard(); }, 50);
       break;
     case 'cotizaciones':
       pagId = 'pag-cotizaciones';
@@ -1768,6 +1792,16 @@ function navJefe(pag) {
       pagId = 'pag-mecanicos';
       titulo = 'Mecánicos';
       cargarMecanicosVista();
+      break;
+    case 'repuestos':
+      pagId = 'pag-repuestos-jefe';
+      titulo = 'Repuestos';
+      setTimeout(() => { if (typeof cargarRepuestosJefe === 'function') cargarRepuestosJefe(); }, 50);
+      break;
+    case 'reportes':
+      pagId = 'pag-reportes';
+      titulo = 'Reportes';
+      setTimeout(() => { if (typeof montarReportes === 'function') montarReportes(); }, 50);
       break;
     default:
       pagId = 'pag-ordenes';
