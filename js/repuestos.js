@@ -293,10 +293,32 @@ async function guardarPreciosVenta(cotIds, solicitudId) {
 // PERFIL REPUESTOS
 // ─────────────────────────────────────────────────────────
 async function montarRepuestos() {
+  const sidebarNav = document.getElementById('sidebar-nav');
+  if (sidebarNav) {
+    sidebarNav.innerHTML = `
+      <div class="nav-section-label">Repuestos</div>
+      <button class="nav-item active" id="nav-rep-solicitudes" onclick="mostrarSeccionRep('solicitudes')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+        Solicitudes
+      </button>
+      <button class="nav-item" id="nav-rep-proveedores" onclick="mostrarSeccionRep('proveedores')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Proveedores
+      </button>`;
+  }
   const title = document.getElementById('topbar-title');
   if (title) title.textContent = 'Repuestos';
   mostrarPagina('pag-repuestos');
   cargarSolicitudesRepuestos();
+}
+
+function mostrarSeccionRep(sec) {
+  const btnSol = document.getElementById('nav-rep-solicitudes');
+  const btnProv = document.getElementById('nav-rep-proveedores');
+  if (btnSol) btnSol.classList.toggle('active', sec === 'solicitudes');
+  if (btnProv) btnProv.classList.toggle('active', sec === 'proveedores');
+  if (sec === 'solicitudes') cargarSolicitudesRepuestos();
+  else cargarProveedores();
 }
 
 async function cargarSolicitudesRepuestos() {

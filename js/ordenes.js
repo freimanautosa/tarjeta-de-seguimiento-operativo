@@ -327,6 +327,10 @@ async function abrirOrden(id) {
               <div>
                 <div class="detalle-placa">${orden.placa}</div>
                 <div class="detalle-vehiculo">${[orden.marca,orden.linea,orden.modelo,orden.color].filter(Boolean).join(' · ')}</div>
+                <button class="btn btn-ghost btn-sm" onclick="verHistorialVehiculo('${orden.placa}')" style="margin-top:6px;font-size:11px;padding:4px 10px">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+                  Historial del vehículo
+                </button>
               </div>
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
                 <span class="badge badge-${estadoClase}">${estadoTexto}</span>
@@ -628,7 +632,9 @@ function toggleEtapa(id) {
 // ============================================================
 async function iniciarEtapa(eid, nombre) {
   try {
-    await api(`/etapas?id=eq.${eid}`, 'PATCH', { inicio: new Date().toISOString() });
+    const inicioISO = new Date().toISOString();
+    await api(`/etapas?id=eq.${eid}`, 'PATCH', { inicio: inicioISO });
+    notificarEtapaIniciada(eid, inicioISO, ordenActual).catch(() => {});
     toast(`${nombre} iniciada ✓`);
     if (ordenActual) abrirOrden(ordenActual.id);
   } catch(e) { toast('Error: '+e.message, 'err'); }
@@ -1443,6 +1449,67 @@ async function subirFotos(input, nombre, eid, k) {
   input.value = '';
   toast(`${sub} foto(s) subida(s) ✓`);
   if (ordenActual) abrirOrden(ordenActual.id);
+}
+
+async function verHistorialVehiculo(placa) {
+  const existing = document.getElementById('modal-historial-vehiculo');
+  if (existing) existing.remove();
+  const div = document.createElement('div');
+  div.id = 'modal-historial-vehiculo';
+  div.className = 'modal-overlay show';
+  div.innerHTML = `
+    <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto">
+      <div class="modal-header">
+        <div class="modal-titulo">Historial — ${placa}</div>
+        <button class="modal-close" onclick="document.getElementById('modal-historial-vehiculo').remove()">✕</button>
+      </div>
+      <div class="modal-body" id="historial-body"><div class="loading-state">Cargando...</div></div>
+    </div>`;
+  document.body.appendChild(div);
+
+  try {
+    const ordenes = await api(
+      `/ordenes?placa=eq.${placa}&order=creado_en.desc&select=id,placa,marca,linea,modelo,propietario,estado,creado_en,entregada_en`
+    ).catch(()=>[]) || [];
+
+    const body = document.getElementById('historial-body');
+    if (!body) return;
+    if (!ordenes.length) { body.innerHTML = '<div class="empty-state"><p>Sin historial para esta placa.</p></div>'; return; }
+
+    const ids = ordenes.map(o => o.id);
+    const etapas = await api(`/etapas?orden_id=in.(${ids.join(',')})&select=id,orden_id,servicio,valor`).catch(()=>[]) || [];
+
+    const fmt = n => n ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : null;
+    const estadoClsMap = { Activa:'badge-activa', Entregada:'badge-completada' };
+    const srvNombre = { latoneria:'Latonería', pintura:'Pintura', mecanica:'Mecánica', adicionales:'Adicionales' };
+
+    const html = ordenes.map(o => {
+      const ets = etapas.filter(e => e.orden_id === o.id);
+      const total = ets.reduce((s,e) => s + (e.valor||0), 0);
+      const srvs = [...new Set(ets.map(e=>e.servicio).filter(Boolean))];
+      const isCurrent = o.id === ordenActual?.id;
+      return `<div class="card" style="padding:14px;margin-bottom:8px;${isCurrent?'border:2px solid var(--azul)':''}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+          <div style="flex:1;min-width:0">
+            ${isCurrent ? '<div style="font-size:10px;font-weight:700;color:var(--azul);margin-bottom:3px;letter-spacing:.5px">ORDEN ACTUAL</div>' : ''}
+            <div style="font-size:12px;color:var(--gris-mid)">${formatFecha(o.creado_en)}${o.entregada_en ? ' → ' + formatFecha(o.entregada_en) : ''}</div>
+            ${srvs.length ? `<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:4px">${srvs.map(s=>`<span class="badge badge-${s}" style="font-size:10px">${srvNombre[s]||s}</span>`).join('')}</div>` : ''}
+            ${ets.length ? `<div style="font-size:11px;color:var(--gris-mid);margin-top:4px">${ets.length} etapas</div>` : ''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
+            <span class="badge ${estadoClsMap[o.estado]||''}">${o.estado}</span>
+            ${total ? `<div style="font-size:12px;font-weight:700;color:var(--verde)">${fmt(total)}</div>` : ''}
+            ${!isCurrent ? `<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px" onclick="document.getElementById('modal-historial-vehiculo').remove();abrirOrden(${o.id})">Ver orden</button>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    body.innerHTML = `<div style="font-size:12px;color:var(--gris-mid);margin-bottom:12px">${ordenes.length} orden(es) registradas para ${placa}</div>${html}`;
+  } catch(e) {
+    const body = document.getElementById('historial-body');
+    if (body) body.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
+  }
 }
 
 async function eliminarFoto(fotoId, url) {
@@ -2341,6 +2408,58 @@ async function mecGuardarNovedadDetalle(eid, oid) {
     toast('Novedad registrada ✓');
     abrirOrdenMecanico(oid);
   } catch(e) { toast('Error: '+e.message, 'err'); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODAL REPORTE — abrir / cerrar / generar
+// ═══════════════════════════════════════════════════════════
+function cerrarModalReporte() {
+  const overlay = document.getElementById('modal-reporte');
+  if (overlay) overlay.classList.remove('show');
+}
+
+function abrirModalReporte(tipo) {
+  const overlay = document.getElementById('modal-reporte');
+  if (!overlay) return;
+  overlay.dataset.tipo = tipo || 'ordenes';
+  const tituloEl = document.getElementById('modal-rep-titulo');
+  if (tituloEl) tituloEl.textContent = tipo === 'todos_tecnicos' ? 'Reporte general de técnicos' : 'Generar reporte';
+  const selWrap = document.getElementById('rep-sel-tecnico');
+  if (selWrap) selWrap.style.display = 'none';
+  overlay.classList.add('show');
+}
+
+function generarReporteModal() {
+  const overlay = document.getElementById('modal-reporte');
+  const periodo = document.getElementById('rep-periodo')?.value || 'todo';
+  const fecha   = document.getElementById('rep-fecha')?.value || null;
+  const formato = document.getElementById('rep-formato')?.value || 'excel';
+
+  let tipo = 'rango', fechaIni = null, fechaFin = null;
+  const now = new Date();
+
+  if (periodo === 'todo') {
+    tipo = 'rango';
+    fechaIni = '2020-01-01';
+    fechaFin  = now.toISOString().split('T')[0];
+  } else if (periodo === 'semana' && fecha) {
+    const d = new Date(fecha + 'T12:00:00');
+    const lunes = new Date(d);
+    lunes.setDate(d.getDate() - ((d.getDay()+6)%7));
+    const dom = new Date(lunes);
+    dom.setDate(lunes.getDate() + 6);
+    tipo = 'rango';
+    fechaIni = lunes.toISOString().split('T')[0];
+    fechaFin  = dom.toISOString().split('T')[0];
+  } else if (periodo === 'mes') {
+    tipo = 'mes';
+  } else if (periodo === 'ano') {
+    tipo = 'anio';
+  }
+
+  cerrarModalReporte();
+  if (typeof generarReporte === 'function') generarReporte(tipo, fechaIni, fechaFin, formato);
+  else toast('Función de reportes no disponible', 'err');
 }
 
 // ═══════════════════════════════════════════════════════════

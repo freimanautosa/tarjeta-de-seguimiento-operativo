@@ -134,7 +134,9 @@ async function cargarEtapasMecanico() {
 
 async function mecIniciarEtapa(eid, nombre, oid) {
   try {
-    await api(`/etapas?id=eq.${eid}`, 'PATCH', { inicio: new Date().toISOString() });
+    const inicioISO = new Date().toISOString();
+    await api(`/etapas?id=eq.${eid}`, 'PATCH', { inicio: inicioISO });
+    notificarEtapaIniciada(eid, inicioISO).catch(() => {});
     toast(`${nombre} iniciada ✓`);
     cargarEtapasMecanico();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
