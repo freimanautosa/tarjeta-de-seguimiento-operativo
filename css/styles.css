@@ -307,7 +307,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   cursor: pointer;
   color: var(--texto);
 }
-.content { flex: 1; padding: 28px; max-width: 1100px; width: 100%; }
+.content { flex: 1; padding: 28px; max-width: 1280px; width: 100%; }
 
 /* BOTTOM NAV (mobile) */
 .bottom-nav {
@@ -1386,10 +1386,17 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   border-radius: 3px;
   display: inline-block;
 }
+.cal-shell {
+  background: white;
+  border: 1px solid var(--gris-borde);
+  border-radius: var(--radio);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+}
 .cal-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
   background: var(--gris-borde);
   border: 1px solid var(--gris-borde);
   border-radius: var(--radio);
@@ -1407,38 +1414,76 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 }
 .cal-cell {
   background: white;
-  min-height: 80px;
-  padding: 6px;
+  min-height: 132px;
+  padding: 8px;
   vertical-align: top;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 6px;
+  min-width: 0;
 }
 .cal-cell.cal-empty { background: var(--gris-bg); }
 .cal-cell.cal-pasado { background: #FAFAFA; }
+.cal-cell.cal-con-ordenes { background: #fff; }
 .cal-cell.cal-hoy { background: var(--azul-light); outline: 2px solid var(--azul-mid); outline-offset: -2px; }
 .cal-dia {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 12px;
   font-weight: 700;
   font-family: 'DM Sans', sans-serif;
   color: var(--gris-texto);
   margin-bottom: 2px;
 }
+.cal-dia strong {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 99px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--azul);
+  color: white;
+  font-size: 10px;
+}
 .cal-hoy .cal-dia { color: var(--azul); }
 .cal-pasado .cal-dia { color: var(--gris-mid); }
 .cal-orden {
   font-family: 'DM Sans', sans-serif;
-  border-radius: 10px;
-  padding: 2px 5px;
-  font-size: 10px;
+  border-radius: 6px;
+  border-left: 3px solid transparent;
+  padding: 6px 7px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  white-space: nowrap;
+  white-space: normal;
+  overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+.cal-orden:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.cal-orden-meta {
+  margin-top: 2px;
+  font-size: 10px;
+  color: rgba(17,24,39,0.65);
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: opacity 0.15s;
+  white-space: nowrap;
 }
-.cal-orden:hover { opacity: 0.75; }
+.cal-mas {
+  font-size: 10px;
+  color: var(--gris-mid);
+  text-align: center;
+  padding: 2px 0;
+}
+.solicitud-card {
+  background: white;
+  border: 1px solid var(--gris-borde);
+  border-radius: var(--radio);
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-sm);
+}
 @media (max-width: 600px) {
   .cal-cell { min-height: 56px; }
   .cal-orden { font-size: 10px; }
