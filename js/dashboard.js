@@ -2,17 +2,21 @@
 // DASHBOARD - ESTADO DEL TALLER
 // ═══════════════════════════════════════════════════════════
 
-function actualizarCapacidad(activas, pulmonInterno) {
-  pulmonInterno = pulmonInterno || 0;
+function actualizarCapacidad(activas, pulmonInterno = 0, pulmonExterno = 0) {
+  activas = Number(activas) || 0;
+  pulmonInterno = Number(pulmonInterno) || 0;
+  pulmonExterno = Number(pulmonExterno) || 0;
   const cap   = document.getElementById('sidebar-capacidad');
   const fillA = document.getElementById('cap-fill-activas');
   const fillP = document.getElementById('cap-fill-pulmon');
   const pctEl = document.getElementById('cap-pct');
   const subEl = document.getElementById('cap-sub');
+  const pulmonSubEl = document.getElementById('cap-pulmon-sub');
   if (!cap) return;
   cap.style.display = 'block';
 
   const circ     = 2 * Math.PI * 30;
+  const pulmonTotal = pulmonInterno + pulmonExterno;
   const total    = activas + pulmonInterno;
   const pctA     = Math.min(Math.round((activas / CAPACIDAD_TALLER) * 100), 100);
   const pctP     = Math.min(Math.round((pulmonInterno / CAPACIDAD_TALLER) * 100), 100);
@@ -20,16 +24,25 @@ function actualizarCapacidad(activas, pulmonInterno) {
 
   // Barra activas (amarillo)
   if (fillA) {
+    fillA.style.display = activas > 0 ? '' : 'none';
     fillA.style.strokeDasharray = `${(pctA/100)*circ} ${circ}`;
     fillA.style.strokeDashoffset = '0';
   }
   // Barra pulmón (naranja) — desplazada por el arco de activas
   if (fillP) {
+    fillP.style.display = pulmonInterno > 0 ? '' : 'none';
     fillP.style.strokeDasharray = `${(pctP/100)*circ} ${circ}`;
     fillP.style.strokeDashoffset = `-${(pctA/100)*circ}`;
   }
   if (pctEl) pctEl.textContent = pctTotal + '%';
   if (subEl) subEl.textContent = `${total} de ${CAPACIDAD_TALLER} cupos`;
+  if (pulmonSubEl) {
+    const partes = [];
+    if (pulmonInterno > 0) partes.push(`${pulmonInterno} pulmon interno`);
+    if (pulmonExterno > 0) partes.push(`${pulmonExterno} pulmon externo`);
+    pulmonSubEl.textContent = partes.join(' · ');
+    pulmonSubEl.style.display = pulmonTotal > 0 ? 'block' : 'none';
+  }
 }
 
 // ── Helpers ──────────────────────────────────────────────
@@ -45,6 +58,144 @@ function diasEntre(a, b) {
   return Math.round((new Date(b) - new Date(a)) / 86400000);
 }
 
+async function cargarDashboardMes() {
+  const cont = document.getElementById('dash-mes-contenido');
+  if (!cont) return;
+  cont.innerHTML = '<div class="loading-state">Cargando mes actual...</div>';
+
+  try {
+    const ahora = new Date();
+    const inicioMesDate = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+    const finMesDate = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1);
+    const inicioMes = inicioMesDate.toISOString();
+    const finMes = finMesDate.toISOString();
+    const hoy = new Date();
+    hoy.setHours(0,0,0,0);
+
+    const [ordenesMes, ordenesActivas, etapasMes, solicitudes] = await Promise.all([
+      api(`/ordenes?creado_en=gte.${inicioMes}&creado_en=lt.${finMes}&select=id,placa,marca,linea,propietario,estado,pulmon,pulmon_tipo,creado_en,fecha_entrega_1,fecha_entrega_2,entregada_en&order=creado_en.desc`).catch(()=>[]) || [],
+      api(`/ordenes?estado=eq.Activa&select=id,placa,marca,linea,propietario,estado,pulmon,pulmon_tipo,creado_en,fecha_entrega_1,fecha_entrega_2&order=fecha_entrega_1.asc`).catch(()=>[]) || [],
+      api(`/etapas?select=id,orden_id,servicio,etapa,inicio,fin,valor,tecnico,creado_en&or=(creado_en.gte.${inicioMes},inicio.gte.${inicioMes},fin.gte.${inicioMes})`).catch(()=>[]) || [],
+      api(`/solicitudes_repuesto?creado_en=gte.${inicioMes}&select=id,orden_id,estado,repuesto,creado_en`).catch(()=>[]) || []
+    ]);
+
+    const idsMes = new Set(ordenesMes.map(o => o.id));
+    const activasNormales = ordenesActivas.filter(o => !o.pulmon).length;
+    const pulmonInterno = ordenesActivas.filter(o => o.pulmon && o.pulmon_tipo === 'interno').length;
+    const pulmonExterno = ordenesActivas.filter(o => o.pulmon && o.pulmon_tipo === 'externo').length;
+    const entregadasMes = ordenesMes.filter(o => o.estado === 'Entregada' || (o.entregada_en && new Date(o.entregada_en) >= inicioMesDate)).length;
+    const etapasFinalizadas = etapasMes.filter(e => e.fin && new Date(e.fin) >= inicioMesDate && new Date(e.fin) < finMesDate);
+    const valorMes = etapasFinalizadas.reduce((s,e)=>s+(e.valor||0),0);
+    const fmt = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n || 0);
+
+    const porDia = {};
+    for (let d = 1; d <= new Date(ahora.getFullYear(), ahora.getMonth()+1, 0).getDate(); d++) {
+      porDia[d] = { ingresos: 0, entregas: 0 };
+    }
+    ordenesMes.forEach(o => {
+      const d = new Date(o.creado_en).getDate();
+      if (porDia[d]) porDia[d].ingresos++;
+      if (o.entregada_en) {
+        const eDate = new Date(o.entregada_en);
+        if (eDate >= inicioMesDate && eDate < finMesDate && porDia[eDate.getDate()]) porDia[eDate.getDate()].entregas++;
+      }
+    });
+    const maxDia = Math.max(...Object.values(porDia).map(x=>Math.max(x.ingresos,x.entregas)), 1);
+    const barrasHtml = Object.entries(porDia).map(([dia, data]) => `
+      <div class="dash-bar-col">
+        <div class="dash-bar-group">
+          <div class="dash-bar" style="height:${Math.max(2, Math.round((data.ingresos/maxDia)*72))}px;background:var(--azul-mid)" title="Ingresos: ${data.ingresos}"></div>
+          <div class="dash-bar" style="height:${Math.max(2, Math.round((data.entregas/maxDia)*72))}px;background:var(--verde)" title="Entregas: ${data.entregas}"></div>
+        </div>
+        <div class="dash-bar-label">${dia}</div>
+      </div>`).join('');
+
+    const proximas = ordenesActivas
+      .filter(o => o.fecha_entrega_1 || o.fecha_entrega_2)
+      .map(o => {
+        const f = o.fecha_entrega_1 ? new Date(o.fecha_entrega_1) : new Date(o.fecha_entrega_2);
+        f.setHours(0,0,0,0);
+        return { ...o, fechaRef: f, dias: Math.round((f - hoy) / 86400000) };
+      })
+      .sort((a,b)=>a.dias-b.dias)
+      .slice(0,8);
+
+    const proximasHtml = proximas.length ? proximas.map(o => {
+      const color = o.dias < 0 ? 'var(--rojo)' : o.dias <= 2 ? '#D97706' : 'var(--verde)';
+      const label = o.dias < 0 ? `${Math.abs(o.dias)}d vencida` : o.dias === 0 ? 'Hoy' : o.dias === 1 ? 'Mañana' : `${o.dias} días`;
+      return `<div class="dash-entrega-row" onclick="abrirOrden(${o.id})">
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'DM Mono',monospace;font-weight:700">${o.placa}</div>
+          <div style="font-size:12px;color:var(--gris-mid)">${[o.marca,o.linea].filter(Boolean).join(' ') || 'Sin datos'} · ${o.propietario || 'Sin cliente'}</div>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:${color};white-space:nowrap">${label}</div>
+      </div>`;
+    }).join('') : '<div style="font-size:13px;color:var(--gris-mid);padding:8px 0">Sin próximas entregas.</div>';
+
+    const servicios = {};
+    etapasMes.forEach(e => {
+      if (!idsMes.has(e.orden_id) && !(e.fin && new Date(e.fin) >= inicioMesDate && new Date(e.fin) < finMesDate)) return;
+      const srv = e.servicio || 'sin_servicio';
+      servicios[srv] = (servicios[srv] || 0) + 1;
+    });
+    const maxSrv = Math.max(...Object.values(servicios), 1);
+    const srvColor = { latoneria:'#DC2626', pintura:'#D97706', mecanica:'#2563EB', adicionales:'#059669' };
+    const serviciosHtml = Object.entries(servicios).length ? Object.entries(servicios).sort((a,b)=>b[1]-a[1]).map(([srv, n]) => {
+      const color = srvColor[srv] || '#6B7280';
+      return `<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="font-size:12px;font-weight:700;color:${color}">${CATALOGO[srv]?.nombre || srv}</span>
+          <span style="font-size:12px;color:var(--gris-mid)">${n} etapas</span>
+        </div>
+        <div style="height:7px;background:var(--gris-borde);border-radius:99px;overflow:hidden">
+          <div style="height:100%;width:${Math.round((n/maxSrv)*100)}%;background:${color};border-radius:99px"></div>
+        </div>
+      </div>`;
+    }).join('') : '<div style="font-size:13px;color:var(--gris-mid)">Sin etapas registradas este mes.</div>';
+
+    const pendientesRep = solicitudes.filter(s => !['entregado','rechazado'].includes(s.estado || '')).length;
+    const mesLabel = ahora.toLocaleDateString('es-CO', { month:'long', year:'numeric' });
+
+    cont.innerHTML = `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:20px;font-weight:800;color:var(--texto);text-transform:capitalize">${mesLabel}</div>
+          <div style="font-size:13px;color:var(--gris-mid)">Resumen operativo del mes en curso</div>
+        </div>
+      </div>
+      <div class="dash-grid">
+        <div class="dash-card"><div class="dash-card-val" style="color:var(--azul)">${ordenesMes.length}</div><div class="dash-card-label">Ingresos del mes</div><div class="dash-card-sub">Órdenes creadas</div></div>
+        <div class="dash-card"><div class="dash-card-val" style="color:var(--verde)">${entregadasMes}</div><div class="dash-card-label">Entregadas</div><div class="dash-card-sub">Cerradas durante el mes</div></div>
+        <div class="dash-card"><div class="dash-card-val" style="color:#D97706">${pulmonInterno + pulmonExterno}</div><div class="dash-card-label">En pulmón</div><div class="dash-card-sub">${pulmonInterno} interno · ${pulmonExterno} externo</div></div>
+        <div class="dash-card"><div class="dash-card-val" style="color:var(--azul);font-size:20px">${fmt(valorMes)}</div><div class="dash-card-label">Valor finalizado</div><div class="dash-card-sub">${etapasFinalizadas.length} etapas cerradas</div></div>
+      </div>
+      <div class="dash-row-2">
+        <div class="dash-panel">
+          <div class="dash-panel-titulo">Ingresos y entregas por día</div>
+          <div class="dash-legend"><span class="dash-legend-dot" style="background:var(--azul-mid)"></span><span>Ingresos</span><span class="dash-legend-dot" style="background:var(--verde);margin-left:12px"></span><span>Entregas</span></div>
+          <div class="dash-bars" style="height:104px;overflow-x:auto;padding-bottom:6px">${barrasHtml}</div>
+        </div>
+        <div class="dash-panel">
+          <div class="dash-panel-titulo">Próximas entregas</div>
+          <div class="dash-entregas">${proximasHtml}</div>
+        </div>
+      </div>
+      <div class="dash-row-2">
+        <div class="dash-panel"><div class="dash-panel-titulo">Servicios trabajados</div>${serviciosHtml}</div>
+        <div class="dash-panel">
+          <div class="dash-panel-titulo">Señales rápidas</div>
+          <div style="display:grid;gap:10px">
+            <div class="info-chip"><div class="info-chip-label">Activas en taller</div><div class="info-chip-val">${activasNormales}</div></div>
+            <div class="info-chip"><div class="info-chip-label">Solicitudes de repuesto pendientes</div><div class="info-chip-val">${pendientesRep}</div></div>
+            <div class="info-chip"><div class="info-chip-label">Capacidad usada</div><div class="info-chip-val">${Math.min(Math.round(((activasNormales + pulmonInterno) / CAPACIDAD_TALLER) * 100), 100)}%</div></div>
+          </div>
+        </div>
+      </div>`;
+  } catch(e) {
+    cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
+  }
+}
+
 // ── Dashboard principal ───────────────────────────────────
 async function cargarDashboard() {
   const cont = document.getElementById('dash-contenido');
@@ -58,12 +209,14 @@ async function cargarDashboard() {
     ]);
 
     // ── Métricas base ─────────────────────────────────────
-    const activas    = ordenes.filter(o => o.estado === 'Activa' && !o.pulmon).length;
-    const pulmon     = ordenes.filter(o => o.pulmon).length;
+    const activas        = ordenes.filter(o => o.estado === 'Activa' && !o.pulmon).length;
+    const pulmonInterno  = ordenes.filter(o => o.pulmon && o.pulmon_tipo === 'interno').length;
+    const pulmonExterno  = ordenes.filter(o => o.pulmon && o.pulmon_tipo === 'externo').length;
+    const pulmon         = pulmonInterno + pulmonExterno;
     const entregadas = ordenes.filter(o => o.estado === 'Entregada').length;
     const total      = ordenes.length;
 
-    actualizarCapacidad(activas + pulmon);
+    actualizarCapacidad(activas, pulmonInterno, pulmonExterno);
 
     const etapasActivas = todasEtapas.filter(e => e.inicio && !e.fin);
 

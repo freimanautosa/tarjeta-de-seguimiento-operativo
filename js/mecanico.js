@@ -15,9 +15,9 @@ function montarMecanico() {
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         Mi historial
       </button>
-      <button class="nav-item" id="nav-mec-repuestos" onclick="navMec('repuestos')">
+      <button class="nav-item" id="nav-mec-solicitudes" onclick="navMec('solicitudes')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83"/></svg>
-        Solicitar repuestos
+        Solicitudes
       </button>
     `;
   }
@@ -33,9 +33,9 @@ function montarMecanico() {
         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <span>Historial</span>
       </button>
-      <button class="bnav-item" id="bnav-mec-repuestos" onclick="navMec('repuestos')">
+      <button class="bnav-item" id="bnav-mec-solicitudes" onclick="navMec('solicitudes')">
         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4"/></svg>
-        <span>Repuestos</span>
+        <span>Solicitudes</span>
       </button>
     `;
   }
@@ -43,20 +43,20 @@ function montarMecanico() {
 }
 
 function navMec(pag) {
-  ['ordenes','historial','repuestos'].forEach(p => {
+  ['ordenes','historial','solicitudes'].forEach(p => {
     const nb = document.getElementById('nav-mec-'+p);
     const bb = document.getElementById('bnav-mec-'+p);
     if (nb) nb.classList.toggle('active', p===pag);
     if (bb) bb.classList.toggle('active', p===pag);
   });
-  const titles = { ordenes:'Mis Órdenes', historial:'Mi Historial', repuestos:'Solicitar Repuestos' };
-  const pages  = { ordenes:'pag-mecanico', historial:'pag-mec-historial', repuestos:'pag-mec-repuestos' };
+  const titles = { ordenes:'Mis Órdenes', historial:'Mi Historial', solicitudes:'Solicitudes' };
+  const pages  = { ordenes:'pag-mecanico', historial:'pag-mec-historial', solicitudes:'pag-mec-repuestos' };
   mostrarPagina(pages[pag]||'pag-mecanico');
   const title = document.getElementById('topbar-title');
   if (title) title.textContent = titles[pag]||'Mis Órdenes';
   if (pag==='ordenes') cargarEtapasMecanico();
   if (pag==='historial') cargarHistorialMecanico();
-  if (pag==='repuestos') cargarRepuestosMecanico();
+  if (pag==='solicitudes') cargarRepuestosMecanico();
   closeSidebar();
 }
 
@@ -88,9 +88,9 @@ async function cargarEtapasMecanico() {
         const hayActiva = ets.some(x => x.inicio && !x.fin);
         let acc = '';
         if (!e.inicio && !hayActiva)
-          acc = `<button class="btn btn-success btn-sm" onclick="mecIniciarEtapa(${e.id},'${e.etapa || ''}',${oid})">▶ Iniciar</button>`;
+          acc = `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();mecIniciarEtapa(${e.id},'${e.etapa || ''}',${oid})">▶ Iniciar</button>`;
         else if (e.inicio && !e.fin)
-          acc = `<button class="btn btn-danger btn-sm" onclick="mecFinalizarEtapa(${e.id},'${e.etapa || ''}','${e.servicio || ''}',${oid})">■ Finalizar</button>`;
+          acc = `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();mecFinalizarEtapa(${e.id},'${e.etapa || ''}','${e.servicio || ''}',${oid})">■ Finalizar</button>`;
         else if (e.fin)
           acc = `<span class="badge badge-completada">Completada ✓</span>`;
         else
@@ -108,8 +108,7 @@ async function cargarEtapasMecanico() {
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span class="badge badge-${bCls}">${badge}</span>
             ${acc}
-            ${!e.fin ? `<button class="btn btn-ghost btn-xs" onclick="abrirMecDetalle(${e.id},${oid})">Fotos / novedades</button>` : ''}
-            <button class="btn btn-ghost btn-xs" style="font-size:11px" onclick="abrirModalSolicitudRepuesto(${oid},${e.id},'Orden #${oid}')">+ Repuesto</button>
+            ${!e.fin ? `<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirMecDetalle(${e.id},${oid})">Fotos / novedades</button>` : ''}
           </div>
         </div>`;
       }).join('');
@@ -371,6 +370,62 @@ async function cargarRepuestosMecanico() {
   if (!cont) return;
   cont.innerHTML = '<div class="loading-state">Cargando...</div>';
   try {
+    {
+    const solicitudes = await api(`/solicitudes_repuesto?solicitado_por=eq.${encodeURIComponent(sesion.nombre)}&order=creado_en.desc&limit=80&select=*`).catch(()=>[]) || [];
+    const ordenIds = [...new Set(solicitudes.map(s => s.orden_id).filter(Boolean))];
+    const ordenes = ordenIds.length ? await api(`/ordenes?id=in.(${ordenIds.join(',')})&select=id,placa,propietario,marca,linea,estado`).catch(()=>[]) || [] : [];
+    const estadoColor = {
+      pendiente_jefe:'#D97706', enviado_repuestos:'#7C3AED',
+      cotizado:'#2563EB', pedido:'#0891B2',
+      entregado:'#059669', rechazado:'#DC2626'
+    };
+    const estadoBg = {
+      pendiente_jefe:'#FEF3C7', enviado_repuestos:'#EDE9FE',
+      cotizado:'#EBF2FF', pedido:'#E0F2FE',
+      entregado:'#E6F5EF', rechazado:'#FEE2E2'
+    };
+    const estadoLabel = {
+      pendiente_jefe:'Pendiente revision', enviado_repuestos:'En gestion',
+      cotizado:'Cotizado', pedido:'Pedido al proveedor',
+      entregado:'Entregado', rechazado:'Rechazado'
+    };
+    const conteos = solicitudes.reduce((acc, s) => {
+      const estado = s.estado || 'pendiente_jefe';
+      acc[estado] = (acc[estado] || 0) + 1;
+      return acc;
+    }, {});
+
+    cont.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px">
+        <div class="info-chip"><div class="info-chip-label">Pendientes</div><div class="info-chip-val">${(conteos.pendiente_jefe||0) + (conteos.enviado_repuestos||0) + (conteos.cotizado||0) + (conteos.pedido||0)}</div></div>
+        <div class="info-chip"><div class="info-chip-label">Entregadas</div><div class="info-chip-val">${conteos.entregado||0}</div></div>
+        <div class="info-chip"><div class="info-chip-label">Rechazadas</div><div class="info-chip-val">${conteos.rechazado||0}</div></div>
+      </div>
+      ${solicitudes.length ? solicitudes.map(s => {
+        const o = ordenes.find(ord => ord.id === s.orden_id) || {};
+        const estado = s.estado || 'pendiente_jefe';
+        const color = estadoColor[estado] || '#6B7280';
+        const bg = estadoBg[estado] || '#F3F4F6';
+        return `<div class="solicitud-card">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
+            <div style="min-width:0">
+              <div style="font-family:'DM Mono',monospace;font-weight:800;font-size:15px">${o.placa || 'Orden #' + s.orden_id}</div>
+              <div style="font-size:12px;color:var(--gris-mid);margin-top:2px">${[o.marca,o.linea].filter(Boolean).join(' ') || o.propietario || 'Sin datos'} · ${formatTS(s.creado_en)}</div>
+            </div>
+            <span style="font-size:11px;font-weight:800;color:${color};background:${bg};padding:4px 10px;border-radius:99px;text-transform:uppercase;white-space:nowrap">${estadoLabel[estado] || estado}</span>
+          </div>
+          <div style="font-weight:700;margin-bottom:4px">${s.repuesto || 'Repuesto sin nombre'}</div>
+          <div style="font-size:12px;color:var(--gris-mid)">Cantidad: ${s.unidades || 1}${s.observaciones ? ' · ' + s.observaciones : ''}</div>
+          ${s.nota_jefe ? `<div style="font-size:12px;color:var(--texto);background:var(--gris-bg);padding:8px;border-radius:6px;margin-top:10px">${s.nota_jefe}</div>` : ''}
+          <div class="btn-row" style="margin-top:10px">
+            <button class="btn btn-ghost btn-sm" onclick="abrirOrdenMecanico(${s.orden_id})">Ver orden</button>
+          </div>
+        </div>`;
+      }).join('') : '<div class="empty-state"><p>No tienes solicitudes de repuestos todavía.</p></div>'}
+    `;
+    return;
+    }
+
     const etapas = await api(`/etapas?mecanico_id=eq.${sesion.id}&fin=is.null&select=orden_id`).catch(()=>[]) || [];
     const oids = [...new Set(etapas.map(e=>e.orden_id))];
     const ordenes = oids.length ? await api(`/ordenes?id=in.(${oids.join(',')})&select=id,placa,propietario`).catch(()=>[]) || [] : [];

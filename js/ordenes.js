@@ -1534,12 +1534,13 @@ async function guardarAprobacion() {
 // CAPACIDAD (helper)
 // ============================================================
 function _refrescarCapacidad() {
-  const ok = [true, true];
+  const ok = [true, true, true];
   Promise.all([
     api('/ordenes?estado=eq.Activa&pulmon=eq.false&select=id').catch(() => { ok[0] = false; return []; }),
-    api('/ordenes?pulmon=eq.true&pulmon_tipo=eq.interno&select=id').catch(() => { ok[1] = false; return []; })
-  ]).then(([activas, pulmonInterno]) => {
-    if (ok[0] && ok[1]) actualizarCapacidad(activas.length, pulmonInterno.length);
+    api('/ordenes?pulmon=eq.true&pulmon_tipo=eq.interno&select=id').catch(() => { ok[1] = false; return []; }),
+    api('/ordenes?pulmon=eq.true&pulmon_tipo=eq.externo&select=id').catch(() => { ok[2] = false; return []; })
+  ]).then(([activas, pulmonInterno, pulmonExterno]) => {
+    if (ok[0] && ok[1] && ok[2]) actualizarCapacidad(activas.length, pulmonInterno.length, pulmonExterno.length);
   });
 }
 
@@ -1865,6 +1866,7 @@ function renderCalendario(cont, ordenes, mesDate) {
 
   // Build grid
   const diasSem = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const totalMes = Object.values(porDia).reduce((sum, items) => sum + items.length, 0);
   const headHtml = diasSem.map(d => `<div class="cal-head">${d}</div>`).join('');
 
   let celdas = '';
@@ -1877,28 +1879,35 @@ function renderCalendario(cont, ordenes, mesDate) {
     const ords   = porDia[d] || [];
     const pasado = fecha < hoy;
 
-    const ordsHtml = ords.slice(0, 3).map(o => {
+    const ordsHtml = ords.slice(0, 4).map(o => {
       const urgente = !o.esFecha2 && new Date(o.fecha_entrega_1) <= hoy;
       const color = urgente ? '#DC2626' : o.esFecha2 ? '#D97706' : '#2A5298';
       const bg    = urgente ? '#FEE2E2' : o.esFecha2 ? '#FEF3C7' : '#EBF2FF';
-      return `<div class="cal-orden" style="background:${bg};color:${color}" onclick="abrirCalModal(${o.id})" style="cursor:pointer">
-        <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:10px">${o.placa}</span>
-        ${o.esFecha2 ? '<span style="font-size:9px;opacity:0.7"> F2</span>' : ''}
+      return `<div class="cal-orden" style="background:${bg};color:${color};border-left-color:${color}" onclick="abrirOrden(${o.id})">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:11px">${o.placa || '---'}</span>
+          ${o.esFecha2 ? '<span style="font-size:9px;font-weight:800;opacity:0.75">F2</span>' : ''}
+        </div>
+        <div class="cal-orden-meta">${[o.marca,o.linea].filter(Boolean).join(' ') || o.propietario || 'Orden activa'}</div>
       </div>`;
     }).join('');
-    const masHtml = ords.length > 3
-      ? `<div style="font-size:9px;color:var(--gris-mid);text-align:center">+${ords.length-3} más</div>` : '';
+    const masHtml = ords.length > 4
+      ? `<div class="cal-mas">+${ords.length-4} mas</div>` : '';
 
-    celdas += `<div class="cal-cell${esHoy?' cal-hoy':''}${pasado&&!esHoy?' cal-pasado':''}">
-      <div class="cal-dia">${d}</div>
+    celdas += `<div class="cal-cell${esHoy?' cal-hoy':''}${pasado&&!esHoy?' cal-pasado':''}${ords.length?' cal-con-ordenes':''}">
+      <div class="cal-dia"><span>${d}</span>${ords.length ? `<strong>${ords.length}</strong>` : ''}</div>
       ${ordsHtml}${masHtml}
     </div>`;
   }
 
   cont.innerHTML = `
+    <div class="cal-shell">
     <div class="cal-nav">
       <button class="btn btn-ghost btn-sm" onclick="calCambiarMes(-1)">← Anterior</button>
-      <div class="cal-mes-titulo">${mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1)}</div>
+      <div>
+        <div class="cal-mes-titulo">${mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1)}</div>
+        <div style="font-size:12px;color:var(--gris-mid);text-align:center">${totalMes} entregas programadas</div>
+      </div>
       <button class="btn btn-ghost btn-sm" onclick="calCambiarMes(1)">Siguiente →</button>
     </div>
     <div class="cal-leyenda">
@@ -1909,6 +1918,7 @@ function renderCalendario(cont, ordenes, mesDate) {
     <div class="cal-grid">
       ${headHtml}
       ${celdas}
+    </div>
     </div>
   `;
 }
@@ -2283,7 +2293,10 @@ async function abrirOrdenMecanico(id) {
             <div class="detalle-placa">${orden.placa}</div>
             <div class="detalle-vehiculo">${[orden.marca,orden.linea,orden.modelo,orden.color].filter(Boolean).join(' · ')||'—'}</div>
           </div>
-          <span class="badge badge-${orden.pulmon?'pulmon':(orden.estado||'activa').toLowerCase()}">${orden.pulmon?'En Pulmón':orden.estado||'Activa'}</span>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+            <span class="badge badge-${orden.pulmon?'pulmon':(orden.estado||'activa').toLowerCase()}">${orden.pulmon?'En Pulmón':orden.estado||'Activa'}</span>
+            <button class="btn btn-primary btn-sm" onclick="abrirModalSolicitudRepuesto(${id},null,'Orden #${id}')">+ Solicitar repuesto</button>
+          </div>
         </div>
         <div class="donut-section">
           <svg width="56" height="56" viewBox="0 0 56 56">
