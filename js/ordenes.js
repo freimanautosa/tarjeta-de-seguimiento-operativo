@@ -1,17 +1,4 @@
 // ═══════════════════════════════════════════════════════════
-// POLLING GLOBAL — Actualización automática cada 15s
-// ═══════════════════════════════════════════════════════════
-let _globalPollingInterval = null;
-function iniciarPollingGlobal(fn, seg = 15) {
-  if (window._sesion?.perfil === 'taller') return;
-  if (_globalPollingInterval) clearInterval(_globalPollingInterval);
-  _globalPollingInterval = setInterval(() => { try { fn(); } catch(e) {} }, seg * 1000);
-}
-function detenerPollingGlobal() {
-  if (_globalPollingInterval) { clearInterval(_globalPollingInterval); _globalPollingInterval = null; }
-}
-
-// ═══════════════════════════════════════════════════════════
 // ÓRDENES - LISTA, DETALLE, NUEVA ORDEN, ETAPAS
 // ═══════════════════════════════════════════════════════════
 
@@ -532,7 +519,14 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
         </div>
       </div>
       <div class="etapa-body" id="eb-${k}">
-        <div class="etapa-actions">${acc}</div>
+        <div class="etapa-actions" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          ${acc}
+          <button class="btn btn-ghost btn-sm" style="font-size:12px;display:flex;align-items:center;gap:4px"
+            onclick="abrirModalSolicitudRepuesto(${ordenActual?.id||e.orden_id},${eid},'${ordenActual?.placa||""}')" >
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+            + Repuesto
+          </button>
+        </div>
         <div class="timestamps">
           <div class="ts-chip">Inicio: <strong>${e.inicio?formatTS(e.inicio):'—'}</strong></div>
           <div class="ts-chip">Fin: <strong>${e.fin?formatTS(e.fin):'—'}</strong></div>
@@ -636,6 +630,11 @@ async function iniciarEtapa(eid, nombre) {
 
 async function finalizarEtapa(eid, nombre, servicio) {
   try {
+    const repPend = await api(`/solicitudes_repuesto?etapa_id=eq.${eid}&estado=in.(pendiente_jefe,enviado_repuestos,cotizado,pedido)&select=id,repuesto`).catch(()=>[]) || [];
+    if (repPend.length) {
+      toast(`No puedes finalizar. Hay ${repPend.length} repuesto(s) pendiente(s): ${repPend.map(r=>r.repuesto).join(', ')}`, 'err');
+      return;
+    }
     await api(`/etapas?id=eq.${eid}`, 'PATCH', { fin: new Date().toISOString() });
     toast(`${nombre} finalizada ✓`);
     const etapasOrden = await api(`/etapas?orden_id=eq.${ordenActual.id}&order=creado_en.asc`);
@@ -1732,7 +1731,6 @@ function montarJefe() {
   
   // Cargar capacidad al inicio
   _refrescarCapacidad();
-  // Badge repuestos pendientes
   setTimeout(() => { if (typeof actualizarBadgeRepuestos === 'function') actualizarBadgeRepuestos(); }, 1500);
 
   // Activar Realtime
@@ -1776,7 +1774,7 @@ function navJefe(pag) {
     case 'dashboard':
       pagId = 'pag-dashboard';
       titulo = 'Estado del Taller';
-      setTimeout(() => { if (typeof switchDashTab === 'function') switchDashTab('mes'); else cargarDashboard(); }, 50);
+      setTimeout(() => { if (typeof switchDashTab === 'function') switchDashTab('mes'); }, 50);
       break;
     case 'cotizaciones':
       pagId = 'pag-cotizaciones';
@@ -2311,6 +2309,11 @@ async function abrirOrdenMecanico(id) {
 
 async function mecFinalizarEtapaDetalle(eid, nombre, servicio, oid) {
   try {
+    const repPend = await api(`/solicitudes_repuesto?etapa_id=eq.${eid}&estado=in.(pendiente_jefe,enviado_repuestos,cotizado,pedido)&select=id,repuesto`).catch(()=>[]) || [];
+    if (repPend.length) {
+      toast(`No puedes finalizar. Hay ${repPend.length} repuesto(s) pendiente(s): ${repPend.map(r=>r.repuesto).join(', ')}`, 'err');
+      return;
+    }
     await api(`/etapas?id=eq.${eid}`, 'PATCH', { fin: new Date().toISOString() });
     toast(`${nombre} finalizada ✓`);
     const etapasOrden = await api(`/etapas?orden_id=eq.${oid}&order=creado_en.asc`);

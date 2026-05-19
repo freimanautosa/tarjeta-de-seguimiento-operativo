@@ -2,19 +2,34 @@
 // DASHBOARD - ESTADO DEL TALLER
 // ═══════════════════════════════════════════════════════════
 
-function actualizarCapacidad(activas) {
+function actualizarCapacidad(activas, pulmonInterno) {
+  pulmonInterno = pulmonInterno || 0;
   const cap   = document.getElementById('sidebar-capacidad');
-  const fill  = document.getElementById('cap-fill');
+  const fillA = document.getElementById('cap-fill-activas');
+  const fillP = document.getElementById('cap-fill-pulmon');
   const pctEl = document.getElementById('cap-pct');
   const subEl = document.getElementById('cap-sub');
   if (!cap) return;
   cap.style.display = 'block';
-  const pct   = Math.min(Math.round((activas / CAPACIDAD_TALLER) * 100), 100);
-  const circ  = 2 * Math.PI * 30;
-  const color = pct <= 65 ? '#EAB308' : pct <= 80 ? '#F97316' : '#EF4444';
-  if (fill)  { fill.style.strokeDasharray = `${(pct/100)*circ} ${circ}`; fill.style.stroke = color; }
-  if (pctEl) pctEl.textContent = pct + '%';
-  if (subEl) subEl.textContent = `${activas} de ${CAPACIDAD_TALLER} cupos`;
+
+  const circ     = 2 * Math.PI * 30;
+  const total    = activas + pulmonInterno;
+  const pctA     = Math.min(Math.round((activas / CAPACIDAD_TALLER) * 100), 100);
+  const pctP     = Math.min(Math.round((pulmonInterno / CAPACIDAD_TALLER) * 100), 100);
+  const pctTotal = Math.min(pctA + pctP, 100);
+
+  // Barra activas (amarillo)
+  if (fillA) {
+    fillA.style.strokeDasharray = `${(pctA/100)*circ} ${circ}`;
+    fillA.style.strokeDashoffset = '0';
+  }
+  // Barra pulmón (naranja) — desplazada por el arco de activas
+  if (fillP) {
+    fillP.style.strokeDasharray = `${(pctP/100)*circ} ${circ}`;
+    fillP.style.strokeDashoffset = `-${(pctA/100)*circ}`;
+  }
+  if (pctEl) pctEl.textContent = pctTotal + '%';
+  if (subEl) subEl.textContent = `${total} de ${CAPACIDAD_TALLER} cupos`;
 }
 
 // ── Helpers ──────────────────────────────────────────────
@@ -605,9 +620,8 @@ function switchDashTab(tab) {
   if (tab === 'mes') {
     if (mesCont) { mesCont.style.display = ''; }
     if (btnMes)  btnMes.classList.add('active');
-    if (!mesCont?.innerHTML?.trim() || mesCont.innerHTML.includes('loading-state')) {
+    if (!mesCont?.innerHTML?.trim()) {
       if (typeof cargarDashboardMes === 'function') cargarDashboardMes();
-      else cargarDashboard();
     }
   } else if (tab === 'operativo') {
     if (opCont)  { opCont.style.display = ''; }
