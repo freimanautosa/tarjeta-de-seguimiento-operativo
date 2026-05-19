@@ -1742,8 +1742,8 @@ function montarJefe() {
   _refrescarCapacidad();
   setTimeout(() => { if (typeof actualizarBadgeRepuestos === 'function') actualizarBadgeRepuestos(); }, 1500);
 
-  // Activar Realtime
-  iniciarRealtime();
+  // Activar Realtime (pendiente de implementar)
+  if (typeof iniciarRealtime === 'function') iniciarRealtime();
 }
 
 function navJefe(pag) {
