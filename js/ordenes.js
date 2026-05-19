@@ -1735,7 +1735,7 @@ function montarJefe() {
 
   // Cargar la lista de mecánicos para los selects
   cargarMecanicos().finally(() => {
-    navJefe('ordenes');
+    navJefe('dashboard');
   });
   
   // Cargar capacidad al inicio
