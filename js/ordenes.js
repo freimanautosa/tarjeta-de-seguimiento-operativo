@@ -62,8 +62,8 @@ async function cargarOrdenes() {
         style="${esMesAnterior ? 'border-left:3px solid #F59E0B;' : ''}">
         <div class="orden-card-top">
           <div>
-            <div class="orden-placa">${o.placa}</div>
-            <div class="orden-vehiculo">${[o.marca,o.linea,o.modelo].filter(Boolean).join(' · ')} ${o.propietario ? '— '+o.propietario : ''}</div>
+            <div class="orden-placa">${escapeHtml(o.placa)}</div>
+            <div class="orden-vehiculo">${[o.marca,o.linea,o.modelo].filter(Boolean).map(escapeHtml).join(' · ')} ${o.propietario ? '— '+escapeHtml(o.propietario) : ''}</div>
           </div>
           <div class="orden-badges">${estadoBadge}${tcBadge}</div>
         </div>
@@ -113,8 +113,8 @@ async function cargarOrdenesPulmon() {
         onclick="abrirOrden(${o.id})">
         <div class="orden-card-top">
           <div>
-            <div class="orden-placa">${o.placa}</div>
-            <div class="orden-vehiculo">${[o.marca,o.linea,o.modelo].filter(Boolean).join(' · ')} ${o.propietario ? '— '+o.propietario : ''}</div>
+            <div class="orden-placa">${escapeHtml(o.placa)}</div>
+            <div class="orden-vehiculo">${[o.marca,o.linea,o.modelo].filter(Boolean).map(escapeHtml).join(' · ')} ${o.propietario ? '— '+escapeHtml(o.propietario) : ''}</div>
           </div>
           <div class="orden-badges">
             <span class="badge badge-pulmon">En Pulmón${diasPulmon !== null ? ` · ${diasPulmon}d` : ''}</span>
@@ -220,7 +220,7 @@ async function abrirOrden(id) {
     // Fotos
     const todasFotos = [...fotosEt, ...fotosIng];
     const fotosRecHtml = todasFotos.length
-      ? todasFotos.map(f=>`<div class="foto-thumb" onclick="abrirLightbox('${f.url}')"><img src="${f.url}" alt="" loading="lazy"></div>`).join('')
+      ? todasFotos.map(f=>`<div class="foto-thumb" data-url="${escapeHtml(f.url)}" onclick="abrirLightbox(this.dataset.url)"><img src="${escapeHtml(f.url)}" alt="" loading="lazy"></div>`).join('')
       : '<span style="font-size:12px;color:var(--gris-mid)">Sin fotos.</span>';
 
     // Timeline
@@ -231,7 +231,7 @@ async function abrirOrden(id) {
       const icon = done ? '✓' : active ? '●' : (i+1);
       return `<div class="timeline-step ${done?'done':''}">
         <div class="timeline-dot ${cls}">${icon}</div>
-        <div class="timeline-label ${cls}">${e.etapa||'—'}</div>
+        <div class="timeline-label ${cls}">${escapeHtml(e.etapa)||'—'}</div>
       </div>`;
     }).join('') : '<span style="font-size:12px;color:var(--gris-mid)">Sin etapas.</span>';
 
@@ -312,12 +312,8 @@ async function abrirOrden(id) {
           <div class="detalle-header-card">
             <div class="detalle-placa-row">
               <div>
-                <div class="detalle-placa">${orden.placa}</div>
-                <div class="detalle-vehiculo">${[orden.marca,orden.linea,orden.modelo,orden.color].filter(Boolean).join(' · ')}</div>
-                <button class="btn btn-ghost btn-sm" onclick="verHistorialVehiculo('${orden.placa}')" style="margin-top:6px;font-size:11px;padding:4px 10px">
-                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
-                  Historial del vehículo
-                </button>
+                <div class="detalle-placa">${escapeHtml(orden.placa)}</div>
+                <div class="detalle-vehiculo">${[orden.marca,orden.linea,orden.modelo,orden.color].filter(Boolean).map(escapeHtml).join(' · ')}</div>
               </div>
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
                 <span class="badge badge-${estadoClase}">${estadoTexto}</span>
@@ -352,14 +348,14 @@ async function abrirOrden(id) {
             </button>` : ''}
           </div>
           <div class="info-chips" style="margin-bottom:16px">
-            <div class="info-chip"><div class="info-chip-label">Propietario</div><div class="info-chip-val">${orden.propietario||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Teléfono</div><div class="info-chip-val">${orden.telefono||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Tipo cliente</div><div class="info-chip-val">${orden.tipo_cliente||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Aseguradora</div><div class="info-chip-val">${orden.aseguradora||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Nivel daño</div><div class="info-chip-val">${orden.nivel_dano||'—'}</div></div>
+            <div class="info-chip"><div class="info-chip-label">Propietario</div><div class="info-chip-val">${escapeHtml(orden.propietario)||'—'}</div></div>
+            <div class="info-chip"><div class="info-chip-label">Teléfono</div><div class="info-chip-val">${escapeHtml(orden.telefono)||'—'}</div></div>
+            <div class="info-chip"><div class="info-chip-label">Tipo cliente</div><div class="info-chip-val">${escapeHtml(orden.tipo_cliente)||'—'}</div></div>
+            <div class="info-chip"><div class="info-chip-label">Aseguradora</div><div class="info-chip-val">${escapeHtml(orden.aseguradora)||'—'}</div></div>
+            <div class="info-chip"><div class="info-chip-label">Nivel daño</div><div class="info-chip-val">${escapeHtml(orden.nivel_dano)||'—'}</div></div>
             <div class="info-chip"><div class="info-chip-label">Kilometraje</div><div class="info-chip-val">${orden.kilometraje?orden.kilometraje.toLocaleString('es-CO')+' km':'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">VIN</div><div class="info-chip-val" style="font-family:'DM Mono',monospace;font-size:11px">${orden.vin||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Correo</div><div class="info-chip-val">${orden.correo_cliente||'—'}</div></div>
+            <div class="info-chip"><div class="info-chip-label">VIN</div><div class="info-chip-val" style="font-family:'DM Mono',monospace;font-size:11px">${escapeHtml(orden.vin)||'—'}</div></div>
+            <div class="info-chip"><div class="info-chip-label">Correo</div><div class="info-chip-val">${escapeHtml(orden.correo_cliente)||'—'}</div></div>
             <div class="info-chip"><div class="info-chip-label">Ingreso</div><div class="info-chip-val">${formatFecha(orden.creado_en)}</div></div>
             <div class="info-chip"><div class="info-chip-label">Fecha entrega 1</div><div class="info-chip-val">${formatFecha(orden.fecha_entrega_1)}</div></div>
             <div class="info-chip"><div class="info-chip-label">Fecha entrega 2</div><div class="info-chip-val">${formatFecha(orden.fecha_entrega_2)}</div></div>
@@ -379,7 +375,7 @@ async function abrirOrden(id) {
                 if (!totalEtapas) return '<div style="font-size:13px;color:var(--gris-mid)">Sin valores en etapas.</div>';
                 const fmt = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n);
                 const filas = etapas.filter(e=>e.valor).map(e =>
-                  '<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--gris-borde)"><span style="color:var(--gris-mid)">' + (e.etapa||'') + '</span><span style="font-weight:600">' + fmt(e.valor) + '</span></div>'
+                  '<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--gris-borde)"><span style="color:var(--gris-mid)">' + escapeHtml(e.etapa||'') + '</span><span style="font-weight:600">' + fmt(e.valor) + '</span></div>'
                 ).join('');
                 return filas + '<div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:2px solid var(--azul-mid)"><span style="font-size:13px;font-weight:700;color:var(--azul)">Total</span><span style="font-size:15px;font-weight:700;color:var(--azul)">' + fmt(totalEtapas) + '</span></div>';
               })()}
@@ -415,7 +411,7 @@ async function abrirOrden(id) {
             <div class="sidebar-card-body">
               <div id="d-cotizacion-link" style="margin-bottom:12px;font-size:13px">
                 ${orden.cotizacion_url
-                  ? `<a href="${orden.cotizacion_url}" target="_blank" style="color:var(--azul-mid);text-decoration:underline">Ver PDF →</a>`
+                  ? `<a href="${safeUrl(orden.cotizacion_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--azul-mid);text-decoration:underline">Ver PDF →</a>`
                   : '<span style="color:var(--gris-mid)">Sin cotización adjunta</span>'}
               </div>
               <div class="upload-zone" onclick="document.getElementById('fi-cotizacion').click()">
@@ -479,32 +475,32 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
 
   let acc = '';
   if (!e.inicio)
-    acc = `<button class="btn btn-success btn-sm" onclick="iniciarEtapa(${eid},'${nombre}')">▶ Iniciar</button>`;
+    acc = `<button class="btn btn-success btn-sm" data-eid="${eid}" data-nombre="${escapeHtml(nombre)}" onclick="iniciarEtapa(+this.dataset.eid,this.dataset.nombre)">▶ Iniciar</button>`;
   else if (e.inicio && !e.fin)
-    acc = `<button class="btn btn-danger btn-sm" onclick="finalizarEtapa(${eid},'${nombre}','${e.servicio||''}')">■ Finalizar</button>`;
+    acc = `<button class="btn btn-danger btn-sm" data-eid="${eid}" data-nombre="${escapeHtml(nombre)}" data-srv="${escapeHtml(e.servicio||'')}" onclick="finalizarEtapa(+this.dataset.eid,this.dataset.nombre,this.dataset.srv)">■ Finalizar</button>`;
   else if (e.fin) {
     const aprobBtn = ultimaAprob
-      ? `<button class="btn btn-ghost btn-sm" onclick="abrirModalAprobacion(${eid},'${nombre.replace(/'/g,"\\'")}')">↻ Revisar calidad</button>`
-      : `<button class="btn btn-primary btn-sm" onclick="abrirModalAprobacion(${eid},'${nombre.replace(/'/g,"\\'")}')">✓ Aprobar calidad</button>`;
+      ? `<button class="btn btn-ghost btn-sm" data-eid="${eid}" data-nombre="${escapeHtml(nombre)}" onclick="abrirModalAprobacion(+this.dataset.eid,this.dataset.nombre)">↻ Revisar calidad</button>`
+      : `<button class="btn btn-primary btn-sm" data-eid="${eid}" data-nombre="${escapeHtml(nombre)}" onclick="abrirModalAprobacion(+this.dataset.eid,this.dataset.nombre)">✓ Aprobar calidad</button>`;
     acc = aprobBtn;
   } else {
     acc = `<span style="font-size:12px;color:var(--gris-mid);font-style:italic">Esperando turno</span>`;
   }
 
   const fotosHtml = eFotos.map(f => `
-    <div class="foto-thumb" onclick="abrirLightbox('${f.url}')">
-      <img src="${f.url}" alt="">
-      <button class="foto-delete" onclick="event.stopPropagation();eliminarFoto(${f.id},'${f.url}')">✕</button>
+    <div class="foto-thumb" data-url="${escapeHtml(f.url)}" onclick="abrirLightbox(this.dataset.url)">
+      <img src="${escapeHtml(f.url)}" alt="">
+      <button class="foto-delete" data-fid="${f.id}" data-url="${escapeHtml(f.url)}" onclick="event.stopPropagation();eliminarFoto(+this.dataset.fid,this.dataset.url)">✕</button>
     </div>`).join('');
 
   const novsHtml = eNovs.length ? eNovs.map(n => `
     <div class="novedad-item">
       <div class="novedad-item-top">
-        <span class="novedad-tipo ${(n.tipo||'').toLowerCase()}">${n.tipo}</span>
+        <span class="novedad-tipo ${escapeHtml((n.tipo||'').toLowerCase())}">${escapeHtml(n.tipo)}</span>
         <span class="novedad-fecha">${formatTS(n.creado_en)}</span>
       </div>
-      <div class="novedad-motivo">${n.motivo||'—'}</div>
-      <div class="novedad-resp">Resp: ${n.responsable||'—'}</div>
+      <div class="novedad-motivo">${escapeHtml(n.motivo)||'—'}</div>
+      <div class="novedad-resp">Resp: ${escapeHtml(n.responsable)||'—'}</div>
       ${n.valor ? '<div style="font-size:12px;font-weight:600;color:var(--rojo);margin-top:3px">💰 Valor adicional: ' + new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n.valor) + '</div>' : ''}
     </div>`).join('')
     : '<div style="font-size:12px;color:var(--gris-mid);padding:4px 0">Sin novedades.</div>';
@@ -513,8 +509,8 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
     <div class="etapa-card">
       <div class="etapa-header" onclick="toggleEtapa('eb-${k}')">
         <div style="flex:1;min-width:0">
-          <div class="etapa-nombre">${nombre}${e.tercero?` <span style="font-size:11px;color:var(--gris-mid);font-weight:400">(${e.tercero})</span>`:''}</div>
-          ${e.tecnico||e.mecanico_id ? `<div class="etapa-tecnico">👤 ${e.tecnico||'Asignado'}</div>` : ''}
+          <div class="etapa-nombre">${escapeHtml(nombre)}${e.tercero?` <span style="font-size:11px;color:var(--gris-mid);font-weight:400">(${escapeHtml(e.tercero)})</span>`:''}</div>
+          ${e.tecnico||e.mecanico_id ? `<div class="etapa-tecnico">👤 ${escapeHtml(e.tecnico)||'Asignado'}</div>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
           ${ultimaAprob ? `<span class="badge badge-${ultimaAprob.estado}">${ultimaAprob.estado==='aprobado'?'✓ Aprobada':'✗ Rechazada'}</span>` : ''}
@@ -526,7 +522,7 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
         <div class="etapa-actions" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           ${acc}
           <button class="btn btn-ghost btn-sm" style="font-size:12px;display:flex;align-items:center;gap:4px"
-            onclick="abrirModalSolicitudRepuesto(${ordenActual?.id||e.orden_id},${eid},'${ordenActual?.placa||""}')" >
+            data-oid="${ordenActual?.id||e.orden_id}" data-eid="${eid}" data-placa="${escapeHtml(ordenActual?.placa||'')}" onclick="abrirModalSolicitudRepuesto(+this.dataset.oid,+this.dataset.eid,this.dataset.placa)" >
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
             + Repuesto
           </button>
@@ -540,7 +536,7 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
           <div class="field"><label>Técnico asignado</label>
             <select id="tec-${k}" onchange="asignarMecanico(${eid},'${k}')">
               <option value="">— Sin asignar —</option>
-              ${mecanicos.filter(m=>!['taller','repuestos','Asesor Previsora'].includes(m.rol)).map(m=>`<option value="${m.id}" ${e.mecanico_id===m.id?'selected':''}>${m.nombre}</option>`).join('')}
+              ${mecanicos.filter(m=>!['taller','repuestos','Asesor Previsora'].includes(m.rol)).map(m=>`<option value="${m.id}" ${e.mecanico_id===m.id?'selected':''}>${escapeHtml(m.nombre)}</option>`).join('')}
             </select>
           </div>
           <div style="display:flex;gap:8px">
@@ -565,7 +561,7 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
           <label style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris-mid)">Fotos (${eFotos.length})</label>
           <div class="fotos-grid" style="margin-top:6px">${fotosHtml}</div>
           <div class="upload-zone" onclick="document.getElementById('fi-${k}').click()" style="margin-top:8px">
-            <input type="file" id="fi-${k}" accept="image/*" multiple onchange="subirFotos(this,'${nombre}',${eid},'${k}')">
+            <input type="file" id="fi-${k}" accept="image/*" multiple data-nombre="${escapeHtml(nombre)}" data-eid="${eid}" data-k="${k}" onchange="subirFotos(this,this.dataset.nombre,+this.dataset.eid,this.dataset.k)">
             <div style="font-size:18px">📷</div>
             <p>Clic para subir fotos</p>
             <div class="upload-prog" id="prog-${k}"></div>
@@ -605,8 +601,8 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
             <span class="aprob-box-estado">${ultimaAprob.estado==='aprobado'?'✓ Aprobada':'✗ Rechazada'}</span>
             <span class="aprob-box-fecha">${formatTS(ultimaAprob.creado_en)}</span>
           </div>
-          <div style="font-size:12px;color:var(--gris-mid)">Por: ${ultimaAprob.registrado_por}</div>
-          ${ultimaAprob.observacion?`<div style="font-size:12px;margin-top:4px">${ultimaAprob.observacion}</div>`:''}
+          <div style="font-size:12px;color:var(--gris-mid)">Por: ${escapeHtml(ultimaAprob.registrado_por)}</div>
+          ${ultimaAprob.observacion?`<div style="font-size:12px;margin-top:4px">${escapeHtml(ultimaAprob.observacion)}</div>`:''}
         </div>` : ''}
       </div>
     </div>`;
@@ -626,9 +622,7 @@ function toggleEtapa(id) {
 // ============================================================
 async function iniciarEtapa(eid, nombre) {
   try {
-    const inicioISO = new Date().toISOString();
-    await api(`/etapas?id=eq.${eid}`, 'PATCH', { inicio: inicioISO });
-    notificarEtapaIniciada(eid, inicioISO, ordenActual).catch(() => {});
+    await api(`/etapas?id=eq.${eid}`, 'PATCH', { inicio: new Date().toISOString() });
     toast(`${nombre} iniciada ✓`);
     if (ordenActual) abrirOrden(ordenActual.id);
   } catch(e) { toast('Error: '+e.message, 'err'); }
@@ -745,6 +739,11 @@ function quitarFotoIngreso(i) {
 
 // ── Autocompletado de placa en tiempo real ──────────────────
 let _placaDebounce = null;
+let _placaRegistry = {};
+
+function seleccionarPlacaById(placa) {
+  seleccionarPlaca(placa, _placaRegistry[placa] || {});
+}
 
 async function autocompletarPlaca(val) {
   clearTimeout(_placaDebounce);
@@ -767,10 +766,13 @@ async function autocompletarPlaca(val) {
 
       if (!sugerencias.length) { sugDiv.style.display = 'none'; return; }
 
+      _placaRegistry = {};
+      sugerencias.forEach(s => { _placaRegistry[s.placa] = s; });
+
       sugDiv.innerHTML = sugerencias.map(s => `
-        <div class="placa-sug-item" onmousedown="seleccionarPlaca('${s.placa}',${JSON.stringify(s).replace(/"/g,'&quot;')})">
-          <span class="placa-sug-placa">${s.placa}</span>
-          <span class="placa-sug-veh">${[s.marca,s.linea,s.modelo].filter(Boolean).join(' ')||'—'}</span>
+        <div class="placa-sug-item" data-placa="${escapeHtml(s.placa)}" onmousedown="seleccionarPlacaById(this.dataset.placa)">
+          <span class="placa-sug-placa">${escapeHtml(s.placa)}</span>
+          <span class="placa-sug-veh">${[s.marca,s.linea,s.modelo].filter(Boolean).map(escapeHtml).join(' ')||'—'}</span>
         </div>`).join('');
       sugDiv.style.display = 'block';
     } catch(e) { sugDiv.style.display = 'none'; }
@@ -842,8 +844,8 @@ async function buscarPorPlaca() {
       if (historialLista && histDiv) {
         historialLista.innerHTML = ordenes.map(o => `
           <div class="historial-item" onclick="abrirOrden(${o.id})">
-            <div><span class="historial-placa">${o.placa}</span>
-            <span style="color:var(--gris-mid);margin-left:8px">${o.aseguradora||'—'}</span></div>
+            <div><span class="historial-placa">${escapeHtml(o.placa)}</span>
+            <span style="color:var(--gris-mid);margin-left:8px">${escapeHtml(o.aseguradora)||'—'}</span></div>
             <div style="font-size:11px;color:var(--gris-mid);text-align:right">${formatFecha(o.creado_en)}</div>
           </div>`).join('');
         histDiv.style.display = 'block';
@@ -1028,9 +1030,9 @@ async function recargarListasNuevaOrden() {
   const selA = document.getElementById('n-aseguradora-sel');
   const selF = document.getElementById('n-flotilla-sel');
   if (selA) selA.innerHTML = '<option value="">— Seleccionar —</option>' +
-    aseg.map(a=>`<option value="${a.nombre}">${a.nombre}</option>`).join('');
+    aseg.map(a=>`<option value="${escapeHtml(a.nombre)}">${escapeHtml(a.nombre)}</option>`).join('');
   if (selF) selF.innerHTML = '<option value="">— Seleccionar —</option>' +
-    flot.map(f=>`<option value="${f.nombre}">${f.nombre}</option>`).join('');
+    flot.map(f=>`<option value="${escapeHtml(f.nombre)}">${escapeHtml(f.nombre)}</option>`).join('');
 }
 
 async function crearOrden() {
@@ -1239,7 +1241,7 @@ function buildChecklist(containerId, servicios, existentes) {
       const mecHtml = !iniciada ? `<div class="mec-select-wrap" id="mec-${et.key}" style="margin-top:6px;display:${checked ? 'block' : 'none'}">
         <select id="mec-sel-${et.key}" style="font-size:13px">
           <option value="">— Asignar técnico * —</option>
-          ${mecsFiltrados.map(m => `<option value="${m.id}" ${m.id == mecSelected ? ' selected' : ''}>${m.nombre}</option>`).join('')}
+          ${mecsFiltrados.map(m => `<option value="${m.id}" ${m.id == mecSelected ? ' selected' : ''}>${escapeHtml(m.nombre)}</option>`).join('')}
         </select>
       </div>` : `<div style="font-size:11px;color:var(--gris-mid);margin-top:4px">Técnico ya asignado</div>`;
       const camposHtml = !iniciada ? `
@@ -1450,73 +1452,12 @@ async function subirFotos(input, nombre, eid, k) {
   if (ordenActual) abrirOrden(ordenActual.id);
 }
 
-async function verHistorialVehiculo(placa) {
-  const existing = document.getElementById('modal-historial-vehiculo');
-  if (existing) existing.remove();
-  const div = document.createElement('div');
-  div.id = 'modal-historial-vehiculo';
-  div.className = 'modal-overlay show';
-  div.innerHTML = `
-    <div class="modal" style="max-width:560px;max-height:90vh;overflow-y:auto">
-      <div class="modal-header">
-        <div class="modal-titulo">Historial — ${placa}</div>
-        <button class="modal-close" onclick="document.getElementById('modal-historial-vehiculo').remove()">✕</button>
-      </div>
-      <div class="modal-body" id="historial-body"><div class="loading-state">Cargando...</div></div>
-    </div>`;
-  document.body.appendChild(div);
-
-  try {
-    const ordenes = await api(
-      `/ordenes?placa=eq.${placa}&order=creado_en.desc&select=id,placa,marca,linea,modelo,propietario,estado,creado_en,entregada_en`
-    ).catch(()=>[]) || [];
-
-    const body = document.getElementById('historial-body');
-    if (!body) return;
-    if (!ordenes.length) { body.innerHTML = '<div class="empty-state"><p>Sin historial para esta placa.</p></div>'; return; }
-
-    const ids = ordenes.map(o => o.id);
-    const etapas = await api(`/etapas?orden_id=in.(${ids.join(',')})&select=id,orden_id,servicio,valor`).catch(()=>[]) || [];
-
-    const fmt = n => n ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : null;
-    const estadoClsMap = { Activa:'badge-activa', Entregada:'badge-completada' };
-    const srvNombre = { latoneria:'Latonería', pintura:'Pintura', mecanica:'Mecánica', adicionales:'Adicionales' };
-
-    const html = ordenes.map(o => {
-      const ets = etapas.filter(e => e.orden_id === o.id);
-      const total = ets.reduce((s,e) => s + (e.valor||0), 0);
-      const srvs = [...new Set(ets.map(e=>e.servicio).filter(Boolean))];
-      const isCurrent = o.id === ordenActual?.id;
-      return `<div class="card" style="padding:14px;margin-bottom:8px;${isCurrent?'border:2px solid var(--azul)':''}">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
-          <div style="flex:1;min-width:0">
-            ${isCurrent ? '<div style="font-size:10px;font-weight:700;color:var(--azul);margin-bottom:3px;letter-spacing:.5px">ORDEN ACTUAL</div>' : ''}
-            <div style="font-size:12px;color:var(--gris-mid)">${formatFecha(o.creado_en)}${o.entregada_en ? ' → ' + formatFecha(o.entregada_en) : ''}</div>
-            ${srvs.length ? `<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:4px">${srvs.map(s=>`<span class="badge badge-${s}" style="font-size:10px">${srvNombre[s]||s}</span>`).join('')}</div>` : ''}
-            ${ets.length ? `<div style="font-size:11px;color:var(--gris-mid);margin-top:4px">${ets.length} etapas</div>` : ''}
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
-            <span class="badge ${estadoClsMap[o.estado]||''}">${o.estado}</span>
-            ${total ? `<div style="font-size:12px;font-weight:700;color:var(--verde)">${fmt(total)}</div>` : ''}
-            ${!isCurrent ? `<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px" onclick="document.getElementById('modal-historial-vehiculo').remove();abrirOrden(${o.id})">Ver orden</button>` : ''}
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-
-    body.innerHTML = `<div style="font-size:12px;color:var(--gris-mid);margin-bottom:12px">${ordenes.length} orden(es) registradas para ${placa}</div>${html}`;
-  } catch(e) {
-    const body = document.getElementById('historial-body');
-    if (body) body.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
-  }
-}
-
 async function eliminarFoto(fotoId, url) {
   if (!confirm('¿Eliminar esta foto?')) return;
   try {
     await api(`/fotos_etapas?id=eq.${fotoId}`, 'DELETE');
     const path = url.split(`/object/public/${BUCKET}/`)[1];
-    if (path) await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, { method: 'DELETE', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    if (path) await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, { method: 'DELETE', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${_getBearer()}` } });
     toast('Foto eliminada ✓');
     if (ordenActual) abrirOrden(ordenActual.id);
   } catch(e) { toast('Error: ' + e.message, 'err'); }
@@ -1565,8 +1506,8 @@ async function abrirModalAprobacion(eid, nombre) {
           <span class="aprob-box-estado">${h.estado === 'aprobado' ? '✓ Aprobado' : '✗ Rechazado'}</span>
           <span class="aprob-box-fecha">${formatTS(h.creado_en)}</span>
         </div>
-        <div style="font-size:12px;color:var(--gris-mid)">Por: ${h.registrado_por}</div>
-        ${h.observacion ? `<div style="font-size:12px;margin-top:4px">${h.observacion}</div>` : ''}
+        <div style="font-size:12px;color:var(--gris-mid)">Por: ${escapeHtml(h.registrado_por)}</div>
+        ${h.observacion ? `<div style="font-size:12px;margin-top:4px">${escapeHtml(h.observacion)}</div>` : ''}
       </div>`).join('');
     if (histDiv) histDiv.style.display = 'block';
   } else if (histDiv) {
@@ -1952,10 +1893,10 @@ function renderCalendario(cont, ordenes, mesDate) {
       const bg    = urgente ? '#FEE2E2' : o.esFecha2 ? '#FEF3C7' : '#EBF2FF';
       return `<div class="cal-orden" style="background:${bg};color:${color};border-left-color:${color}" onclick="abrirOrden(${o.id})">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:11px">${o.placa || '---'}</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:11px">${escapeHtml(o.placa) || '---'}</span>
           ${o.esFecha2 ? '<span style="font-size:9px;font-weight:800;opacity:0.75">F2</span>' : ''}
         </div>
-        <div class="cal-orden-meta">${[o.marca,o.linea].filter(Boolean).join(' ') || o.propietario || 'Orden activa'}</div>
+        <div class="cal-orden-meta">${[o.marca,o.linea].filter(Boolean).map(escapeHtml).join(' ') || escapeHtml(o.propietario) || 'Orden activa'}</div>
       </div>`;
     }).join('');
     const masHtml = ords.length > 4
@@ -2044,8 +1985,8 @@ async function cargarMecanicosVista() {
                 return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--gris-borde)">
                   <div style="width:3px;height:32px;background:${color};border-radius:99px;flex-shrink:0"></div>
                   <div style="flex:1;min-width:0">
-                    <div style="font-size:12px;font-weight:600;color:var(--texto)">${e.etapa||'—'}</div>
-                    <div style="font-size:11px;color:var(--gris-mid);font-family:'DM Mono',monospace">${ord?.placa||'—'} · ${[ord?.marca,ord?.linea].filter(Boolean).join(' ')||'—'}</div>
+                    <div style="font-size:12px;font-weight:600;color:var(--texto)">${escapeHtml(e.etapa)||'—'}</div>
+                    <div style="font-size:11px;color:var(--gris-mid);font-family:'DM Mono',monospace">${escapeHtml(ord?.placa)||'—'} · ${[ord?.marca,ord?.linea].filter(Boolean).map(escapeHtml).join(' ')||'—'}</div>
                   </div>
                   <div style="font-size:11px;color:var(--gris-mid);font-family:'DM Mono',monospace;flex-shrink:0">${dur}</div>
                 </div>`;
@@ -2054,10 +1995,10 @@ async function cargarMecanicosVista() {
 
           return `<div style="background:white;border:1px solid var(--gris-borde);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05)">
             <div style="padding:12px 16px;border-bottom:1px solid var(--gris-borde);display:flex;align-items:center;gap:10px">
-              <div style="width:36px;height:36px;border-radius:50%;background:var(--azul-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--azul);flex-shrink:0">${m.nombre.charAt(0).toUpperCase()}</div>
+              <div style="width:36px;height:36px;border-radius:50%;background:var(--azul-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--azul);flex-shrink:0">${escapeHtml(m.nombre.charAt(0).toUpperCase())}</div>
               <div style="flex:1;min-width:0">
-                <div style="font-weight:600;font-size:14px">${m.nombre}</div>
-                <div style="font-size:11px;color:var(--gris-mid)">${m.rol||'Técnico'} · ${etapas.length} etapa${etapas.length!==1?'s':''} activa${etapas.length!==1?'s':''}</div>
+                <div style="font-weight:600;font-size:14px">${escapeHtml(m.nombre)}</div>
+                <div style="font-size:11px;color:var(--gris-mid)">${escapeHtml(m.rol)||'Técnico'} · ${etapas.length} etapa${etapas.length!==1?'s':''} activa${etapas.length!==1?'s':''}</div>
               </div>
               <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirReporteTecnico(${m.id})" title="Reporte del técnico">
                 <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -2224,8 +2165,8 @@ async function abrirCalModal(ordenId) {
     document.getElementById('mcal-body').innerHTML = `
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
         <div style="flex:1">
-          <div style="font-size:13px;color:var(--gris-mid)">${[orden.marca,orden.linea,orden.modelo].filter(Boolean).join(' ')||'—'}</div>
-          <div style="font-size:12px;color:var(--gris-mid);margin-top:2px">${orden.aseguradora?'🏢 '+orden.aseguradora:''}</div>
+          <div style="font-size:13px;color:var(--gris-mid)">${[orden.marca,orden.linea,orden.modelo].filter(Boolean).map(escapeHtml).join(' ')||'—'}</div>
+          <div style="font-size:12px;color:var(--gris-mid);margin-top:2px">${orden.aseguradora?'🏢 '+escapeHtml(orden.aseguradora):''}</div>
         </div>
         <div style="text-align:right">
           <div style="font-size:28px;font-weight:700;font-family:'DM Mono',monospace;color:${pct===100?'var(--verde)':'var(--azul)'}">${pct}%</div>
@@ -2243,7 +2184,7 @@ async function abrirCalModal(ordenId) {
         ${totalVal ? `<div class="info-chip"><div class="info-chip-label">Valor MO</div><div class="info-chip-val" style="color:var(--verde);font-weight:700">${fmt(totalVal)}</div></div>` : ''}
       </div>
       ${activa ? `<div style="padding:10px 14px;background:var(--azul-light);border-radius:6px;margin-bottom:10px;font-size:13px">
-        <span style="color:var(--gris-mid)">Etapa actual:</span> <strong>${activa.etapa}</strong>${activa.tecnico?` · 👤 ${activa.tecnico}`:''}
+        <span style="color:var(--gris-mid)">Etapa actual:</span> <strong>${escapeHtml(activa.etapa)}</strong>${activa.tecnico?` · 👤 ${escapeHtml(activa.tecnico)}`:''}
       </div>` : ''}
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         ${srvs.map(s=>`<span style="background:${srvColor[s]||'#6B7280'}15;color:${srvColor[s]||'#6B7280'};border:1px solid ${srvColor[s]||'#6B7280'}30;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">${CATALOGO[s]?.nombre||s}</span>`).join('')}
@@ -2282,7 +2223,7 @@ async function abrirOrdenMecanico(id) {
       const cls = done ? 'done' : active ? 'active' : 'pending';
       return `<div class="timeline-step ${done?'done':''}">
         <div class="timeline-dot ${cls}">${done?'✓':active?'●':(i+1)}</div>
-        <div class="timeline-label ${cls}">${e.etapa||'—'}</div>
+        <div class="timeline-label ${cls}">${escapeHtml(e.etapa)||'—'}</div>
       </div>`;
     }).join('');
 
@@ -2294,19 +2235,19 @@ async function abrirOrdenMecanico(id) {
       const eFotos = fotosEt.filter(f => f.etapa_id === e.id);
       const eNovs  = novedades.filter(n => n.etapa_id === e.id);
       let acc = '';
-      if (!e.inicio) acc = `<button class="btn btn-success btn-sm" onclick="mecIniciarEtapa(${e.id},'${e.etapa||''}',${id})">▶ Iniciar</button>`;
-      else if (!e.fin) acc = `<button class="btn btn-danger btn-sm" onclick="mecFinalizarEtapaDetalle(${e.id},'${e.etapa||''}','${e.servicio||''}',${id})">■ Finalizar</button>`;
+      if (!e.inicio) acc = `<button class="btn btn-success btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa||'')}" data-oid="${id}" onclick="mecIniciarEtapa(+this.dataset.eid,this.dataset.etapa,+this.dataset.oid)">▶ Iniciar</button>`;
+      else if (!e.fin) acc = `<button class="btn btn-danger btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa||'')}" data-srv="${escapeHtml(e.servicio||'')}" data-oid="${id}" onclick="mecFinalizarEtapaDetalle(+this.dataset.eid,this.dataset.etapa,this.dataset.srv,+this.dataset.oid)">■ Finalizar</button>`;
 
-      const fotosHtml = eFotos.map(f=>`<div class="foto-thumb" onclick="abrirLightbox('${f.url}')"><img src="${f.url}" alt="" loading="lazy"></div>`).join('');
+      const fotosHtml = eFotos.map(f=>`<div class="foto-thumb" data-url="${escapeHtml(f.url)}" onclick="abrirLightbox(this.dataset.url)"><img src="${escapeHtml(f.url)}" alt="" loading="lazy"></div>`).join('');
       const novsHtml = eNovs.length ? eNovs.map(n=>`<div class="novedad-item">
-        <div class="novedad-item-top"><span class="novedad-tipo ${(n.tipo||'').toLowerCase()}">${n.tipo}</span><span class="novedad-fecha">${formatTS(n.creado_en)}</span></div>
-        <div class="novedad-motivo">${n.motivo||'—'}</div>
+        <div class="novedad-item-top"><span class="novedad-tipo ${escapeHtml((n.tipo||'').toLowerCase())}">${escapeHtml(n.tipo)}</span><span class="novedad-fecha">${formatTS(n.creado_en)}</span></div>
+        <div class="novedad-motivo">${escapeHtml(n.motivo)||'—'}</div>
         ${n.valor?`<div style="font-size:12px;font-weight:600;color:var(--rojo);margin-top:2px">💰 ${new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n.valor)}</div>`:''}
       </div>`).join('') : '<div style="font-size:12px;color:var(--gris-mid)">Sin novedades.</div>';
 
       return `<div class="etapa-card" style="margin-bottom:12px">
         <div class="etapa-header" onclick="toggleEtapa('meb-${k}')">
-          <div style="flex:1"><div class="etapa-nombre">${e.etapa||'—'}</div></div>
+          <div style="flex:1"><div class="etapa-nombre">${escapeHtml(e.etapa)||'—'}</div></div>
           <div style="display:flex;align-items:center;gap:6px">
             <span class="badge badge-${bCls}">${badge}</span>
             ${acc}
@@ -2321,7 +2262,7 @@ async function abrirOrdenMecanico(id) {
             <label style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris-mid)">Fotos (${eFotos.length})</label>
             <div class="fotos-grid" style="margin-top:6px">${fotosHtml}</div>
             <div class="upload-zone" onclick="document.getElementById('mec-fi2-${k}').click()" style="margin-top:8px">
-              <input type="file" id="mec-fi2-${k}" accept="image/*" multiple onchange="mecSubirFotos(this,${e.id},'${e.etapa||''}',${id})">
+              <input type="file" id="mec-fi2-${k}" accept="image/*" multiple data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa||'')}" data-oid="${id}" onchange="mecSubirFotos(this,+this.dataset.eid,this.dataset.etapa,+this.dataset.oid)">
               <div style="font-size:18px">📷</div><p>Subir fotos</p>
               <div class="upload-prog" id="mec-prog2-${k}"></div>
             </div>
@@ -2357,11 +2298,11 @@ async function abrirOrdenMecanico(id) {
       <div class="detalle-header-card" style="margin-bottom:16px">
         <div class="detalle-placa-row">
           <div>
-            <div class="detalle-placa">${orden.placa}</div>
-            <div class="detalle-vehiculo">${[orden.marca,orden.linea,orden.modelo,orden.color].filter(Boolean).join(' · ')||'—'}</div>
+            <div class="detalle-placa">${escapeHtml(orden.placa)}</div>
+            <div class="detalle-vehiculo">${[orden.marca,orden.linea,orden.modelo,orden.color].filter(Boolean).map(escapeHtml).join(' · ')||'—'}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-            <span class="badge badge-${orden.pulmon?'pulmon':(orden.estado||'activa').toLowerCase()}">${orden.pulmon?'En Pulmón':orden.estado||'Activa'}</span>
+            <span class="badge badge-${orden.pulmon?'pulmon':(orden.estado||'activa').toLowerCase()}">${orden.pulmon?'En Pulmón':escapeHtml(orden.estado)||'Activa'}</span>
             <button class="btn btn-primary btn-sm" onclick="abrirModalSolicitudRepuesto(${id},null,'Orden #${id}')">+ Solicitar repuesto</button>
           </div>
         </div>
@@ -2427,58 +2368,6 @@ async function mecGuardarNovedadDetalle(eid, oid) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// MODAL REPORTE — abrir / cerrar / generar
-// ═══════════════════════════════════════════════════════════
-function cerrarModalReporte() {
-  const overlay = document.getElementById('modal-reporte');
-  if (overlay) overlay.classList.remove('show');
-}
-
-function abrirModalReporte(tipo) {
-  const overlay = document.getElementById('modal-reporte');
-  if (!overlay) return;
-  overlay.dataset.tipo = tipo || 'ordenes';
-  const tituloEl = document.getElementById('modal-rep-titulo');
-  if (tituloEl) tituloEl.textContent = tipo === 'todos_tecnicos' ? 'Reporte general de técnicos' : 'Generar reporte';
-  const selWrap = document.getElementById('rep-sel-tecnico');
-  if (selWrap) selWrap.style.display = 'none';
-  overlay.classList.add('show');
-}
-
-function generarReporteModal() {
-  const overlay = document.getElementById('modal-reporte');
-  const periodo = document.getElementById('rep-periodo')?.value || 'todo';
-  const fecha   = document.getElementById('rep-fecha')?.value || null;
-  const formato = document.getElementById('rep-formato')?.value || 'excel';
-
-  let tipo = 'rango', fechaIni = null, fechaFin = null;
-  const now = new Date();
-
-  if (periodo === 'todo') {
-    tipo = 'rango';
-    fechaIni = '2020-01-01';
-    fechaFin  = now.toISOString().split('T')[0];
-  } else if (periodo === 'semana' && fecha) {
-    const d = new Date(fecha + 'T12:00:00');
-    const lunes = new Date(d);
-    lunes.setDate(d.getDate() - ((d.getDay()+6)%7));
-    const dom = new Date(lunes);
-    dom.setDate(lunes.getDate() + 6);
-    tipo = 'rango';
-    fechaIni = lunes.toISOString().split('T')[0];
-    fechaFin  = dom.toISOString().split('T')[0];
-  } else if (periodo === 'mes') {
-    tipo = 'mes';
-  } else if (periodo === 'ano') {
-    tipo = 'anio';
-  }
-
-  cerrarModalReporte();
-  if (typeof generarReporte === 'function') generarReporte(tipo, fechaIni, fechaFin, formato);
-  else toast('Función de reportes no disponible', 'err');
-}
-
-// ═══════════════════════════════════════════════════════════
 // HELPERS REPORTE DESDE VISTAS
 // ═══════════════════════════════════════════════════════════
 function abrirReporteTecnico(mecId) {
@@ -2508,7 +2397,7 @@ async function _cargarSelectTecnicos(preselect) {
   if (!sel) return;
   if (sel.options.length <= 1) {
     const mecs = await api('/mecanicos?activo=eq.true&order=nombre.asc').catch(()=>[]) || [];
-    sel.innerHTML = mecs.map(m=>`<option value="${m.id}" ${String(m.id)===String(preselect)?'selected':''}>${m.nombre}</option>`).join('');
+    sel.innerHTML = mecs.map(m=>`<option value="${m.id}" ${String(m.id)===String(preselect)?'selected':''}>${escapeHtml(m.nombre)}</option>`).join('');
   } else if (preselect) {
     sel.value = preselect;
   }
@@ -2531,10 +2420,10 @@ async function abrirEditarOrden(ordenId) {
   const esEmpresa  = tipoActual === 'empresa';
 
   const asegOpts = aseguradoras.map(a =>
-    `<option value="${a.nombre}" ${orden.aseguradora===a.nombre?'selected':''}>${a.nombre}</option>`
+    `<option value="${escapeHtml(a.nombre)}" ${orden.aseguradora===a.nombre?'selected':''}>${escapeHtml(a.nombre)}</option>`
   ).join('');
   const flotOpts = flotillas.map(f =>
-    `<option value="${f.nombre}" ${orden.aseguradora===f.nombre?'selected':''}>${f.nombre}</option>`
+    `<option value="${escapeHtml(f.nombre)}" ${orden.aseguradora===f.nombre?'selected':''}>${escapeHtml(f.nombre)}</option>`
   ).join('');
 
   const modal = document.getElementById('modal-editar-orden');
@@ -2560,27 +2449,27 @@ async function abrirEditarOrden(ordenId) {
 
       <!-- VEHÍCULO -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="field"><label>Placa</label><input id="ed-placa" value="${orden.placa||''}" style="font-family:'DM Mono',monospace;letter-spacing:2px;font-size:16px" oninput="this.value=this.value.toUpperCase()"></div>
-        <div class="field"><label>Marca</label><input id="ed-marca" value="${orden.marca||''}"></div>
-        <div class="field"><label>Línea</label><input id="ed-linea" value="${orden.linea||''}"></div>
-        <div class="field"><label>Año</label><input id="ed-modelo" type="number" value="${orden.modelo||''}"></div>
-        <div class="field"><label>Color</label><input id="ed-color" value="${orden.color||''}"></div>
-        <div class="field"><label>Kilometraje</label><input id="ed-km" type="number" value="${orden.kilometraje||''}"></div>
+        <div class="field"><label>Placa</label><input id="ed-placa" value="${escapeHtml(orden.placa||'')}" style="font-family:'DM Mono',monospace;letter-spacing:2px;font-size:16px" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="field"><label>Marca</label><input id="ed-marca" value="${escapeHtml(orden.marca||'')}"></div>
+        <div class="field"><label>Línea</label><input id="ed-linea" value="${escapeHtml(orden.linea||'')}"></div>
+        <div class="field"><label>Año</label><input id="ed-modelo" type="number" value="${escapeHtml(orden.modelo||'')}"></div>
+        <div class="field"><label>Color</label><input id="ed-color" value="${escapeHtml(orden.color||'')}"></div>
+        <div class="field"><label>Kilometraje</label><input id="ed-km" type="number" value="${escapeHtml(String(orden.kilometraje||''))}"></div>
       </div>
       <div class="field">
         <label>VIN <span style="font-weight:400;color:var(--gris-mid);font-size:11px">(17 caracteres, opcional)</span></label>
-        <input id="ed-vin" value="${orden.vin||''}" maxlength="17" style="font-family:'DM Mono',monospace;letter-spacing:1px" oninput="this.value=this.value.toUpperCase()">
+        <input id="ed-vin" value="${escapeHtml(orden.vin||'')}" maxlength="17" style="font-family:'DM Mono',monospace;letter-spacing:1px" oninput="this.value=this.value.toUpperCase()">
       </div>
 
       <!-- PROPIETARIO / EMPRESA -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="ed-bloque-propietario">
         <div class="field" id="ed-wrap-nombre" style="grid-column:1/-1">
           <label id="ed-lbl-nombre">Nombre completo</label>
-          <input id="ed-propietario" value="${orden.propietario||''}">
+          <input id="ed-propietario" value="${escapeHtml(orden.propietario||'')}">
         </div>
-        <div class="field"><label>Teléfono</label><input id="ed-telefono" value="${orden.telefono||''}"></div>
-        <div class="field"><label id="ed-lbl-doc">Cédula / NIT</label><input id="ed-cedula" value="${orden.cedula_cliente||''}"></div>
-        <div class="field" style="grid-column:1/-1"><label>Correo electrónico</label><input id="ed-correo" type="email" value="${orden.correo_cliente||''}"></div>
+        <div class="field"><label>Teléfono</label><input id="ed-telefono" value="${escapeHtml(orden.telefono||'')}"></div>
+        <div class="field"><label id="ed-lbl-doc">Cédula / NIT</label><input id="ed-cedula" value="${escapeHtml(orden.cedula_cliente||'')}"></div>
+        <div class="field" style="grid-column:1/-1"><label>Correo electrónico</label><input id="ed-correo" type="email" value="${escapeHtml(orden.correo_cliente||'')}"></div>
       </div>
 
       <!-- ORDEN -->
@@ -2663,7 +2552,7 @@ async function agregarNuevaAseg() {
     const sel = document.getElementById('ed-aseguradora');
     if (sel) {
       sel.innerHTML = '<option value="">— Seleccionar —</option>' +
-        aseg.map(a=>`<option value="${a.nombre}" ${a.nombre===nombre?'selected':''}>${a.nombre}</option>`).join('');
+        aseg.map(a=>`<option value="${escapeHtml(a.nombre)}" ${a.nombre===nombre?'selected':''}>${escapeHtml(a.nombre)}</option>`).join('');
     }
   } catch(e) { toast('Error: '+e.message,'err'); }
 }
@@ -2678,7 +2567,7 @@ async function agregarNuevaFlot() {
     const sel = document.getElementById('ed-flotilla');
     if (sel) {
       sel.innerHTML = '<option value="">— Seleccionar —</option>' +
-        flot.map(f=>`<option value="${f.nombre}" ${f.nombre===nombre?'selected':''}>${f.nombre}</option>`).join('');
+        flot.map(f=>`<option value="${escapeHtml(f.nombre)}" ${f.nombre===nombre?'selected':''}>${escapeHtml(f.nombre)}</option>`).join('');
     }
   } catch(e) { toast('Error: '+e.message,'err'); }
 }
@@ -2865,8 +2754,8 @@ async function generarPreliquidacion(ordenId) {
           <tbody>
             ${ets.map(e => `
               <tr style="border-bottom:1px solid #F1F5F9">
-                <td style="padding:8px 10px;font-weight:600;color:#1E293B">${e.etapa||'—'}</td>
-                <td style="padding:8px 10px;color:#64748B">${e.tecnico||'—'}</td>
+                <td style="padding:8px 10px;font-weight:600;color:#1E293B">${escapeHtml(e.etapa)||'—'}</td>
+                <td style="padding:8px 10px;color:#64748B">${escapeHtml(e.tecnico)||'—'}</td>
                 <td style="padding:8px 10px;text-align:center;color:#64748B;font-family:monospace">${durMin(e.inicio,e.fin)}</td>
                 <td style="padding:8px 10px;text-align:center;color:#64748B">${e.horas_facturadas||'—'}</td>
                 <td style="padding:8px 10px;text-align:right;font-weight:600;color:#1E293B;font-family:monospace">${fmt(e.valor)}</td>
@@ -2891,9 +2780,9 @@ async function generarPreliquidacion(ordenId) {
           </tr></thead>
           <tbody>
             ${novedades.map(n=>`<tr style="border-bottom:1px solid #FEE2E2">
-              <td style="padding:7px 10px;font-weight:600">${n.tipo||'—'}</td>
-              <td style="padding:7px 10px;color:#64748B">${n.motivo||'—'}</td>
-              <td style="padding:7px 10px;color:#64748B">${n.responsable||'—'}</td>
+              <td style="padding:7px 10px;font-weight:600">${escapeHtml(n.tipo)||'—'}</td>
+              <td style="padding:7px 10px;color:#64748B">${escapeHtml(n.motivo)||'—'}</td>
+              <td style="padding:7px 10px;color:#64748B">${escapeHtml(n.responsable)||'—'}</td>
               <td style="padding:7px 10px;color:#64748B;font-size:11px">${fmtHora(n.creado_en)}</td>
             </tr>`).join('')}
           </tbody>
@@ -2904,7 +2793,7 @@ async function generarPreliquidacion(ordenId) {
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Preliquidación ${orden.placa}</title>
+<title>Preliquidación ${escapeHtml(orden.placa)}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Segoe UI',Arial,sans-serif;color:#1E293B;background:#fff;font-size:13px;line-height:1.5}
@@ -2923,7 +2812,7 @@ async function generarPreliquidacion(ordenId) {
     </div>
     <div style="text-align:right">
       <div style="font-size:18px;font-weight:700;color:#1E3A5F">PRELIQUIDACIÓN</div>
-      <div style="font-family:monospace;font-size:20px;font-weight:800;color:#1E3A5F;letter-spacing:3px;margin-top:4px">${orden.placa}</div>
+      <div style="font-family:monospace;font-size:20px;font-weight:800;color:#1E3A5F;letter-spacing:3px;margin-top:4px">${escapeHtml(orden.placa)}</div>
       <div style="font-size:11px;color:#94A3B8;margin-top:4px">Generada: ${fmtHora(new Date().toISOString())}</div>
     </div>
   </div>
@@ -2933,21 +2822,21 @@ async function generarPreliquidacion(ordenId) {
     <div style="background:#F8FAFC;border-radius:8px;padding:14px 16px;border:1px solid #E2E8F0">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94A3B8;margin-bottom:10px">Vehículo</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
-        <div><div style="color:#94A3B8;font-size:10px">Marca</div><div style="font-weight:600">${orden.marca||'—'}</div></div>
-        <div><div style="color:#94A3B8;font-size:10px">Línea</div><div style="font-weight:600">${orden.linea||'—'}</div></div>
-        <div><div style="color:#94A3B8;font-size:10px">Modelo</div><div style="font-weight:600">${orden.modelo||'—'}</div></div>
-        <div><div style="color:#94A3B8;font-size:10px">Color</div><div style="font-weight:600">${orden.color||'—'}</div></div>
+        <div><div style="color:#94A3B8;font-size:10px">Marca</div><div style="font-weight:600">${escapeHtml(orden.marca)||'—'}</div></div>
+        <div><div style="color:#94A3B8;font-size:10px">Línea</div><div style="font-weight:600">${escapeHtml(orden.linea)||'—'}</div></div>
+        <div><div style="color:#94A3B8;font-size:10px">Modelo</div><div style="font-weight:600">${escapeHtml(orden.modelo)||'—'}</div></div>
+        <div><div style="color:#94A3B8;font-size:10px">Color</div><div style="font-weight:600">${escapeHtml(orden.color)||'—'}</div></div>
         <div><div style="color:#94A3B8;font-size:10px">Kilometraje</div><div style="font-weight:600">${orden.km ? orden.km+' km' : '—'}</div></div>
-        <div><div style="color:#94A3B8;font-size:10px">VIN</div><div style="font-weight:600;font-family:monospace;font-size:10px">${orden.vin||'—'}</div></div>
+        <div><div style="color:#94A3B8;font-size:10px">VIN</div><div style="font-weight:600;font-family:monospace;font-size:10px">${escapeHtml(orden.vin)||'—'}</div></div>
       </div>
     </div>
     <div style="background:#F8FAFC;border-radius:8px;padding:14px 16px;border:1px solid #E2E8F0">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94A3B8;margin-bottom:10px">Cliente</div>
       <div style="display:grid;gap:6px;font-size:12px">
-        <div><div style="color:#94A3B8;font-size:10px">Propietario</div><div style="font-weight:600">${orden.propietario||'—'}</div></div>
-        <div><div style="color:#94A3B8;font-size:10px">Teléfono</div><div style="font-weight:600">${orden.telefono||'—'}</div></div>
-        <div><div style="color:#94A3B8;font-size:10px">Tipo cliente</div><div style="font-weight:600">${orden.tipo_cliente||'Particular'}</div></div>
-        ${orden.aseguradora ? `<div><div style="color:#94A3B8;font-size:10px">Aseguradora</div><div style="font-weight:600">${orden.aseguradora}</div></div>` : ''}
+        <div><div style="color:#94A3B8;font-size:10px">Propietario</div><div style="font-weight:600">${escapeHtml(orden.propietario)||'—'}</div></div>
+        <div><div style="color:#94A3B8;font-size:10px">Teléfono</div><div style="font-weight:600">${escapeHtml(orden.telefono)||'—'}</div></div>
+        <div><div style="color:#94A3B8;font-size:10px">Tipo cliente</div><div style="font-weight:600">${escapeHtml(orden.tipo_cliente)||'Particular'}</div></div>
+        ${orden.aseguradora ? `<div><div style="color:#94A3B8;font-size:10px">Aseguradora</div><div style="font-weight:600">${escapeHtml(orden.aseguradora)}</div></div>` : ''}
       </div>
     </div>
   </div>

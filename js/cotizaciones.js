@@ -50,20 +50,20 @@ function renderCotizaciones(data) {
     return `<div class="cot-card">
       <div class="cot-card-top">
         <div>
-          <div class="cot-placa">${c.placa || '—'}</div>
-          <div class="cot-codigo">${c.codigo_cotizacion || '—'}</div>
-          <div class="cot-cliente">${c.nombre_cliente || '—'} · ${c.cedula_cliente || '—'}</div>
+          <div class="cot-placa">${escapeHtml(c.placa) || '—'}</div>
+          <div class="cot-codigo">${escapeHtml(c.codigo_cotizacion) || '—'}</div>
+          <div class="cot-cliente">${escapeHtml(c.nombre_cliente) || '—'} · ${escapeHtml(c.cedula_cliente) || '—'}</div>
         </div>
         <span class="${badgeCls}">${badgeTxt}</span>
       </div>
       <div class="cot-card-mid">
-        <div class="cot-chip"><strong>${c.fecha || formatFecha(c.created_at)}</strong></div>
-        <div class="cot-chip">Tecnico: <strong>${c.tecnico || '—'}</strong></div>
-        <div class="cot-chip"><strong>${[c.marca, c.modelo, c.año].filter(Boolean).join(' ') || '—'}</strong></div>
+        <div class="cot-chip"><strong>${escapeHtml(c.fecha) || formatFecha(c.created_at)}</strong></div>
+        <div class="cot-chip">Tecnico: <strong>${escapeHtml(c.tecnico) || '—'}</strong></div>
+        <div class="cot-chip"><strong>${[c.marca, c.modelo, c.año].filter(Boolean).map(escapeHtml).join(' ') || '—'}</strong></div>
         <div class="cot-chip">Valor: <strong>${fmt(c.total_general)}</strong></div>
       </div>
       <div class="cot-card-bot">
-        ${c.url_pdf ? `<a href="${c.url_pdf}" target="_blank" class="btn btn-outline btn-sm" style="font-size:12px">Ver PDF</a>` : ''}
+        ${c.url_pdf ? `<a href="${safeUrl(c.url_pdf)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size:12px">Ver PDF</a>` : ''}
         ${estado === 'pendiente' ? `
           <button class="btn btn-success btn-sm" onclick="aprobarCotizacion(${c.id})">Aprobar → Crear Orden</button>
           <button class="btn btn-danger btn-sm" onclick="rechazarCotizacion(${c.id})">Rechazar</button>
@@ -82,9 +82,15 @@ async function aprobarCotizacion(id) {
   try {
     await api(`/cotizaciones?id=eq.${id}`, 'PATCH', { estado: 'aprobada' });
     const cot = todasCotizaciones.find(c => c.id === id);
-    if (cot) await crearOrdenDesdeCotizacion(cot);
-    toast('Cotización aprobada y orden creada ✓');
-    cargarCotizaciones();
+    if (cot) {
+      const ordenId = await crearOrdenDesdeCotizacion(cot);
+      toast('Cotización aprobada y orden creada ✓');
+      cargarCotizaciones();
+      if (ordenId) abrirOrden(ordenId);
+    } else {
+      toast('Cotización aprobada ✓');
+      cargarCotizaciones();
+    }
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
 
@@ -101,9 +107,10 @@ async function convertirEnOrden(cotId) {
   const cot = todasCotizaciones.find(c => c.id === cotId);
   if (!cot) return;
   try {
-    await crearOrdenDesdeCotizacion(cot);
+    const ordenId = await crearOrdenDesdeCotizacion(cot);
     toast('Orden creada ✓');
     cargarCotizaciones();
+    if (ordenId) abrirOrden(ordenId);
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
 
@@ -126,19 +133,12 @@ async function crearOrdenDesdeCotizacion(cot) {
     } catch(e) { console.warn('Error cliente:', e); }
   }
 
-  // Buscar vehículo
-  let vehiculoId = null;
-  if (cot.placa) {
-    const vh = await api(`/vehiculos?placa=eq.${cot.placa}`).catch(() => []) || [];
-    vehiculoId = vh[0]?.id || null;
-  }
-
   // Construir body con todos los campos disponibles en la cotización
   const body = {
     placa:           cot.placa           || null,
     marca:           cot.marca           || null,
     linea:           cot.linea           || cot.modelo || null,
-    modelo:          cot.año             || cot.modelo || null,
+    modelo:          cot.año             || null,
     color:           cot.color           || null,
     propietario:     cot.nombre_cliente  || null,
     telefono:        cot.telefono_cliente || null,
@@ -148,9 +148,7 @@ async function crearOrdenDesdeCotizacion(cot) {
     tipo_cliente:    cot.tipo_cliente    || null,
     nivel_dano:      cot.nivel_dano      || null,
     cotizacion_url:  cot.url_pdf         || null,
-    cotizacion_id:   cot.id,
     cliente_id:      clienteId,
-    vehiculo_id:     vehiculoId,
     estado:          'Activa'
   };
 

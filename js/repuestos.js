@@ -25,6 +25,20 @@ function detenerPollingRepuestos() {
   _repuestosPollingInterval = null;
 }
 
+// ── Registros para evitar pasar datos de DB en onclick ──
+let _solRegistry = {};
+let _provRegistry = {};
+
+function _abrirCotizarPorId(btn) {
+  const d = _solRegistry[btn.dataset.solId];
+  if (d) abrirModalCotizar(d.solicitudId, d.repuesto, d.unidades, d.placa, d.marca, d.modelo, d.anio, d.vin);
+}
+
+function _editarProveedorPorId(btn) {
+  const p = _provRegistry[btn.dataset.provId];
+  if (p) abrirModalProveedor(p);
+}
+
 // ─────────────────────────────────────────────────────────
 // SOLICITAR REPUESTO
 // ─────────────────────────────────────────────────────────
@@ -43,7 +57,7 @@ async function abrirModalSolicitudRepuesto(ordenId, etapaId, placa) {
   div.innerHTML = `
     <div class="modal" style="max-width:460px">
       <div class="modal-header">
-        <div class="modal-titulo">Solicitar repuesto — ${placa}</div>
+        <div class="modal-titulo">Solicitar repuesto — ${escapeHtml(placa)}</div>
         <button class="modal-close" onclick="document.getElementById('modal-solicitud-repuesto').remove()">✕</button>
       </div>
       <div class="modal-body">
@@ -53,12 +67,12 @@ async function abrirModalSolicitudRepuesto(ordenId, etapaId, placa) {
             oninput="filtrarSugerenciasRepuesto(this.value)"
             onblur="setTimeout(()=>{ const s=document.getElementById('sr-sugerencias'); if(s) s.style.display='none'; },200)">
           <div id="sr-sugerencias" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid var(--gris-borde);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;overflow:hidden">
-            ${sugeridos.map(s=>`<div style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--gris-borde)" onmousedown="document.getElementById('sr-repuesto').value='${s.replace(/'/g,"\\'")}';document.getElementById('sr-sugerencias').style.display='none'">${s}</div>`).join('')}
+            ${sugeridos.map(s=>`<div style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--gris-borde)" data-val="${escapeHtml(s)}" onmousedown="document.getElementById('sr-repuesto').value=this.dataset.val;document.getElementById('sr-sugerencias').style.display='none'">${escapeHtml(s)}</div>`).join('')}
           </div>
         </div>
         ${sugeridos.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
           <span style="font-size:11px;color:var(--gris-mid);align-self:center">Recientes:</span>
-          ${sugeridos.slice(0,5).map(s=>`<button type="button" class="btn btn-ghost btn-xs" onclick="document.getElementById('sr-repuesto').value='${s.replace(/'/g,"\\'")}'" style="font-size:11px">${s}</button>`).join('')}
+          ${sugeridos.slice(0,5).map(s=>`<button type="button" class="btn btn-ghost btn-xs" data-val="${escapeHtml(s)}" onclick="document.getElementById('sr-repuesto').value=this.dataset.val" style="font-size:11px">${escapeHtml(s)}</button>`).join('')}
         </div>` : ''}
         <div class="field">
           <label>Unidades *</label>
@@ -71,7 +85,7 @@ async function abrirModalSolicitudRepuesto(ordenId, etapaId, placa) {
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="document.getElementById('modal-solicitud-repuesto').remove()">Cancelar</button>
-        <button class="btn btn-primary" onclick="enviarSolicitudRepuesto(${ordenId},${etapaId||'null'},'${placa}')">Enviar solicitud</button>
+        <button class="btn btn-primary" data-oid="${ordenId}" data-eid="${etapaId||''}" data-placa="${escapeHtml(placa)}" onclick="enviarSolicitudRepuesto(+this.dataset.oid,this.dataset.eid?+this.dataset.eid:null,this.dataset.placa)">Enviar solicitud</button>
       </div>
     </div>`;
   document.body.appendChild(div);
@@ -186,20 +200,20 @@ async function cargarRepuestosJefe() {
           return `<div class="card" style="padding:16px">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
               <div>
-                <div style="font-weight:700;font-size:15px;margin-bottom:3px">${s.repuesto}</div>
-                <div style="font-size:12px;color:var(--gris-mid)">${s.unidades} und · ${s.solicitado_por} · ${formatTS(s.creado_en)}</div>
+                <div style="font-weight:700;font-size:15px;margin-bottom:3px">${escapeHtml(s.repuesto)}</div>
+                <div style="font-size:12px;color:var(--gris-mid)">${escapeHtml(String(s.unidades))} und · ${escapeHtml(s.solicitado_por)} · ${formatTS(s.creado_en)}</div>
                 ${o.placa ? `<div style="font-size:12px;color:var(--azul);margin-top:3px;font-family:'DM Mono',monospace">
-                  ${o.placa} · ${[o.marca,o.linea,o.modelo].filter(Boolean).join(' ')} · OT#${s.orden_id}
-                  ${o.vin ? `· <span style="color:var(--gris-mid)">VIN: ${o.vin}</span>` : ''}
+                  ${escapeHtml(o.placa)} · ${[o.marca,o.linea,o.modelo].filter(Boolean).map(escapeHtml).join(' ')} · OT#${s.orden_id}
+                  ${o.vin ? `· <span style="color:var(--gris-mid)">VIN: ${escapeHtml(o.vin)}</span>` : ''}
                 </div>` : ''}
-                ${s.observaciones ? `<div style="font-size:12px;color:var(--gris-mid);font-style:italic;margin-top:3px">${s.observaciones}</div>` : ''}
+                ${s.observaciones ? `<div style="font-size:12px;color:var(--gris-mid);font-style:italic;margin-top:3px">${escapeHtml(s.observaciones)}</div>` : ''}
               </div>
               <span class="badge ${est.cls}">${est.txt}</span>
             </div>
             ${s.estado==='pendiente_jefe' ? `
               <div style="background:var(--gris-bg);border-radius:8px;padding:10px 12px;margin-bottom:10px">
                 <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Nota para repuestos (opcional)</div>
-                <textarea id="nota-jefe-${s.id}" style="width:100%;min-height:48px;font-size:13px;border:1px solid var(--gris-borde);border-radius:6px;padding:6px 10px;resize:vertical">${s.nota_jefe||''}</textarea>
+                <textarea id="nota-jefe-${s.id}" style="width:100%;min-height:48px;font-size:13px;border:1px solid var(--gris-borde);border-radius:6px;padding:6px 10px;resize:vertical">${escapeHtml(s.nota_jefe||'')}</textarea>
               </div>
               <div style="display:flex;gap:8px">
                 <button class="btn btn-success btn-sm" onclick="jefeProcesarSolicitud(${s.id},'aprobar')">✓ Aprobar y enviar</button>
@@ -246,7 +260,7 @@ async function abrirModalPrecioVenta(solicitudId) {
   div.innerHTML = `
     <div class="modal" style="max-width:560px">
       <div class="modal-header">
-        <div class="modal-titulo">Precio venta — ${sol?.repuesto||''}</div>
+        <div class="modal-titulo">Precio venta — ${escapeHtml(sol?.repuesto||'')}</div>
         <button class="modal-close" onclick="document.getElementById('modal-precio-venta').remove()">✕</button>
       </div>
       <div class="modal-body">
@@ -256,7 +270,7 @@ async function abrirModalPrecioVenta(solicitudId) {
           return `<div style="background:var(--gris-bg);border-radius:8px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--gris-borde)">
             <div style="font-weight:700;font-size:13px;margin-bottom:6px;color:var(--azul)">${opLbl[c.opcion]||'Opción '+c.opcion}</div>
             <div style="font-size:12px;color:var(--gris-mid);margin-bottom:10px">
-              Proveedor: <strong>${c.proveedores?.nombre||'—'}</strong><br>
+              Proveedor: <strong>${escapeHtml(c.proveedores?.nombre||'—')}</strong><br>
               Costo taller: <strong>${fmt(c.precio_costo)}</strong>
               ${sug ? `· <span style="color:var(--verde);font-weight:600">Sugerido +40%: ${fmt(sug)}</span>` : ''}
             </div>
@@ -264,7 +278,7 @@ async function abrirModalPrecioVenta(solicitudId) {
               <label>Precio venta al cliente (COP)</label>
               <div style="display:flex;gap:8px;align-items:center">
                 <input type="number" id="pv-${c.id}" value="${c.precio_venta_jefe||(sug||'')}" placeholder="0" min="0" style="font-family:'DM Mono',monospace;flex:1">
-                ${sug ? `<button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('pv-${c.id}').value='${sug}'" style="white-space:nowrap;font-size:11px">Usar sugerido</button>` : ''}
+                ${sug ? `<button type="button" class="btn btn-ghost btn-sm" data-sug="${sug}" onclick="document.getElementById('pv-${c.id}').value=this.dataset.sug" style="white-space:nowrap;font-size:11px">Usar sugerido</button>` : ''}
               </div>
             </div>
           </div>`;
@@ -332,6 +346,17 @@ async function cargarSolicitudesRepuestos() {
     const ords = oids.length ? await api(`/ordenes?id=in.(${oids.join(',')})&select=id,placa,marca,linea,modelo,vin`).catch(()=>[]) || [] : [];
     const om = {}; ords.forEach(o=>{ om[o.id]=o; });
 
+    // Poblar registry para evitar pasar strings de DB en onclick
+    _solRegistry = {};
+    sols.forEach(s => {
+      const o = om[s.orden_id]||{};
+      _solRegistry[s.id] = {
+        solicitudId: s.id, repuesto: s.repuesto||'', unidades: s.unidades||1,
+        placa: o.placa||'', marca: o.marca||'', modelo: o.linea||'',
+        anio: o.modelo||'', vin: o.vin||''
+      };
+    });
+
     if (!sols.length) {
       cont.innerHTML = `<div style="padding:20px"><div style="font-size:16px;font-weight:700;margin-bottom:16px">Solicitudes</div><div class="empty-state"><p>Sin solicitudes asignadas</p></div></div>`;
       return;
@@ -345,19 +370,19 @@ async function cargarSolicitudesRepuestos() {
           return `<div class="card" style="padding:16px">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
               <div>
-                <div style="font-weight:700;font-size:15px;margin-bottom:2px">${s.repuesto}</div>
-                <div style="font-size:12px;color:var(--gris-mid)">${s.unidades} und · ${formatTS(s.creado_en)}</div>
+                <div style="font-weight:700;font-size:15px;margin-bottom:2px">${escapeHtml(s.repuesto)}</div>
+                <div style="font-size:12px;color:var(--gris-mid)">${escapeHtml(String(s.unidades))} und · ${formatTS(s.creado_en)}</div>
                 ${o.placa ? `<div style="font-size:12px;color:var(--azul);font-family:'DM Mono',monospace;margin-top:3px">
-                  ${o.placa} · ${[o.marca,o.linea,o.modelo].filter(Boolean).join(' ')} · OT#${s.orden_id}
-                  ${o.vin ? `<br><span style="color:var(--gris-mid)">VIN: ${o.vin}</span>` : ''}
+                  ${escapeHtml(o.placa)} · ${[o.marca,o.linea,o.modelo].filter(Boolean).map(escapeHtml).join(' ')} · OT#${s.orden_id}
+                  ${o.vin ? `<br><span style="color:var(--gris-mid)">VIN: ${escapeHtml(o.vin)}</span>` : ''}
                 </div>` : ''}
-                ${s.nota_jefe ? `<div style="font-size:12px;background:var(--gris-bg);padding:6px 10px;border-radius:6px;border-left:3px solid var(--azul);margin-top:6px">📝 ${s.nota_jefe}</div>` : ''}
+                ${s.nota_jefe ? `<div style="font-size:12px;background:var(--gris-bg);padding:6px 10px;border-radius:6px;border-left:3px solid var(--azul);margin-top:6px">📝 ${escapeHtml(s.nota_jefe)}</div>` : ''}
               </div>
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
                 <span class="badge ${s.estado==='entregado'?'badge-completada':s.estado==='pedido'?'badge-iniciada':'badge-cotizada'}">${
                   s.estado==='enviado_repuestos'?'Por cotizar':s.estado==='cotizado'?'Cotizado':s.estado==='pedido'?'Pedido':'Entregado'
                 }</span>
-                <button class="btn btn-primary btn-sm" onclick="abrirModalCotizar(${s.id},'${s.repuesto.replace(/'/g,"&apos;")}',${s.unidades},'${o.placa||''}','${o.marca||''}','${(o.linea||'').replace(/'/g,"&apos;")}','${o.modelo||''}','${o.vin||''}')">
+                <button class="btn btn-primary btn-sm" data-sol-id="${s.id}" onclick="_abrirCotizarPorId(this)">
                   ${s.estado==='enviado_repuestos'?'+ Cotizar':'Ver / editar'}
                 </button>
               </div>
@@ -383,7 +408,7 @@ async function abrirModalCotizar(solicitudId, repuesto, unidades, placa, marca, 
   if (existing) existing.remove();
 
   const provOpts = '<option value="">— Seleccionar proveedor —</option>'+
-    proveedores.map(p=>`<option value="${p.id}" data-wa="${p.whatsapp||''}">${p.nombre}</option>`).join('');
+    proveedores.map(p=>`<option value="${p.id}" data-wa="${escapeHtml(p.whatsapp||'')}">${escapeHtml(p.nombre)}</option>`).join('');
   const opLbl = {1:'Opción 1 — Precio alto',2:'Opción 2 — Precio medio',3:'Opción 3 — Precio bajo'};
   const msgBase = `Buenos días. Solicito su colaboración para la búsqueda del siguiente repuesto: *${repuesto}* (${unidades} und) para el vehículo *${marca} ${modelo}*${anio?' año '+anio:''}, VIN: *${vin||'No disponible'}*. Quedo atento, gracias.`;
 
@@ -411,7 +436,7 @@ async function abrirModalCotizar(solicitudId, repuesto, unidades, placa, marca, 
       </div>
       <div style="margin-top:10px;background:white;border-radius:6px;padding:10px 12px;border:1px solid var(--gris-borde)">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gris-mid);margin-bottom:6px">Mensaje WhatsApp</div>
-        <textarea id="wa-msg-${num}-${solicitudId}" rows="3" style="width:100%;font-size:12px;border:none;background:transparent;resize:none;outline:none">${msgBase}</textarea>
+        <textarea id="wa-msg-${num}-${solicitudId}" rows="3" style="width:100%;font-size:12px;border:none;background:transparent;resize:none;outline:none">${escapeHtml(msgBase)}</textarea>
         <div style="display:flex;justify-content:flex-end;margin-top:6px">
           <a id="wa-link-${num}-${solicitudId}" href="#" target="_blank"
             class="btn btn-success btn-sm" style="display:flex;align-items:center;gap:5px;text-decoration:none;opacity:.4;pointer-events:none">
@@ -429,12 +454,12 @@ async function abrirModalCotizar(solicitudId, repuesto, unidades, placa, marca, 
   div.innerHTML = `
     <div class="modal" style="max-width:600px;max-height:90vh;overflow-y:auto">
       <div class="modal-header">
-        <div class="modal-titulo">Cotizar — ${repuesto}</div>
+        <div class="modal-titulo">Cotizar — ${escapeHtml(repuesto)}</div>
         <button class="modal-close" onclick="document.getElementById('modal-cotizar').remove()">✕</button>
       </div>
       <div class="modal-body">
         ${placa ? `<div style="font-size:12px;color:var(--azul);font-family:'DM Mono',monospace;margin-bottom:14px;background:var(--gris-bg);padding:8px 12px;border-radius:6px">
-          ${placa} · ${[marca,modelo,anio].filter(Boolean).join(' ')}${vin?`<br>VIN: ${vin}`:''}
+          ${escapeHtml(placa)} · ${[marca,modelo,anio].filter(Boolean).map(escapeHtml).join(' ')}${vin?`<br>VIN: ${escapeHtml(vin)}`:''}
         </div>` : ''}
         ${renderOp(1)}${renderOp(2)}${renderOp(3)}
       </div>
@@ -498,6 +523,11 @@ async function cargarProveedores() {
 
   try {
     const provs = await api('/proveedores?order=nombre.asc').catch(()=>[]) || [];
+
+    // Poblar registry para evitar pasar JSON en onclick
+    _provRegistry = {};
+    provs.forEach(p => { _provRegistry[p.id] = p; });
+
     cont.innerHTML = `<div style="padding:20px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <div style="font-size:16px;font-weight:700">Proveedores</div>
@@ -514,15 +544,15 @@ async function cargarProveedores() {
         </tr></thead>
         <tbody>
           ${provs.map(p=>`<tr style="border-bottom:1px solid var(--gris-borde)">
-            <td style="padding:10px 12px;font-weight:600">${p.nombre}</td>
-            <td style="padding:10px 12px;color:var(--gris-mid)">${p.tipo_proveedor||'—'}</td>
-            <td style="padding:10px 12px">${p.ciudad||'—'}</td>
-            <td style="padding:10px 12px;font-family:'DM Mono',monospace">${p.whatsapp||'—'}</td>
+            <td style="padding:10px 12px;font-weight:600">${escapeHtml(p.nombre)}</td>
+            <td style="padding:10px 12px;color:var(--gris-mid)">${escapeHtml(p.tipo_proveedor||'—')}</td>
+            <td style="padding:10px 12px">${escapeHtml(p.ciudad||'—')}</td>
+            <td style="padding:10px 12px;font-family:'DM Mono',monospace">${escapeHtml(p.whatsapp||'—')}</td>
             <td style="padding:10px 12px;font-size:11px;color:var(--gris-mid)">
-              ${p.multimarca?'<span style="background:var(--azul-light);color:var(--azul);padding:2px 6px;border-radius:3px;font-size:10px;font-weight:600">Multimarca</span>':(p.marcas||[]).slice(0,3).join(', ')||'—'}
+              ${p.multimarca?'<span style="background:var(--azul-light);color:var(--azul);padding:2px 6px;border-radius:3px;font-size:10px;font-weight:600">Multimarca</span>':(p.marcas||[]).slice(0,3).map(escapeHtml).join(', ')||'—'}
             </td>
             <td style="padding:10px 12px">
-              <button class="btn btn-ghost btn-sm" onclick="abrirModalProveedor(${JSON.stringify(p).replace(/"/g,'&quot;')})">Editar</button>
+              <button class="btn btn-ghost btn-sm" data-prov-id="${p.id}" onclick="_editarProveedorPorId(this)">Editar</button>
             </td>
           </tr>`).join('')}
         </tbody>
@@ -540,8 +570,8 @@ function abrirModalProveedor(prov) {
 
   const marcasHtml = MARCAS_VEHICULOS.map(m=>`
     <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;padding:2px 0">
-      <input type="checkbox" name="prov-marca" value="${m}" ${selMarcas.includes(m)||esMulti?'checked':''}>
-      ${m}
+      <input type="checkbox" name="prov-marca" value="${escapeHtml(m)}" ${selMarcas.includes(m)||esMulti?'checked':''}>
+      ${escapeHtml(m)}
     </label>`).join('');
 
   const div = document.createElement('div');
@@ -554,7 +584,7 @@ function abrirModalProveedor(prov) {
         <button class="modal-close" onclick="document.getElementById('modal-proveedor').remove()">✕</button>
       </div>
       <div class="modal-body">
-        <div class="field"><label>Nombre *</label><input id="prov-nombre" value="${p.nombre||''}"></div>
+        <div class="field"><label>Nombre *</label><input id="prov-nombre" value="${escapeHtml(p.nombre||'')}"></div>
         <div class="field">
           <label>Tipo de proveedor</label>
           <select id="prov-tipo" style="width:100%">
@@ -564,8 +594,8 @@ function abrirModalProveedor(prov) {
             <option value="Almacén"       ${p.tipo_proveedor==='Almacén'      ?'selected':''}>Almacén</option>
           </select>
         </div>
-        <div class="field"><label>Ciudad</label><input id="prov-ciudad" value="${p.ciudad||''}" placeholder="Bogotá, Medellín..."></div>
-        <div class="field"><label>WhatsApp</label><input id="prov-whatsapp" value="${p.whatsapp||''}" type="tel" placeholder="3001234567"></div>
+        <div class="field"><label>Ciudad</label><input id="prov-ciudad" value="${escapeHtml(p.ciudad||'')}" placeholder="Bogotá, Medellín..."></div>
+        <div class="field"><label>WhatsApp</label><input id="prov-whatsapp" value="${escapeHtml(p.whatsapp||'')}" type="tel" placeholder="3001234567"></div>
         <div class="field">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <label style="margin:0">Marcas que maneja</label>
@@ -641,9 +671,9 @@ async function cargarRepuestosCliente(ordenId) {
       const conPrecio = cots.filter(c=>c.precio_venta_jefe);
       if (!conPrecio.length) return '';
       return `<div style="margin-bottom:14px;padding:14px;background:var(--gris-bg);border-radius:8px;border:1px solid var(--gris-borde)">
-        <div style="font-weight:700;margin-bottom:8px">${s.repuesto} · ${s.unidades} und</div>
+        <div style="font-weight:700;margin-bottom:8px">${escapeHtml(s.repuesto)} · ${escapeHtml(String(s.unidades))} und</div>
         ${conPrecio.map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:white;border-radius:6px;border:1px solid var(--gris-borde);margin-bottom:5px">
-          <div><div style="font-size:13px;font-weight:600">Opción ${c.opcion}</div><div style="font-size:11px;color:var(--gris-mid)">${c.proveedores?.nombre||'—'}</div></div>
+          <div><div style="font-size:13px;font-weight:600">Opción ${c.opcion}</div><div style="font-size:11px;color:var(--gris-mid)">${escapeHtml(c.proveedores?.nombre||'—')}</div></div>
           <div style="font-size:15px;font-weight:700;color:var(--verde);font-family:'DM Mono',monospace">${fmt(c.precio_venta_jefe)}</div>
         </div>`).join('')}
         <div style="font-size:11px;color:var(--gris-mid);margin-top:6px">Consulta con el taller para confirmar tu opción.</div>

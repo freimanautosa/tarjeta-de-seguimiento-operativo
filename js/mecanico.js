@@ -88,9 +88,9 @@ async function cargarEtapasMecanico() {
         const hayActiva = ets.some(x => x.inicio && !x.fin);
         let acc = '';
         if (!e.inicio && !hayActiva)
-          acc = `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();mecIniciarEtapa(${e.id},'${e.etapa || ''}',${oid})">▶ Iniciar</button>`;
+          acc = `<button class="btn btn-success btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa || '')}" data-oid="${oid}" onclick="event.stopPropagation();mecIniciarEtapa(+this.dataset.eid,this.dataset.etapa,+this.dataset.oid)">▶ Iniciar</button>`;
         else if (e.inicio && !e.fin)
-          acc = `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();mecFinalizarEtapa(${e.id},'${e.etapa || ''}','${e.servicio || ''}',${oid})">■ Finalizar</button>`;
+          acc = `<button class="btn btn-danger btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa || '')}" data-srv="${escapeHtml(e.servicio || '')}" data-oid="${oid}" onclick="event.stopPropagation();mecFinalizarEtapa(+this.dataset.eid,this.dataset.etapa,this.dataset.srv,+this.dataset.oid)">■ Finalizar</button>`;
         else if (e.fin)
           acc = `<span class="badge badge-completada">Completada ✓</span>`;
         else
@@ -98,9 +98,9 @@ async function cargarEtapasMecanico() {
 
         return `<div class="mec-etapa-item">
           <div style="flex:1">
-            <div style="font-weight:600;font-size:14px">${e.etapa || '—'}</div>
+            <div style="font-weight:600;font-size:14px">${escapeHtml(e.etapa) || '—'}</div>
             <div style="font-size:11px;color:var(--gris-mid);margin-top:2px">
-              ${CATALOGO[e.servicio]?.nombre || e.servicio || '—'}
+              ${escapeHtml(CATALOGO[e.servicio]?.nombre || e.servicio) || '—'}
               ${e.inicio ? ' · Inicio: ' + formatTS(e.inicio) : ''}
               ${e.fin ? ' · Fin: ' + formatTS(e.fin) : ''}
             </div>
@@ -116,8 +116,8 @@ async function cargarEtapasMecanico() {
       return `<div class="mec-orden-card" onclick="abrirOrdenMecanico(${oid})" style="cursor:pointer">
         <div class="mec-orden-header">
           <div>
-            <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:500;letter-spacing:2px">${orden.placa || '—'}</div>
-            <div style="font-size:13px;color:var(--gris-mid);margin-top:3px">${[orden.marca, orden.linea, orden.modelo].filter(Boolean).join(' · ') || 'Sin datos'}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:500;letter-spacing:2px">${escapeHtml(orden.placa) || '—'}</div>
+            <div style="font-size:13px;color:var(--gris-mid);margin-top:3px">${[orden.marca, orden.linea, orden.modelo].filter(Boolean).map(escapeHtml).join(' · ') || 'Sin datos'}</div>
           </div>
           <div style="text-align:right">
             ${orden.pulmon ? '<span class="badge badge-pulmon">En Pulmón</span>' : ''}
@@ -191,25 +191,25 @@ async function abrirMecDetalle(eid, oid) {
     const k = kid(eid);
 
     const fotosHtml = fotos.map(f => `
-      <div class="foto-thumb" onclick="abrirLightbox('${f.url}')">
-        <img src="${f.url}" alt="">
-        <button class="foto-delete" onclick="event.stopPropagation();eliminarFotoMec(${f.id},'${f.url}',${eid},${oid})">✕</button>
+      <div class="foto-thumb" data-url="${escapeHtml(f.url)}" onclick="abrirLightbox(this.dataset.url)">
+        <img src="${escapeHtml(f.url)}" alt="">
+        <button class="foto-delete" data-fid="${f.id}" data-url="${escapeHtml(f.url)}" data-eid="${eid}" data-oid="${oid}" onclick="event.stopPropagation();eliminarFotoMec(+this.dataset.fid,this.dataset.url,+this.dataset.eid,+this.dataset.oid)">✕</button>
       </div>`).join('');
 
     const novsHtml = novedades.length ? novedades.map(n => `
       <div class="novedad-item">
         <div class="novedad-item-top">
-          <span class="novedad-tipo ${(n.tipo || '').toLowerCase()}">${n.tipo}</span>
+          <span class="novedad-tipo ${escapeHtml((n.tipo || '').toLowerCase())}">${escapeHtml(n.tipo)}</span>
           <span class="novedad-fecha">${formatTS(n.creado_en)}</span>
         </div>
-        <div class="novedad-motivo">${n.motivo || '—'}</div>
+        <div class="novedad-motivo">${escapeHtml(n.motivo) || '—'}</div>
       </div>`).join('')
       : '<div style="font-size:12px;color:var(--gris-mid);padding:4px 0">Sin novedades.</div>';
 
     cont.innerHTML = `
       <div class="card" style="padding:24px;margin-bottom:14px">
-        <div style="font-family:'DM Mono',monospace;font-size:20px;letter-spacing:2px;font-weight:500;margin-bottom:4px">${orden.placa || '—'}</div>
-        <div style="font-size:13px;color:var(--gris-mid);margin-bottom:16px">${etapa.etapa || '—'} · ${CATALOGO[etapa.servicio]?.nombre || etapa.servicio || '—'}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:20px;letter-spacing:2px;font-weight:500;margin-bottom:4px">${escapeHtml(orden.placa) || '—'}</div>
+        <div style="font-size:13px;color:var(--gris-mid);margin-bottom:16px">${escapeHtml(etapa.etapa) || '—'} · ${escapeHtml(CATALOGO[etapa.servicio]?.nombre || etapa.servicio) || '—'}</div>
         <div class="seccion-titulo">Fotos (${fotos.length})</div>
         <div class="fotos-grid" id="mec-fotos-grid">${fotosHtml}</div>
         <div class="upload-zone" onclick="document.getElementById('mec-fi-${k}').click()" style="margin-top:10px">
@@ -274,7 +274,7 @@ async function eliminarFotoMec(fotoId, url, eid, oid) {
   try {
     await api(`/fotos_etapas?id=eq.${fotoId}`, 'DELETE');
     const path = url.split(`/object/public/${BUCKET}/`)[1];
-    if (path) await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, { method: 'DELETE', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    if (path) await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, { method: 'DELETE', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${_getBearer()}` } });
     toast('Foto eliminada ✓');
     abrirMecDetalle(eid, oid);
   } catch(e) { toast('Error: ' + e.message, 'err'); }
@@ -352,9 +352,9 @@ async function cargarHistorialMecanico() {
         const dur = mins<60?`${mins}m`:`${Math.floor(mins/60)}h ${mins%60}m`;
         const color = srvColor[e.servicio]||'#6B7280';
         return `<div style="display:grid;grid-template-columns:100px 1fr 80px 70px;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gris-borde)">
-          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;letter-spacing:1px">${o.placa||'—'}</div>
-          <div><div style="font-weight:600;font-size:13px">${e.etapa||'—'}</div>
-            <div style="font-size:11px;color:${color}">${CATALOGO[e.servicio]?.nombre||e.servicio||'—'}</div></div>
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;letter-spacing:1px">${escapeHtml(o.placa)||'—'}</div>
+          <div><div style="font-weight:600;font-size:13px">${escapeHtml(e.etapa)||'—'}</div>
+            <div style="font-size:11px;color:${color}">${escapeHtml(CATALOGO[e.servicio]?.nombre||e.servicio)||'—'}</div></div>
           <div style="font-size:12px;color:var(--gris-mid)">${formatFecha(e.fin)}</div>
           <div style="font-size:13px;font-weight:600;color:var(--azul);text-align:right">${dur}</div>
         </div>`;
@@ -411,14 +411,14 @@ async function cargarRepuestosMecanico() {
         return `<div class="solicitud-card">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
             <div style="min-width:0">
-              <div style="font-family:'DM Mono',monospace;font-weight:800;font-size:15px">${o.placa || 'Orden #' + s.orden_id}</div>
-              <div style="font-size:12px;color:var(--gris-mid);margin-top:2px">${[o.marca,o.linea].filter(Boolean).join(' ') || o.propietario || 'Sin datos'} · ${formatTS(s.creado_en)}</div>
+              <div style="font-family:'DM Mono',monospace;font-weight:800;font-size:15px">${escapeHtml(o.placa) || 'Orden #' + s.orden_id}</div>
+              <div style="font-size:12px;color:var(--gris-mid);margin-top:2px">${[o.marca,o.linea].filter(Boolean).map(escapeHtml).join(' ') || escapeHtml(o.propietario) || 'Sin datos'} · ${formatTS(s.creado_en)}</div>
             </div>
             <span style="font-size:11px;font-weight:800;color:${color};background:${bg};padding:4px 10px;border-radius:99px;text-transform:uppercase;white-space:nowrap">${estadoLabel[estado] || estado}</span>
           </div>
-          <div style="font-weight:700;margin-bottom:4px">${s.repuesto || 'Repuesto sin nombre'}</div>
-          <div style="font-size:12px;color:var(--gris-mid)">Cantidad: ${s.unidades || 1}${s.observaciones ? ' · ' + s.observaciones : ''}</div>
-          ${s.nota_jefe ? `<div style="font-size:12px;color:var(--texto);background:var(--gris-bg);padding:8px;border-radius:6px;margin-top:10px">${s.nota_jefe}</div>` : ''}
+          <div style="font-weight:700;margin-bottom:4px">${escapeHtml(s.repuesto) || 'Repuesto sin nombre'}</div>
+          <div style="font-size:12px;color:var(--gris-mid)">Cantidad: ${s.unidades || 1}${s.observaciones ? ' · ' + escapeHtml(s.observaciones) : ''}</div>
+          ${s.nota_jefe ? `<div style="font-size:12px;color:var(--texto);background:var(--gris-bg);padding:8px;border-radius:6px;margin-top:10px">${escapeHtml(s.nota_jefe)}</div>` : ''}
           <div class="btn-row" style="margin-top:10px">
             <button class="btn btn-ghost btn-sm" onclick="abrirOrdenMecanico(${s.orden_id})">Ver orden</button>
           </div>

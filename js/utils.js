@@ -1,6 +1,23 @@
 // ═══════════════════════════════════════════════════════════
 // UTILIDADES
 // ═══════════════════════════════════════════════════════════
+
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function safeUrl(url) {
+  if (!url || typeof url !== 'string') return '#';
+  const lower = url.trim().toLowerCase();
+  if (!lower.startsWith('http://') && !lower.startsWith('https://')) return '#';
+  return url.trim();
+}
 function toast(msg, tipo = 'ok') {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = 'show ' + tipo;

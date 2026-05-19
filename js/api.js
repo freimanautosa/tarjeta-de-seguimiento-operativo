@@ -15,6 +15,72 @@ const ALLOWED_UPLOAD_MIME = new Set([
   'application/pdf'
 ]);
 
+// ═══════════════════════════════════════════════════════════
+// SUPABASE AUTH
+// ═══════════════════════════════════════════════════════════
+
+// Retorna { access_token, refresh_token, expires_in } o null si falla
+async function supabaseLogin(cedula) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
+      body: JSON.stringify({ email: `${cedula}@freimanautos.com`, password: cedula })
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+async function supabaseSignOut(accessToken) {
+  if (!accessToken) return;
+  await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: `Bearer ${accessToken}` }
+  }).catch(() => {});
+}
+
+// Crea una cuenta nueva en Supabase Auth (primer login de un cliente).
+// Retorna el objeto de sesión o null si falla (ej: cuenta ya existe).
+async function supabaseSignUp(cedula) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
+      body: JSON.stringify({
+        email: `${cedula}@freimanautos.com`,
+        password: cedula,
+        data: { perfil: 'cliente' }
+      })
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+// Retorna nuevos tokens o null si el refresh_token expiró
+async function supabaseRefreshToken(refreshToken) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+// Devuelve el token activo: JWT del usuario si existe, anon key si no
+function _getBearer() {
+  return (typeof sesion !== 'undefined' && sesion?.access_token)
+    ? sesion.access_token
+    : SUPABASE_KEY;
+}
+
+// ═══════════════════════════════════════════════════════════
+// VALIDACIONES
+// ═══════════════════════════════════════════════════════════
 function validarApiPath(path) {
   if (typeof path !== 'string' || !path.startsWith('/') || path.startsWith('//') || /[\r\n]/.test(path)) {
     throw new Error('Ruta de API invalida');
@@ -52,12 +118,20 @@ function normalizarStoragePath(file, path) {
   return limpio.replace(/\.[^.\/]+$/, `.${ext}`);
 }
 
+// ═══════════════════════════════════════════════════════════
+// API — usa JWT del usuario cuando está disponible
+// ═══════════════════════════════════════════════════════════
 async function api(path, method = 'GET', body = null, extra = {}) {
   const verb = String(method || 'GET').toUpperCase();
   if (!API_METHODS.has(verb)) throw new Error('Metodo no permitido');
   const opts = {
     method: verb,
-    headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, ...extra }
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${_getBearer()}`,
+      ...extra
+    }
   };
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(SUPABASE_URL + '/rest/v1' + validarApiPath(path), opts);
@@ -71,7 +145,12 @@ async function storageUpload(file, path) {
   const safePath = normalizarStoragePath(file, path);
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${encodeURIComponent(BUCKET)}/${safePath}`, {
     method: 'POST',
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': file.type, 'x-upsert': 'true' },
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${_getBearer()}`,
+      'Content-Type': file.type,
+      'x-upsert': 'true'
+    },
     body: file
   });
   if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || 'Error subiendo foto'); }

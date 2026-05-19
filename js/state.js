@@ -2,6 +2,11 @@
 // ESTADO GLOBAL
 // ═══════════════════════════════════════════════════════════
 let sesion = null;
+
+// Cambiar a true DESPUÉS de crear todos los usuarios en Supabase Auth.
+// Con true: solo 'taller' puede entrar sin Supabase Auth.
+// Con false: todos pueden entrar con login legacy (modo transición).
+const MODO_ESTRICTO_AUTH = false;
 let mecanicos = [];
 let ordenActual = null;
 let filtroEstado = 'Activa';

@@ -70,8 +70,8 @@ async function cargarOrdenesCliente() {
         return `<div class="cliente-etapa-row">
           <div class="cliente-dot ${cls}"></div>
           <div style="flex:1">
-            <div style="font-size:13px;font-weight:600">${e.etapa || '—'}</div>
-            <div style="font-size:11px;color:var(--gris-mid)">${CATALOGO[e.servicio]?.nombre || e.servicio || '—'}</div>
+            <div style="font-size:13px;font-weight:600">${escapeHtml(e.etapa) || '—'}</div>
+            <div style="font-size:11px;color:var(--gris-mid)">${escapeHtml(CATALOGO[e.servicio]?.nombre || e.servicio) || '—'}</div>
           </div>
           <div style="text-align:right">
             <span class="badge badge-${done ? 'completada' : active ? 'iniciada' : 'pendiente'}">${done ? 'Completada' : active ? 'En proceso' : 'Pendiente'}</span>
@@ -85,23 +85,23 @@ async function cargarOrdenesCliente() {
           <div class="seccion-titulo">Novedades / Imprevistos</div>
           ${novs.map(n => `<div class="novedad-item" style="margin-bottom:8px">
             <div class="novedad-item-top">
-              <span class="novedad-tipo ${(n.tipo || '').toLowerCase()}">${n.tipo}</span>
+              <span class="novedad-tipo ${escapeHtml((n.tipo || '').toLowerCase())}">${escapeHtml(n.tipo)}</span>
               <span class="novedad-fecha">${formatTS(n.creado_en)}</span>
             </div>
-            <div class="novedad-motivo">${n.motivo || '—'}</div>
+            <div class="novedad-motivo">${escapeHtml(n.motivo) || '—'}</div>
           </div>`).join('')}
         </div>` : '';
 
       const fotosHtml = fotos.length ? `
         <div style="margin-top:16px;border-top:1px solid var(--gris-borde);padding-top:16px">
           <div class="seccion-titulo">Fotos del proceso</div>
-          <div class="fotos-grid">${fotos.map(f => `<div class="foto-thumb" onclick="abrirLightbox('${f.url}')"><img src="${f.url}" alt="" loading="lazy"></div>`).join('')}</div>
+          <div class="fotos-grid">${fotos.map(f => `<div class="foto-thumb" data-url="${escapeHtml(f.url)}" onclick="abrirLightbox(this.dataset.url)"><img src="${escapeHtml(f.url)}" alt="" loading="lazy"></div>`).join('')}</div>
         </div>` : '';
 
       return `<div class="cliente-orden-card">
         <div class="cliente-header">
-          <div class="cliente-placa">${orden.placa}</div>
-          <div class="cliente-vehiculo">${[orden.marca, orden.linea, orden.modelo, orden.color].filter(Boolean).join(' · ') || 'Sin datos'}</div>
+          <div class="cliente-placa">${escapeHtml(orden.placa)}</div>
+          <div class="cliente-vehiculo">${[orden.marca, orden.linea, orden.modelo, orden.color].filter(Boolean).map(escapeHtml).join(' · ') || 'Sin datos'}</div>
           <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
             <div style="flex:1">
               <div style="font-size:11px;opacity:0.6;margin-bottom:4px">${comp} de ${total} etapas completadas</div>
@@ -117,7 +117,7 @@ async function cargarOrdenesCliente() {
           <div class="info-chips" style="margin-bottom:16px">
             <div class="info-chip"><div class="info-chip-label">Ingreso</div><div class="info-chip-val">${formatFecha(orden.creado_en)}</div></div>
             <div class="info-chip"><div class="info-chip-label">Fecha entrega</div><div class="info-chip-val">${formatFecha(orden.fecha_entrega_1) || '—'}</div></div>
-            ${orden.aseguradora ? `<div class="info-chip"><div class="info-chip-label">Aseguradora</div><div class="info-chip-val">${orden.aseguradora}</div></div>` : ''}
+            ${orden.aseguradora ? `<div class="info-chip"><div class="info-chip-label">Aseguradora</div><div class="info-chip-val">${escapeHtml(orden.aseguradora)}</div></div>` : ''}
             <div class="info-chip"><div class="info-chip-label">Estado</div><div class="info-chip-val">${orden.estado || 'Activa'}</div></div>
           </div>
           ${orden.cotizacion_url ? `
@@ -126,7 +126,7 @@ async function cargarOrdenesCliente() {
               <div style="font-size:12px;font-weight:600;color:var(--texto)">📄 Cotización</div>
               <div style="font-size:11px;color:var(--gris-mid);margin-top:2px">Documento de tu vehículo</div>
             </div>
-            <a href="${orden.cotizacion_url}" target="_blank" class="btn btn-outline btn-sm" style="font-size:12px">Ver PDF →</a>
+            <a href="${safeUrl(orden.cotizacion_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size:12px">Ver PDF →</a>
           </div>` : ''}
           <div class="seccion-titulo">Avance del proceso</div>
           ${etapasHtml}
