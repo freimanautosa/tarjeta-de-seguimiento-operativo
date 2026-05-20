@@ -74,8 +74,31 @@ function openSidebar() {
 function closeSidebar() {
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebar-overlay');
-  if (sidebar) sidebar.classList.remove('mobile-open');
+  const main    = document.querySelector('.main');
+  if (sidebar) { sidebar.classList.remove('mobile-open'); sidebar.classList.remove('tablet-expanded'); }
   if (overlay) overlay.classList.remove('show');
+  if (main)    main.classList.remove('tablet-expanded');
+}
+
+// Hamburger: funciona en móvil (slide overlay) y tablet (expand/collapse)
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const main    = document.querySelector('.main');
+  if (!sidebar) return;
+
+  if (window.innerWidth <= 768) {
+    // Móvil: deslizar como overlay
+    const isOpen = sidebar.classList.contains('mobile-open');
+    sidebar.classList.toggle('mobile-open', !isOpen);
+    if (overlay) overlay.classList.toggle('show', !isOpen);
+  } else {
+    // Tablet: expandir/colapsar (los ítems del sidebar tienen nav-label)
+    const isExpanded = sidebar.classList.contains('tablet-expanded');
+    sidebar.classList.toggle('tablet-expanded', !isExpanded);
+    if (main)    main.classList.toggle('tablet-expanded', !isExpanded);
+    if (overlay) overlay.classList.toggle('show', !isExpanded);
+  }
 }
 
 function mostrarPagina(id) {

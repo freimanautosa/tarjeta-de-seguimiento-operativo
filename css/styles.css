@@ -1245,29 +1245,142 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .cliente-dot.pending{ background: var(--gris-borde); }
 
 /* ═══════════════════════════════════════════════════════════
-   RESPONSIVE
+   RESPONSIVE — TABLET + MÓVIL
 ═══════════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
+
+/* ── TABLET: 769px–1080px — sidebar compacto (solo íconos) ── */
+@media (min-width: 769px) and (max-width: 1080px) {
+  :root { --sidebar-w: 64px; }
+
   .sidebar {
-    transform: translateX(-100%);
+    width: 64px;
+    overflow: hidden;
+    transition: width 0.26s var(--ease-out), box-shadow 0.26s;
   }
-  .sidebar.mobile-open {
-    transform: translateX(0);
+  /* Sidebar expandido via hamburger */
+  .sidebar.tablet-expanded {
+    width: 240px;
+    box-shadow: 6px 0 28px rgba(0,0,0,0.22);
+    z-index: 200;
   }
+
+  /* Texto del sidebar — oculto en modo compacto */
+  .nav-label           { display: none; }
+  .nav-section-label   { display: none; }
+  .sidebar-brand-logo  { display: none; }
+  .sidebar-brand-name  { display: none; }
+  .sidebar-user-info   { display: none; }
+  .sidebar-capacidad   { display: none; }
+
+  /* Ítems centrados (solo ícono) */
+  .sidebar-brand       { padding: 16px; display: flex; align-items: center; justify-content: center; }
+  .sidebar-user        { padding: 12px; justify-content: center; }
+  .nav-item            { justify-content: center; padding: 12px 0; gap: 0; }
+  .nav-item svg        { width: 20px; height: 20px; flex-shrink: 0; }
+  .sidebar-footer      { padding: 10px 8px; }
+  .btn-logout          { justify-content: center; padding: 10px 0; gap: 0; }
+
+  /* Cuando está expandido: vuelve al layout completo */
+  .sidebar.tablet-expanded .nav-label         { display: inline; }
+  .sidebar.tablet-expanded .nav-section-label { display: block; }
+  .sidebar.tablet-expanded .sidebar-brand-logo{ display: block; }
+  .sidebar.tablet-expanded .sidebar-brand-name{ display: block; }
+  .sidebar.tablet-expanded .sidebar-user-info { display: flex; flex-direction: column; }
+  .sidebar.tablet-expanded .sidebar-capacidad { display: block; }
+  .sidebar.tablet-expanded .sidebar-brand     { padding: 22px 20px 18px; display: block; }
+  .sidebar.tablet-expanded .sidebar-user      { padding: 16px 20px; justify-content: flex-start; }
+  .sidebar.tablet-expanded .nav-item          { justify-content: flex-start; padding: 10px 12px; gap: 10px; }
+  .sidebar.tablet-expanded .nav-item svg      { width: 16px; height: 16px; }
+  .sidebar.tablet-expanded .sidebar-footer    { padding: 16px 12px; }
+  .sidebar.tablet-expanded .btn-logout        { justify-content: flex-start; padding: 10px 12px; gap: 10px; }
+
+  /* Main se ajusta con la transición */
+  .main { margin-left: 64px; transition: margin-left 0.26s var(--ease-out); }
+  .main.tablet-expanded { margin-left: 240px; }
+
+  /* Overlay para cerrar el sidebar expandido en tablet */
   .sidebar-overlay.show { display: block; }
-  .main { margin-left: 0; }
-  /* Bottom nav reemplaza el sidebar en móvil — hamburger no necesario */
-  .hamburger { display: none !important; }
-  .content { padding: 16px; }
-  .detalle-grid { grid-template-columns: 1fr; }
-  .grid-2, .grid-3 { grid-template-columns: 1fr; }
-  .bottom-nav { display: flex; }
-  .main { padding-bottom: var(--nav-h); }
-  #toast { bottom: calc(var(--nav-h) + 12px); }
-  /* 5 ítems en bottom nav caben bien con padding reducido */
-  .bnav-item { padding: 6px 6px; }
-  .bnav-item span { font-size: 9px; }
+
+  /* Hamburger visible en tablet */
+  .hamburger { display: flex !important; align-items: center; justify-content: center; }
+
+  /* Content padding tablet */
+  .content { padding: 20px 22px; }
+
+  /* Topbar tablet */
+  .topbar { padding: 0 20px; }
+
+  /* Detalle — sidebar más angosta */
+  .detalle-grid { grid-template-columns: 1fr 268px; }
+
+  /* Bottom nav oculto */
+  .bottom-nav { display: none !important; }
 }
+
+/* ── MÓVIL: ≤768px ── */
+@media (max-width: 768px) {
+  /* Sidebar deslizable */
+  .sidebar         { transform: translateX(-100%); width: 240px !important; }
+  .sidebar.mobile-open { transform: translateX(0); box-shadow: 6px 0 28px rgba(0,0,0,0.28); }
+  .sidebar-overlay.show { display: block; }
+
+  /* Textos del sidebar visibles cuando abre */
+  .nav-label, .sidebar-brand-name, .sidebar-brand-logo,
+  .sidebar-user-info, .sidebar-capacidad, .nav-section-label { display: revert; }
+
+  /* Hamburger visible en móvil también */
+  .hamburger { display: flex !important; align-items: center; justify-content: center; }
+
+  /* Main sin margen (sidebar está fuera de flujo) */
+  .main { margin-left: 0 !important; padding-bottom: var(--nav-h); }
+
+  /* Content padding reducido */
+  .content { padding: 14px; }
+
+  /* Topbar más compacto */
+  .topbar { padding: 0 14px; gap: 10px; }
+  .topbar-title { font-size: 14px; }
+
+  /* Grids de 1 columna */
+  .detalle-grid  { grid-template-columns: 1fr; }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .srv-grid-select { grid-template-columns: 1fr; }
+  .dash-row-2    { grid-template-columns: 1fr; }
+
+  /* Tablas: scroll horizontal */
+  .tabla-scroll  { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Timeline horizontal scroll */
+  .etapas-timeline-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .etapas-timeline { min-width: max-content; }
+
+  /* Modales más anchos en móvil */
+  .modal { width: 96% !important; max-height: 92vh !important; }
+
+  /* Bottom nav visible */
+  .bottom-nav { display: flex; }
+  #toast { bottom: calc(var(--nav-h) + 12px); }
+
+  /* Bottom nav: 5 ítems caben sin texto largo */
+  .bnav-item { padding: 5px 2px; flex: 1; min-width: 0; }
+  .bnav-item span { font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Cards */
+  .orden-card { padding: 14px 16px; }
+
+  /* Formularios */
+  .btn-row { flex-wrap: wrap; }
+  .btn-row .btn { flex: 1; min-width: 120px; }
+
+  /* Reportes: cards 1 col en pantallas muy pequeñas */
+  @media (max-width: 480px) {
+    .content { padding: 10px; }
+    .bnav-item span { display: none; }
+    .bnav-item { padding: 8px 0; }
+  }
+}
+
+/* Desktop: bottom nav siempre oculto */
 @media (min-width: 769px) {
   .bottom-nav { display: none !important; }
 }
