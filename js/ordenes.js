@@ -2927,3 +2927,84 @@ async function generarPreliquidacion(ordenId) {
     console.error(e);
   }
 }
+
+// ═══════════════════════════════════════════════════════════
+// AUTO-REFRESH — Polling para órdenes, capacidad y dashboard
+// ═══════════════════════════════════════════════════════════
+
+let _realtimeIntervals = [];
+let _realtimeVisibilityHandler = null;
+let _ultimoRefresh = 0;
+
+// Devuelve el id de la página activa en el .content
+function _paginaActiva() {
+  const el = document.querySelector('.pagina.activa');
+  return el ? el.id : null;
+}
+
+// ¿Hay algún modal abierto? Evitamos refrescar mientras el usuario edita
+function _hayModalAbierto() {
+  return !![...document.querySelectorAll('.modal-overlay')]
+    .some(m => m.style.display !== 'none' && !m.classList.contains('hide') && m.offsetParent !== null);
+}
+
+function _tickRefresh() {
+  if (!sesion) return;                 // no hay sesión activa
+  if (document.hidden) return;        // pestaña oculta
+  if (_hayModalAbierto()) return;     // usuario en un modal
+
+  const pag = _paginaActiva();
+
+  // Siempre actualizar la barra de capacidad del sidebar
+  _refrescarCapacidad();
+
+  // Actualizar lista de órdenes si está visible
+  if (pag === 'pag-ordenes') {
+    cargarOrdenes();
+    return;
+  }
+
+  // Actualizar dashboard si está visible
+  if (pag === 'pag-dashboard' && typeof switchDashTab === 'function') {
+    const tabActivo = document.querySelector('.filtro-btn.active[id^="dash-tab-"]');
+    const tab = tabActivo ? tabActivo.id.replace('dash-tab-', '') : 'mes';
+    switchDashTab(tab);
+    return;
+  }
+}
+
+function iniciarRealtime() {
+  detenerRealtime(); // Limpiar cualquier instancia previa
+
+  // ── Polling cada 30 segundos ────────────────────────────
+  const intervalo = setInterval(_tickRefresh, 30_000);
+  _realtimeIntervals.push(intervalo);
+
+  // ── Refresh inmediato al volver a la pestaña ────────────
+  _realtimeVisibilityHandler = () => {
+    if (!document.hidden && sesion) {
+      const ahora = Date.now();
+      // Evitar doble-refresh si ya se refrescó hace menos de 5 s
+      if (ahora - _ultimoRefresh > 5_000) {
+        _ultimoRefresh = ahora;
+        _tickRefresh();
+      }
+    }
+  };
+  document.addEventListener('visibilitychange', _realtimeVisibilityHandler);
+
+  // ── Refresh al recuperar conexión ───────────────────────
+  window.addEventListener('online', _tickRefresh);
+
+  console.debug('[Realtime] Polling activo — cada 30 s');
+}
+
+function detenerRealtime() {
+  _realtimeIntervals.forEach(id => clearInterval(id));
+  _realtimeIntervals = [];
+  if (_realtimeVisibilityHandler) {
+    document.removeEventListener('visibilitychange', _realtimeVisibilityHandler);
+    _realtimeVisibilityHandler = null;
+  }
+  window.removeEventListener('online', _tickRefresh);
+}
