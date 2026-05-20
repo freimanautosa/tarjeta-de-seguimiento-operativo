@@ -8,7 +8,10 @@
       "Bash(python3 -c ' *)",
       "Skill(anthropic-skills:impeccable)",
       "Skill(anthropic-skills:impeccable:*)",
-      "Bash(node .claude/skills/impeccable/scripts/load-context.mjs)"
+      "Bash(node .claude/skills/impeccable/scripts/load-context.mjs)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
