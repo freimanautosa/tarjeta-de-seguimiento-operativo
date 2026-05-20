@@ -1264,6 +1264,9 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   .bottom-nav { display: flex; }
   .main { padding-bottom: var(--nav-h); }
   #toast { bottom: calc(var(--nav-h) + 12px); }
+  /* 5 ítems en bottom nav caben bien con padding reducido */
+  .bnav-item { padding: 6px 6px; }
+  .bnav-item span { font-size: 9px; }
 }
 @media (min-width: 769px) {
   .bottom-nav { display: none !important; }

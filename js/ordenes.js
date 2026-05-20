@@ -1743,7 +1743,11 @@ function montarJefe() {
       </button>
       <button class="bnav-item" id="bnav-cotizaciones" onclick="navJefe('cotizaciones')">
         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-        <span>Cotizaciones</span>
+        <span>Cotiz.</span>
+      </button>
+      <button class="bnav-item" id="bnav-mas" onclick="openSidebar()">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <span>Más</span>
       </button>
     `;
   }

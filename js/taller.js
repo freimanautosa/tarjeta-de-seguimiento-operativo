@@ -310,6 +310,48 @@ function montarTaller() {
         transform:translate(-50%,-50%);
         width:36vw;height:36vw;pointer-events:none;z-index:0;
       }
+
+      /* ── MÓVIL ── */
+      @media (max-width: 768px) {
+        /* Pantalla de activación */
+        .tv-activate-logo { width:40vw !important; }
+        .tv-activate-title { font-size:4.5vw !important; letter-spacing:.08em !important; }
+        .tv-activate-btn { font-size:4.5vw !important; padding:2.5vh 8vw !important; border-radius:2vw !important; }
+        .tv-activate-sub { font-size:3vw !important; }
+        /* Header */
+        .tv-header { height:auto !important; padding:1.5vh 4vw !important; }
+        .tv-clock { font-size:9vw !important; }
+        .tv-date { font-size:3vw !important; }
+        .tv-brand-name { font-size:2.8vw !important; letter-spacing:.1em !important; }
+        .tv-brand-dot { width:2vw !important; height:2vw !important; }
+        /* KPI strip: 2x2 en lugar de 1x4 */
+        .tv-kpi-strip { grid-template-columns:repeat(2,1fr) !important; }
+        .tv-kpi { padding:1.5vh 4vw !important; gap:2.5vw !important; border-right:none !important; border-bottom:1px solid rgba(255,255,255,.08); }
+        .tv-kpi:nth-child(1),.tv-kpi:nth-child(3) { border-right:1px solid rgba(255,255,255,.08) !important; }
+        .tv-kpi-num { font-size:10vw !important; }
+        .tv-kpi-label { font-size:2.8vw !important; }
+        /* Ocultar panel derecho */
+        .tv-panel-right { display:none !important; }
+        /* Tabla: ocultar columnas Técnico y Tiempo */
+        .tv-thead th:nth-child(3),
+        .tv-thead th:nth-child(4),
+        .tv-tbody tr td:nth-child(3),
+        .tv-tbody tr td:nth-child(4) { display:none !important; }
+        .tv-col-placa  { width:22% !important; }
+        .tv-col-etapas { width:52% !important; }
+        .tv-col-entrega{ width:12% !important; }
+        .tv-col-estado { width:14% !important; }
+        /* Tamaños de texto tabla */
+        .tv-thead th { font-size:2.5vw !important; padding:.5vh 1.5vw !important; }
+        .tv-tbody td  { padding:1vh 1.5vw !important; }
+        .tv-placa  { font-size:5vw !important; letter-spacing:.02em !important; }
+        .tv-vehiculo { font-size:2.5vw !important; }
+        .chip { font-size:2.5vw !important; padding:.3vh 1vw !important; border-radius:.5vw !important; gap:.4vw !important; }
+        .chip-dot { width:1.5vw !important; height:1.5vw !important; }
+        .tv-entrega-chip { font-size:2.8vw !important; }
+        .tv-badge { font-size:2.5vw !important; padding:.3vh 1vw !important; border-radius:.5vw !important; }
+        .tv-watermark { width:80vw !important; height:80vw !important; }
+      }
     `;
     document.head.appendChild(st);
   }
