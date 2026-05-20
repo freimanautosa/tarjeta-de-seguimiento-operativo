@@ -15,7 +15,7 @@ function montarApp() {
   };
 
   document.getElementById('sb-nombre').textContent = sesion.nombre;
-  document.getElementById('sb-avatar').innerHTML = '<img src="logoFreimanpfp.png" style="width:100%;height:100%;object-fit:contain;border-radius:50%">';
+  document.getElementById('sb-avatar').innerHTML = '<img src="icons/logoFreimanpfp.png" style="width:100%;height:100%;object-fit:contain;border-radius:50%">';
   document.getElementById('sb-rol').textContent = rolLabels[sesion.perfil] || sesion.perfil;
 
   const capEl = document.getElementById('sidebar-capacidad');
@@ -45,3 +45,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => console.log('Service Worker registrado:', reg.scope))
+      .catch(err => console.warn('Error al registrar Service Worker:', err));
+  });
+}

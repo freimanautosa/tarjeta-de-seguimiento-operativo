@@ -328,7 +328,7 @@ function _mostrarPantallaActivacion() {
 
   cont.innerHTML = `
     <div class="tv-activate-screen" id="tv-activate-screen">
-      <img src="Logo_Fondo_Taller.png" class="tv-activate-logo" alt="">
+      <img src="icons/Logo_Fondo_Taller.png" class="tv-activate-logo" alt="">
       <div class="tv-activate-title">Freimanautos · Sistema Operativo</div>
       <button class="tv-activate-btn" onclick="_activarPantallaTaller()">
         ▶ &nbsp; Iniciar pantalla del taller
@@ -682,7 +682,7 @@ async function cargarPantallaTaller() {
       </div>
 
       <div class="tv-watermark">
-        <img src="Logo_Fondo_Taller.png"
+        <img src="icons/Logo_Fondo_Taller.png"
           style="width:100%;height:100%;object-fit:contain;opacity:0.04;filter:grayscale(1) brightness(3)" alt="">
       </div>
     `;
