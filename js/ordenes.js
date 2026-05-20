@@ -2860,6 +2860,11 @@ async function generarPreliquidacion(ordenId) {
     <div>
       <div style="font-size:24px;font-weight:800;color:#1E3A5F;letter-spacing:1px">FREIMANAUTOS</div>
       <div style="font-size:11px;color:#94A3B8;margin-top:3px">Simplemente profesional</div>
+      <div style="font-size:10px;color:#64748B;margin-top:6px;line-height:1.7">
+        NIT: 800.012.186 &nbsp;·&nbsp; Calle 98A # 68D – 15<br>
+        Tel: 320 902 5804<br>
+        freimanautossa@yahoo.com &nbsp;·&nbsp; freimanautosgerencia@yahoo.com
+      </div>
     </div>
     <div style="text-align:right">
       <div style="font-size:18px;font-weight:700;color:#1E3A5F">PRELIQUIDACIÓN</div>
@@ -2936,7 +2941,7 @@ async function generarPreliquidacion(ordenId) {
 
   <!-- NOTA -->
   <div style="margin-top:32px;border-top:1px solid #E2E8F0;padding-top:14px;font-size:10px;color:#94A3B8;display:flex;justify-content:space-between">
-    <span>Freimanautos · Sistema Operativo · Documento preliminar — no constituye factura</span>
+    <span>FREIMANAUTOS · NIT 800.012.186 · Calle 98A # 68D – 15 · Tel: 320 902 5804 · Documento preliminar — no constituye factura</span>
     <span>Generado el ${new Date().toLocaleString('es-CO')}</span>
   </div>
 
