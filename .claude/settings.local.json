@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(anthropic-skills:emil-design-eng)",
+      "Skill(anthropic-skills:emil-design-eng:*)",
+      "Skill(anthropic-skills:design-taste-frontend)",
+      "Skill(anthropic-skills:design-taste-frontend:*)",
+      "Bash(python3 -c ' *)",
+      "Skill(anthropic-skills:impeccable)",
+      "Skill(anthropic-skills:impeccable:*)",
+      "Bash(node .claude/skills/impeccable/scripts/load-context.mjs)"
+    ]
+  }
+}

@@ -43,7 +43,7 @@ async function cargarOrdenesCliente() {
     const ordenes = await api(`/ordenes?cliente_id=eq.${sesion.id}&order=creado_en.desc`) || [];
     if (!ordenes.length) {
       cont.innerHTML = `<div class="empty-state">
-        <div class="empty-state-icon">🚗</div>
+        <div class="empty-state-icon">${ico('car', 32)}</div>
         <p style="font-size:16px;font-weight:600;color:var(--texto);margin-bottom:6px">No tienes órdenes registradas</p>
         <p>Usted no cuenta con órdenes registradas en el sistema.<br>Si crees que es un error, comunícate con el taller.</p>
       </div>`;
@@ -123,7 +123,7 @@ async function cargarOrdenesCliente() {
           ${orden.cotizacion_url ? `
           <div style="margin-bottom:16px;padding:12px 14px;background:var(--gris-bg);border-radius:8px;border:1px solid var(--gris-borde);display:flex;align-items:center;justify-content:space-between">
             <div>
-              <div style="font-size:12px;font-weight:600;color:var(--texto)">📄 Cotización</div>
+              <div style="font-size:12px;font-weight:600;color:var(--texto);display:flex;align-items:center;gap:5px">${ico('file',13)} Cotización</div>
               <div style="font-size:11px;color:var(--gris-mid);margin-top:2px">Documento de tu vehículo</div>
             </div>
             <a href="${safeUrl(orden.cotizacion_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size:12px">Ver PDF →</a>

@@ -30,7 +30,7 @@ function renderCotizaciones(data) {
   const lista = document.getElementById('cot-lista');
   if (!lista) return;
   if (!data.length) {
-    lista.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📄</div><p>No hay cotizaciones.</p></div>';
+    lista.innerHTML = `<div class="empty-state"><div class="empty-state-icon">${ico('file', 32)}</div><p>No hay cotizaciones.</p></div>`;
     return;
   }
   const fmt = n => n != null ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n) : '—';

@@ -27,7 +27,7 @@ async function cargarOrdenes() {
   try {
     const data = await api(`/ordenes?estado=eq.${filtroEstado}${filtroEstado==='Activa'?'&pulmon=eq.false':''}&order=creado_en.desc&limit=60`);
     if (!data?.length) {
-      lista.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div>No hay órdenes ${filtroEstado.toLowerCase()}s.</div>`;
+      lista.innerHTML = `<div class="empty-state"><div class="empty-state-icon">${ico('clipboard', 32)}</div>No hay órdenes ${filtroEstado.toLowerCase()}s.</div>`;
       return;
     }
     const ids = data.map(o => o.id).join(',');
@@ -300,7 +300,7 @@ async function abrirOrden(id) {
           '</div>';
         }).join('') + '</div>'
       : '<div class="empty-state">' +
-          '<div class="empty-state-icon">🔧</div>' +
+          `<div class="empty-state-icon">${ico('wrench', 32)}</div>` +
           '<p>No hay etapas registradas aún.</p>' +
           '<button class="btn btn-primary" style="margin-top:14px" onclick="abrirModalAgregar()">+ Asignar servicios y etapas</button>' +
         '</div>';
@@ -416,7 +416,7 @@ async function abrirOrden(id) {
               </div>
               <div class="upload-zone" onclick="document.getElementById('fi-cotizacion').click()">
                 <input type="file" id="fi-cotizacion" accept=".pdf,application/pdf" onchange="subirCotizacion(this)">
-                <div style="font-size:16px">📄</div>
+                <div style="opacity:0.45">${ico('file', 20)}</div>
                 <p>${orden.cotizacion_url ? 'Reemplazar PDF' : 'Subir PDF'}</p>
                 <div class="upload-prog" id="prog-cotizacion"></div>
               </div>
@@ -501,7 +501,7 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
       </div>
       <div class="novedad-motivo">${escapeHtml(n.motivo)||'—'}</div>
       <div class="novedad-resp">Resp: ${escapeHtml(n.responsable)||'—'}</div>
-      ${n.valor ? '<div style="font-size:12px;font-weight:600;color:var(--rojo);margin-top:3px">💰 Valor adicional: ' + new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n.valor) + '</div>' : ''}
+      ${n.valor ? '<div style="font-size:12px;font-weight:600;color:var(--rojo);margin-top:3px;display:flex;align-items:center;gap:4px">' + ico('money',12) + ' Valor adicional: ' + new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n.valor) + '</div>' : ''}
     </div>`).join('')
     : '<div style="font-size:12px;color:var(--gris-mid);padding:4px 0">Sin novedades.</div>';
 
@@ -510,7 +510,7 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
       <div class="etapa-header" onclick="toggleEtapa('eb-${k}')">
         <div style="flex:1;min-width:0">
           <div class="etapa-nombre">${escapeHtml(nombre)}${e.tercero?` <span style="font-size:11px;color:var(--gris-mid);font-weight:400">(${escapeHtml(e.tercero)})</span>`:''}</div>
-          ${e.tecnico||e.mecanico_id ? `<div class="etapa-tecnico">👤 ${escapeHtml(e.tecnico)||'Asignado'}</div>` : ''}
+          ${e.tecnico||e.mecanico_id ? `<div class="etapa-tecnico">${ico('user',12)} ${escapeHtml(e.tecnico)||'Asignado'}</div>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
           ${ultimaAprob ? `<span class="badge badge-${ultimaAprob.estado}">${ultimaAprob.estado==='aprobado'?'✓ Aprobada':'✗ Rechazada'}</span>` : ''}
@@ -562,7 +562,7 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
           <div class="fotos-grid" style="margin-top:6px">${fotosHtml}</div>
           <div class="upload-zone" onclick="document.getElementById('fi-${k}').click()" style="margin-top:8px">
             <input type="file" id="fi-${k}" accept="image/*" multiple data-nombre="${escapeHtml(nombre)}" data-eid="${eid}" data-k="${k}" onchange="subirFotos(this,this.dataset.nombre,+this.dataset.eid,this.dataset.k)">
-            <div style="font-size:18px">📷</div>
+            <div style="opacity:0.45">${ico('camera', 20)}</div>
             <p>Clic para subir fotos</p>
             <div class="upload-prog" id="prog-${k}"></div>
           </div>
@@ -919,12 +919,12 @@ async function ocrTarjetaPropiedad(input) {
 
     if (estado) {
       if (encontrados.length) {
-        estado.innerHTML = `✅ Datos extraídos: <strong>${encontrados.join(', ')}</strong>. Revisa y corrige si es necesario.`;
+        estado.innerHTML = `${ico('check',14)} Datos extraídos: <strong>${encontrados.join(', ')}</strong>. Revisa y corrige si es necesario.`;
         estado.style.background = 'var(--verde-bg)';
         estado.style.borderColor = 'var(--verde)';
         estado.style.color = 'var(--verde)';
       } else {
-        estado.innerHTML = '⚠️ No se pudieron extraer datos. La imagen puede estar borrosa o mal enfocada. Intenta con mejor iluminación.';
+        estado.innerHTML = ico('warning',14) + ' No se pudieron extraer datos. La imagen puede estar borrosa o mal enfocada. Intenta con mejor iluminación.';
         estado.style.background = '#FEF3C7';
         estado.style.borderColor = '#FDE68A';
         estado.style.color = '#92400E';
@@ -932,7 +932,7 @@ async function ocrTarjetaPropiedad(input) {
     }
   } catch(e) {
     if (estado) {
-      estado.innerHTML = '❌ Error al leer la tarjeta: ' + e.message;
+      estado.innerHTML = ico('x',14) + ' Error al leer la tarjeta: ' + e.message;
       estado.style.background = 'var(--rojo-bg,#FEE2E2)';
     }
     console.error('OCR error:', e);
@@ -1165,12 +1165,6 @@ function toggleServicio(srv) {
   } else {
     srvSeleccionados.push(srv);
   }
-  const cont = document.getElementById('srv-descripciones');
-  if (cont) cont.style.display = srvSeleccionados.length ? 'block' : 'none';
-  ['latoneria', 'pintura', 'mecanica', 'adicionales'].forEach(s => {
-    const el = document.getElementById('srv-desc-' + s);
-    if (el) el.style.display = srvSeleccionados.includes(s) ? 'grid' : 'none';
-  });
 }
 
 function modalNext() {
@@ -1211,9 +1205,12 @@ function modalBack() {
   modalPaso = 1;
 }
 
+const ROLES_EXCLUIR = ['taller', 'repuestos', 'Asesor Previsora'];
+
 function buildChecklist(containerId, servicios, existentes) {
   const container = document.getElementById(containerId);
   if (!container) return;
+  const mecElegibles = mecanicos.filter(m => !ROLES_EXCLUIR.includes(m.rol));
   container.innerHTML = servicios.map(srvKey => {
     const srv = CATALOGO[srvKey];
     if (!srv) return '';
@@ -1226,18 +1223,7 @@ function buildChecklist(containerId, servicios, existentes) {
       const extraHtml = (et.tot || et.otro) ? `<div class="extra-input${checked ? ' show' : ''}" id="extra-${et.key}">
         <input type="text" placeholder="${et.tot ? '¿Quién es el tercero?' : 'Especifica cuál...'}" style="font-size:13px;margin-top:4px">
       </div>` : '';
-      // Filtrar técnicos según el servicio
-      const ROLES_POR_SERVICIO = {
-        latoneria:   m => ['Tecnico Latoneria','T.O.T','prueba'].includes(m.rol) || (!m.rol),
-        pintura:     m => ['Tecnico Pintura','T.O.T','prueba'].includes(m.rol) || (!m.rol),
-        mecanica:    m => ['Tecnico Mecanico','T.O.T','prueba'].includes(m.rol) || (!m.rol),
-        adicionales: m => !['taller','repuestos','Asesor Previsora'].includes(m.rol),
-      };
-      const ROLES_EXCLUIR_SIEMPRE = ['taller','repuestos','Asesor Previsora'];
-      const filtroSrv = ROLES_POR_SERVICIO[srvKey];
-      const mecsFiltrados = mecanicos.filter(m =>
-        filtroSrv ? filtroSrv(m) : !ROLES_EXCLUIR_SIEMPRE.includes(m.rol)
-      );
+      const mecsFiltrados = mecElegibles;
       const mecHtml = !iniciada ? `<div class="mec-select-wrap" id="mec-${et.key}" style="margin-top:6px;display:${checked ? 'block' : 'none'}">
         <select id="mec-sel-${et.key}" style="font-size:13px">
           <option value="">— Asignar técnico * —</option>
@@ -1282,18 +1268,6 @@ function onChkChange(key, checked) {
   }
   const camposDiv = document.getElementById('campos-' + key);
   if (camposDiv) camposDiv.style.display = checked ? 'block' : 'none';
-  if (document.getElementById('modal-agregar')?.classList.contains('show')) {
-    actualizarDescripcionesAgregar();
-  }
-}
-
-function actualizarDescripcionesAgregar() {
-  const etapas = recogerChecklist('checklist-agregar');
-  const srvActivos = [...new Set(etapas.map(e => e.servicio).filter(Boolean))];
-  ['latoneria', 'pintura', 'mecanica', 'adicionales'].forEach(s => {
-    const div = document.getElementById('agregar-desc-' + s);
-    if (div) div.style.display = srvActivos.includes(s) ? 'grid' : 'none';
-  });
 }
 
 function recogerChecklist(containerId) {
@@ -1331,18 +1305,12 @@ async function guardarEtapasNueva() {
   const sinValor = etapas.filter(et => et.valor == null || et.valor === '');
   if (sinValor.length) { toast(`Ingresa el valor de: ${sinValor.map(e => e.nombre).join(', ')}`, 'err'); return; }
   try {
-    const descripciones = {
-      latoneria: document.getElementById('desc-latoneria')?.value?.trim() || null,
-      pintura: document.getElementById('desc-pintura')?.value?.trim() || null,
-      mecanica: document.getElementById('desc-mecanica')?.value?.trim() || null,
-      adicionales: document.getElementById('desc-adicionales')?.value?.trim() || null,
-    };
     for (const et of etapas) {
       const mec = mecanicos.find(m => m.id === et.mecanico_id);
-      await api('/etapas', 'POST', { 
-        orden_id: modalOrdenId, servicio: et.servicio, etapa_key: et.key, etapa: et.nombre, 
-        tercero: et.tercero || null, mecanico_id: et.mecanico_id || null, tecnico: mec?.nombre || null, 
-        descripcion: et.descripcion || descripciones[et.servicio] || null,
+      await api('/etapas', 'POST', {
+        orden_id: modalOrdenId, servicio: et.servicio, etapa_key: et.key, etapa: et.nombre,
+        tercero: et.tercero || null, mecanico_id: et.mecanico_id || null, tecnico: mec?.nombre || null,
+        descripcion: et.descripcion || null,
         horas_estimadas: et.horas_estimadas || null,
         valor: et.valor || null
       }, { Prefer: 'return=minimal' });
@@ -1392,9 +1360,11 @@ async function guardarEtapasNueva() {
 // ============================================================
 async function abrirModalAgregar() {
   if (!ordenActual) return;
-  const existentes = await api(`/etapas?orden_id=eq.${ordenActual.id}&order=creado_en.asc`).catch(() => []) || [];
-  const todos = Object.keys(CATALOGO);
-  buildChecklist('checklist-agregar', todos, existentes);
+  const [existentes] = await Promise.all([
+    api(`/etapas?orden_id=eq.${ordenActual.id}&order=creado_en.asc`).catch(() => []),
+    cargarMecanicos(),
+  ]);
+  buildChecklist('checklist-agregar', Object.keys(CATALOGO), existentes || []);
   const modal = document.getElementById('modal-agregar');
   if (modal) modal.classList.add('show');
 }
@@ -2166,7 +2136,7 @@ async function abrirCalModal(ordenId) {
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
         <div style="flex:1">
           <div style="font-size:13px;color:var(--gris-mid)">${[orden.marca,orden.linea,orden.modelo].filter(Boolean).map(escapeHtml).join(' ')||'—'}</div>
-          <div style="font-size:12px;color:var(--gris-mid);margin-top:2px">${orden.aseguradora?'🏢 '+escapeHtml(orden.aseguradora):''}</div>
+          <div style="font-size:12px;color:var(--gris-mid);margin-top:2px;display:flex;align-items:center;gap:4px">${orden.aseguradora?ico('building',12)+' '+escapeHtml(orden.aseguradora):''}</div>
         </div>
         <div style="text-align:right">
           <div style="font-size:28px;font-weight:700;font-family:'DM Mono',monospace;color:${pct===100?'var(--verde)':'var(--azul)'}">${pct}%</div>
@@ -2184,7 +2154,7 @@ async function abrirCalModal(ordenId) {
         ${totalVal ? `<div class="info-chip"><div class="info-chip-label">Valor MO</div><div class="info-chip-val" style="color:var(--verde);font-weight:700">${fmt(totalVal)}</div></div>` : ''}
       </div>
       ${activa ? `<div style="padding:10px 14px;background:var(--azul-light);border-radius:6px;margin-bottom:10px;font-size:13px">
-        <span style="color:var(--gris-mid)">Etapa actual:</span> <strong>${escapeHtml(activa.etapa)}</strong>${activa.tecnico?` · 👤 ${escapeHtml(activa.tecnico)}`:''}
+        <span style="color:var(--gris-mid)">Etapa actual:</span> <strong>${escapeHtml(activa.etapa)}</strong>${activa.tecnico?` · ${ico('user',12)} ${escapeHtml(activa.tecnico)}`:''}
       </div>` : ''}
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         ${srvs.map(s=>`<span style="background:${srvColor[s]||'#6B7280'}15;color:${srvColor[s]||'#6B7280'};border:1px solid ${srvColor[s]||'#6B7280'}30;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">${CATALOGO[s]?.nombre||s}</span>`).join('')}
@@ -2242,7 +2212,7 @@ async function abrirOrdenMecanico(id) {
       const novsHtml = eNovs.length ? eNovs.map(n=>`<div class="novedad-item">
         <div class="novedad-item-top"><span class="novedad-tipo ${escapeHtml((n.tipo||'').toLowerCase())}">${escapeHtml(n.tipo)}</span><span class="novedad-fecha">${formatTS(n.creado_en)}</span></div>
         <div class="novedad-motivo">${escapeHtml(n.motivo)||'—'}</div>
-        ${n.valor?`<div style="font-size:12px;font-weight:600;color:var(--rojo);margin-top:2px">💰 ${new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n.valor)}</div>`:''}
+        ${n.valor?`<div style="font-size:12px;font-weight:600;color:var(--rojo);margin-top:2px;display:flex;align-items:center;gap:4px">${ico('money',12)} ${new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n.valor)}</div>`:''}
       </div>`).join('') : '<div style="font-size:12px;color:var(--gris-mid)">Sin novedades.</div>';
 
       return `<div class="etapa-card" style="margin-bottom:12px">
@@ -2263,7 +2233,7 @@ async function abrirOrdenMecanico(id) {
             <div class="fotos-grid" style="margin-top:6px">${fotosHtml}</div>
             <div class="upload-zone" onclick="document.getElementById('mec-fi2-${k}').click()" style="margin-top:8px">
               <input type="file" id="mec-fi2-${k}" accept="image/*" multiple data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa||'')}" data-oid="${id}" onchange="mecSubirFotos(this,+this.dataset.eid,this.dataset.etapa,+this.dataset.oid)">
-              <div style="font-size:18px">📷</div><p>Subir fotos</p>
+              <div style="opacity:0.45">${ico('camera', 20)}</div><p>Subir fotos</p>
               <div class="upload-prog" id="mec-prog2-${k}"></div>
             </div>
           </div>
@@ -2620,7 +2590,7 @@ async function guardarEdicionOrden() {
   }
 }
 // ── Combustible (dropdown en inventario) ─────────────────────
-const _COMB_LABELS = { vacio:'⬜ Vacío', '1/4':'🟥 1/4', '1/2':'🟨 1/2', '3/4':'🟩 3/4', lleno:'🟦 Lleno' };
+const _COMB_LABELS = { vacio:'Vacío', '1/4':'1/4 tanque', '1/2':'1/2 tanque', '3/4':'3/4 tanque', lleno:'Lleno' };
 
 function abrirDropdownCombustible(e, el) {
   e.stopPropagation();
@@ -2639,7 +2609,7 @@ function seleccionarCombustible(valor) {
   const label  = document.getElementById('inv-combustible-label');
   const hidden = document.getElementById('n-combustible-val');
   if (hidden) hidden.value = valor;
-  if (label)  label.textContent = _COMB_LABELS[valor] || '⛽ Combustible';
+  if (label)  label.textContent = _COMB_LABELS[valor] || 'Combustible';
   if (item)   item.classList.add('checked');
   document.getElementById('comb-dropdown')?.classList.remove('open');
 }
@@ -2662,7 +2632,7 @@ function resetNuevaOrden() {
   const _ci = document.getElementById('inv-combustible-item');
   const _cl = document.getElementById('inv-combustible-label');
   if (_ci) _ci.classList.remove('checked');
-  if (_cl) _cl.textContent = '⛽ Combustible';
+  if (_cl) _cl.textContent = 'Combustible';
   document.querySelectorAll('.tipo-cliente-btn.selected').forEach(el => el.classList.remove('selected'));
   ['n-wrap-particular','n-wrap-aseg','n-wrap-flot','n-wrap-empresa'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = 'none';

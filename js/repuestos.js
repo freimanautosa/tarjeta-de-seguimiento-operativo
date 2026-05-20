@@ -376,7 +376,7 @@ async function cargarSolicitudesRepuestos() {
                   ${escapeHtml(o.placa)} · ${[o.marca,o.linea,o.modelo].filter(Boolean).map(escapeHtml).join(' ')} · OT#${s.orden_id}
                   ${o.vin ? `<br><span style="color:var(--gris-mid)">VIN: ${escapeHtml(o.vin)}</span>` : ''}
                 </div>` : ''}
-                ${s.nota_jefe ? `<div style="font-size:12px;background:var(--gris-bg);padding:6px 10px;border-radius:6px;border-left:3px solid var(--azul);margin-top:6px">📝 ${escapeHtml(s.nota_jefe)}</div>` : ''}
+                ${s.nota_jefe ? `<div style="font-size:12px;background:var(--gris-bg);padding:6px 10px;border-radius:6px;border-left:3px solid var(--azul);margin-top:6px;display:flex;align-items:flex-start;gap:5px">${ico('edit',13)} <span>${escapeHtml(s.nota_jefe)}</span></div>` : ''}
               </div>
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
                 <span class="badge ${s.estado==='entregado'?'badge-completada':s.estado==='pedido'?'badge-iniciada':'badge-cotizada'}">${

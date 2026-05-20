@@ -46,8 +46,8 @@ function montarReportes() {
           Reporte completo del mes en curso con métricas de eficiencia y productividad.
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="generarReporte('mes',null,null,'pdf')" style="flex:1;font-size:12px">📄 PDF</button>
-          <button class="btn btn-primary btn-sm" onclick="generarReporte('mes',null,null,'excel')" style="flex:1;font-size:12px">📊 Excel</button>
+          <button class="btn btn-outline btn-sm" onclick="generarReporte('mes',null,null,'pdf')" style="flex:1;font-size:12px">${ico('file',13)} PDF</button>
+          <button class="btn btn-primary btn-sm" onclick="generarReporte('mes',null,null,'excel')" style="flex:1;font-size:12px">${ico('chart',13)} Excel</button>
         </div>
       </div>
 
@@ -61,8 +61,8 @@ function montarReportes() {
           Consolidado anual con evolución mensual, tendencias y comparativos.
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="generarReporte('anio',null,null,'pdf')" style="flex:1;font-size:12px">📄 PDF</button>
-          <button class="btn btn-primary btn-sm" onclick="generarReporte('anio',null,null,'excel')" style="flex:1;font-size:12px">📊 Excel</button>
+          <button class="btn btn-outline btn-sm" onclick="generarReporte('anio',null,null,'pdf')" style="flex:1;font-size:12px">${ico('file',13)} PDF</button>
+          <button class="btn btn-primary btn-sm" onclick="generarReporte('anio',null,null,'excel')" style="flex:1;font-size:12px">${ico('chart',13)} Excel</button>
         </div>
       </div>
 
@@ -77,8 +77,8 @@ function montarReportes() {
           <div class="field"><label style="font-size:11px">Hasta</label><input type="date" id="rep-sem-fin" value="${hoy}" max="${hoy}"></div>
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="generarReporte('rango',document.getElementById('rep-sem-ini').value,document.getElementById('rep-sem-fin').value,'pdf')" style="flex:1;font-size:12px">📄 PDF</button>
-          <button class="btn btn-primary btn-sm" onclick="generarReporte('rango',document.getElementById('rep-sem-ini').value,document.getElementById('rep-sem-fin').value,'excel')" style="flex:1;font-size:12px">📊 Excel</button>
+          <button class="btn btn-outline btn-sm" onclick="generarReporte('rango',document.getElementById('rep-sem-ini').value,document.getElementById('rep-sem-fin').value,'pdf')" style="flex:1;font-size:12px">${ico('file',13)} PDF</button>
+          <button class="btn btn-primary btn-sm" onclick="generarReporte('rango',document.getElementById('rep-sem-ini').value,document.getElementById('rep-sem-fin').value,'excel')" style="flex:1;font-size:12px">${ico('chart',13)} Excel</button>
         </div>
       </div>
 
@@ -92,8 +92,8 @@ function montarReportes() {
           <div class="field"><label style="font-size:11px">Selecciona el día</label><input type="date" id="rep-dia" value="${hoy}" max="${hoy}"></div>
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="generarReporte('dia',document.getElementById('rep-dia').value,null,'pdf')" style="flex:1;font-size:12px">📄 PDF</button>
-          <button class="btn btn-primary btn-sm" onclick="generarReporte('dia',document.getElementById('rep-dia').value,null,'excel')" style="flex:1;font-size:12px">📊 Excel</button>
+          <button class="btn btn-outline btn-sm" onclick="generarReporte('dia',document.getElementById('rep-dia').value,null,'pdf')" style="flex:1;font-size:12px">${ico('file',13)} PDF</button>
+          <button class="btn btn-primary btn-sm" onclick="generarReporte('dia',document.getElementById('rep-dia').value,null,'excel')" style="flex:1;font-size:12px">${ico('chart',13)} Excel</button>
         </div>
       </div>
 
@@ -424,7 +424,7 @@ function _generarPDF(d, titulo, subtitulo) {
 
   <!-- ANÁLISIS POR SERVICIO -->
   <div class="section">
-    <div class="section-title">📊 Análisis por servicio</div>
+    <div class="section-title">Análisis por servicio</div>
     <table>
       <thead><tr>
         <th>Servicio</th><th>Etapas</th><th>Ingresos</th>
@@ -452,7 +452,7 @@ function _generarPDF(d, titulo, subtitulo) {
 
   <!-- CUELLOS DE BOTELLA -->
   <div class="section">
-    <div class="section-title">🔴 Cuellos de botella — etapas con mayor duración promedio</div>
+    <div class="section-title">Cuellos de botella — etapas con mayor duración promedio</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
       <div>
         ${cuellos.slice(0,5).map((c,i) => {
@@ -482,7 +482,7 @@ function _generarPDF(d, titulo, subtitulo) {
 
   <!-- EFICIENCIA POR TÉCNICO -->
   <div class="section">
-    <div class="section-title">👷 Rendimiento por técnico</div>
+    <div class="section-title">Rendimiento por técnico</div>
     <div style="font-size:10px;color:#888;margin-bottom:10px;font-style:italic">
       * Los tiempos estimados provienen del campo horas_estimadas por etapa. 
       La eficiencia estimada compara el tiempo real vs el estimado (>100% = más rápido que lo previsto).
@@ -517,7 +517,7 @@ function _generarPDF(d, titulo, subtitulo) {
 
   <!-- NOVEDADES -->
   <div class="section">
-    <div class="section-title">⚠️ Novedades y detenciones</div>
+    <div class="section-title">Novedades y detenciones</div>
     <div class="nov-grid">
       <div class="nov-box" style="background:#fee2e2">
         <div class="nov-val" style="color:#DC2626">${resumen.novPorTipo.Detenido||0}</div>
@@ -548,7 +548,7 @@ function _generarPDF(d, titulo, subtitulo) {
 
   <!-- DETALLE DE ÓRDENES ENTREGADAS -->
   ${ordenesDetalle.length ? `<div class="section">
-    <div class="section-title">📦 Órdenes entregadas — detalle de ciclo</div>
+    <div class="section-title">Órdenes entregadas — detalle de ciclo</div>
     <table>
       <thead><tr>
         <th>Placa</th><th>Vehículo</th><th>Propietario</th><th>Aseguradora</th>

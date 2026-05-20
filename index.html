@@ -99,7 +99,7 @@
       <!-- PÁGINAS (contenedores vacíos, JS llena el contenido) -->
       <div class="pagina" id="pag-dashboard">
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-    <button class="filtro-btn active" id="dash-tab-mes" onclick="switchDashTab('mes')">📅 Mes actual</button>
+    <button class="filtro-btn active" id="dash-tab-mes" onclick="switchDashTab('mes')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Mes actual</button>
     <button class="filtro-btn" id="dash-tab-operativo" onclick="switchDashTab('operativo')">General</button>
     <button class="filtro-btn" id="dash-tab-financiero" onclick="switchDashTab('financiero')">Financiero</button>
     <button class="filtro-btn" id="dash-tab-metas" onclick="switchDashTab('metas')">Metas</button>
@@ -355,7 +355,7 @@
             <div class="fotos-grid" id="fotos-ingreso-preview"></div>
             <div class="upload-zone" onclick="document.getElementById('fi-ingreso').click()">
               <input type="file" id="fi-ingreso" accept="image/*" multiple onchange="agregarFotosIngreso(this)">
-              <div style="font-size:20px">📷</div>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;margin-bottom:2px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
               <p>Clic para agregar fotos de ingreso</p>
               <div class="upload-prog" id="prog-ingreso"></div>
             </div>
@@ -417,52 +417,31 @@
   <div class="modal">
     <div class="modal-header">
       <h2 id="modal-srv-titulo">Paso 1 — Servicios</h2>
-      <button class="btn btn-ghost btn-sm" onclick="cerrarModalServicios()">✕</button>
+      <button class="btn btn-ghost btn-sm" onclick="cerrarModalServicios()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-step active" id="paso-1">
         <p style="font-size:13px;color:var(--gris-mid);margin-bottom:16px">Selecciona los servicios que aplican para esta orden.</p>
         <div class="srv-grid-select">
           <div class="srv-card-select" id="srv-latoneria" onclick="toggleServicio('latoneria')">
-            <div class="srv-card-icon"></div>
+            <div class="srv-card-icon" style="background:#FEE2E2;color:#991B1B"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
             <div class="srv-card-name">Latonería</div>
             <div class="srv-card-desc">Enderezado, tapicería, vidriería</div>
           </div>
           <div class="srv-card-select" id="srv-pintura" onclick="toggleServicio('pintura')">
-            <div class="srv-card-icon"></div>
+            <div class="srv-card-icon" style="background:#FEF3C7;color:#92400E"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2 13.5V19a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.5"/><path d="M2 13.5C2 10.46 4.46 8 7.5 8H16a6 6 0 0 1 6 6v-0.5"/><path d="M9 8V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v3"/><circle cx="12" cy="16" r="2"/></svg></div>
             <div class="srv-card-name">Pintura</div>
             <div class="srv-card-desc">Preparación, pintura, pulida</div>
           </div>
           <div class="srv-card-select" id="srv-mecanica" onclick="toggleServicio('mecanica')">
-            <div class="srv-card-icon"></div>
+            <div class="srv-card-icon" style="background:#EBF2FF;color:#1E3A5F"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></div>
             <div class="srv-card-name">Mecánica</div>
             <div class="srv-card-desc">Mecánica, eléctrica</div>
           </div>
           <div class="srv-card-select" id="srv-adicionales" onclick="toggleServicio('adicionales')">
-            <div class="srv-card-icon"></div>
+            <div class="srv-card-icon" style="background:#E6F5EF;color:#0D7A4E"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
             <div class="srv-card-name">Adicionales</div>
             <div class="srv-card-desc">Polarizados, radio, lavado</div>
-          </div>
-        </div>
-        <div id="srv-descripciones" style="display:none;margin-top:18px;border-top:1px solid var(--gris-borde);padding-top:16px">
-          <div style="font-size:11px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px">Descripción del trabajo (opcional)</div>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <div id="srv-desc-latoneria" style="display:none;display:grid;grid-template-columns:90px 1fr;align-items:center;gap:10px">
-              <label style="font-size:12px;font-weight:600;color:var(--texto);text-align:right">Latonería</label>
-              <textarea id="desc-latoneria" style="height:34px;min-height:34px;font-size:13px;resize:vertical;padding:6px 10px;line-height:1.4"></textarea>
-            </div>
-            <div id="srv-desc-pintura" style="display:none;display:grid;grid-template-columns:90px 1fr;align-items:center;gap:10px">
-              <label style="font-size:12px;font-weight:600;color:var(--texto);text-align:right">Pintura</label>
-              <textarea id="desc-pintura" style="height:34px;min-height:34px;font-size:13px;resize:vertical;padding:6px 10px;line-height:1.4"></textarea>
-            </div>
-            <div id="srv-desc-mecanica" style="display:none;display:grid;grid-template-columns:90px 1fr;align-items:center;gap:10px">
-              <label style="font-size:12px;font-weight:600;color:var(--texto);text-align:right">Mecánica</label>
-              <textarea id="desc-mecanica" style="height:34px;min-height:34px;font-size:13px;resize:vertical;padding:6px 10px;line-height:1.4"></textarea>
-            </div>
-            <div id="srv-desc-adicionales" style="display:none;display:grid;grid-template-columns:90px 1fr;align-items:center;gap:10px">
-              <label style="font-size:12px;font-weight:600;color:var(--texto);text-align:right">Adicionales</label>
-              <textarea id="desc-adicionales" style="height:34px;min-height:34px;font-size:13px;resize:vertical;padding:6px 10px;line-height:1.4"></textarea>
-            </div>
           </div>
         </div>
         <div id="srv-error" style="display:none;margin-top:12px;font-size:13px;color:var(--rojo)">Selecciona al menos un servicio.</div>
@@ -485,7 +464,7 @@
   <div class="modal">
     <div class="modal-header">
       <h2>Agregar etapas</h2>
-      <button class="btn btn-ghost btn-sm" onclick="cerrarModalAgregar()">✕</button>
+      <button class="btn btn-ghost btn-sm" onclick="cerrarModalAgregar()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="modal-body">
       <p style="font-size:13px;color:var(--gris-mid);margin-bottom:16px">Las etapas ya iniciadas no pueden eliminarse.</p>
@@ -503,7 +482,7 @@
   <div class="modal" style="max-width:440px">
     <div class="modal-header">
       <h2 id="modal-aprob-titulo">Aprobación de calidad</h2>
-      <button class="btn btn-ghost btn-sm" onclick="cerrarModalAprobacion()">✕</button>
+      <button class="btn btn-ghost btn-sm" onclick="cerrarModalAprobacion()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="modal-body">
       <p style="font-size:13px;color:var(--gris-mid);margin-bottom:16px">Registra el resultado de la revisión de calidad para esta etapa.</p>
@@ -540,7 +519,7 @@
   <div class="modal" style="max-width:560px">
     <div class="modal-header">
       <h2>Editar datos de la orden</h2>
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-editar-orden').classList.remove('show')">✕</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-editar-orden').classList.remove('show')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="modal-body" id="modal-editar-body"></div>
     <div class="modal-footer">
@@ -551,7 +530,7 @@
 </div>
 <!-- LIGHTBOX -->
 <div id="lightbox">
-  <button id="lightbox-close" onclick="cerrarLightbox()">✕</button>
+  <button id="lightbox-close" onclick="cerrarLightbox()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   <img id="lightbox-img" src="" alt="">
 </div>
 

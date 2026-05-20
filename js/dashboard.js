@@ -373,7 +373,7 @@ async function cargarDashboard() {
                 <div class="proceso-orden-vehiculo">${[o?.marca, o?.linea].filter(Boolean).join(' ')||'—'}</div>
               </div>
               <div style="text-align:right;margin-left:auto">
-                ${e.tecnico ? `<div style="font-size:10px;color:var(--gris-mid)">👤 ${e.tecnico}</div>` : ''}
+                ${e.tecnico ? `<div style="font-size:10px;color:var(--gris-mid);display:flex;align-items:center;gap:3px">${ico('user',11)} ${e.tecnico}</div>` : ''}
                 <div style="font-size:10px;color:${dias >= 3 ? 'var(--rojo)' : 'var(--gris-mid)'};font-weight:${dias>=3?'700':'400'}">${dias}d</div>
               </div>
             </div>`;
@@ -387,7 +387,7 @@ async function cargarDashboard() {
             ${ets.length ? filasHtml + masHtml : '<div class="proceso-vacio">Sin carros</div>'}
           </div>`;
         }).join('')
-      : '<div class="empty-state"><div class="empty-state-icon">🔧</div><p>No hay etapas activas ahora.</p></div>';
+      : `<div class="empty-state"><div class="empty-state-icon">${ico('wrench', 32)}</div><p>No hay etapas activas ahora.</p></div>`;
 
     // ── Render ────────────────────────────────────────────
     cont.innerHTML = `
@@ -709,25 +709,25 @@ async function cargarDashboardFinanciero() {
       <!-- KPIs financieros -->
       <div class="dash-grid" style="margin-bottom:16px">
         <div class="dash-card">
-          <div class="dash-card-icon" style="background:#E6F5EF;color:#059669">💰</div>
+          <div class="dash-card-icon" style="background:#E6F5EF;color:#059669">${ico('money', 22)}</div>
           <div class="dash-card-val" style="color:var(--verde);font-size:20px">${fmt(wipTotal)}</div>
           <div class="dash-card-label">WIP — trabajo en proceso</div>
           <div class="dash-card-sub">MO: ${fmt(wipMO)} · Rep: ${fmt(wipRep)}</div>
         </div>
         <div class="dash-card">
-          <div class="dash-card-icon" style="background:#EBF2FF;color:#2563EB">📊</div>
+          <div class="dash-card-icon" style="background:#EBF2FF;color:#2563EB">${ico('chart', 22)}</div>
           <div class="dash-card-val" style="color:var(--azul);font-size:20px">${fmt(totalFacturado)}</div>
           <div class="dash-card-label">Total facturado (entregadas)</div>
           <div class="dash-card-sub">${ordenesEntregadas.length} órdenes entregadas</div>
         </div>
         <div class="dash-card">
-          <div class="dash-card-icon" style="background:#FEF3C7;color:#D97706">🎫</div>
+          <div class="dash-card-icon" style="background:#FEF3C7;color:#D97706">${ico('ticket', 22)}</div>
           <div class="dash-card-val" style="color:#D97706;font-size:20px">${fmt(ticketProm)}</div>
           <div class="dash-card-label">Ticket promedio por orden</div>
           <div class="dash-card-sub">Mano de obra + repuestos</div>
         </div>
         <div class="dash-card">
-          <div class="dash-card-icon" style="background:#FEE2E2;color:#DC2626">⚠️</div>
+          <div class="dash-card-icon" style="background:#FEE2E2;color:#DC2626">${ico('warning', 22)}</div>
           <div class="dash-card-val" style="color:var(--rojo)">${demoradas.length}</div>
           <div class="dash-card-label">Órdenes demoradas</div>
           <div class="dash-card-sub">>30% sobre promedio histórico</div>
@@ -736,17 +736,17 @@ async function cargarDashboardFinanciero() {
 
       <div class="dash-row-2" style="margin-bottom:16px">
         <div class="dash-panel">
-          <div class="dash-panel-titulo">⏱ Tiempo real vs estimado por servicio</div>
+          <div class="dash-panel-titulo">${ico('clock', 15)} Tiempo real vs estimado por servicio</div>
           ${tiempoSrvHtml}
         </div>
         <div class="dash-panel">
-          <div class="dash-panel-titulo">⚠️ Órdenes demoradas</div>
+          <div class="dash-panel-titulo">${ico('warning', 15)} Órdenes demoradas</div>
           ${demoradasHtml}
         </div>
       </div>
 
       <div class="dash-panel">
-        <div class="dash-panel-titulo">👤 Productividad por técnico</div>
+        <div class="dash-panel-titulo">${ico('user', 15)} Productividad por técnico</div>
         ${tecnicoHtml}
       </div>`;
   } catch(e) {

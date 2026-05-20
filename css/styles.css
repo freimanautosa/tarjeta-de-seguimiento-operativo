@@ -346,7 +346,8 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 /* DASHBOARD */
 .dash-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-bottom: 20px; }
 @media(min-width:600px){ .dash-grid { grid-template-columns: repeat(4,1fr); } }
-.dash-card { background: white; border: 1px solid var(--gris-borde); border-radius: 10px; padding: 18px; box-shadow: var(--shadow-sm); }
+.dash-card { background: white; border: 1px solid var(--gris-borde); border-radius: 10px; padding: 18px; box-shadow: var(--shadow-sm); transition: box-shadow 0.18s var(--ease-out), border-color 0.18s var(--ease-out), transform 0.18s var(--ease-out); }
+.dash-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); border-color: #D0D6E0; transform: translateY(-2px); }
 /* DRAG & DROP */
 .orden-card[draggable] { cursor: grab; }
 .orden-card[draggable]:active { cursor: grabbing; }
@@ -365,7 +366,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .proceso-col-header { padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--gris-borde); }
 .proceso-col-nombre { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; }
 .proceso-col-count { font-size: 12px; font-weight: 700; font-family: 'DM Mono', monospace; }
-.proceso-orden-row { padding: 8px 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--gris-borde); cursor: pointer; transition: background 0.1s; }
+.proceso-orden-row { padding: 8px 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--gris-borde); cursor: pointer; transition: background 0.15s; }
 .proceso-orden-row:last-child { border-bottom: none; }
 .proceso-orden-row:hover { background: var(--gris-bg); }
 .proceso-orden-placa { font-size: 12px; font-weight: 700; font-family: 'DM Mono', monospace; }
@@ -389,7 +390,12 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
    SECCIONES / PÁGINAS
 ═══════════════════════════════════════════════════════════ */
 .pagina { display: none; }
-.pagina.activa { display: block; }
+.pagina.activa { display: block; animation: pageIn 0.2s var(--ease-out); }
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 /* ═══════════════════════════════════════════════════════════
    COMPONENTES COMUNES
@@ -548,7 +554,13 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   width: 36px; height: 36px;
   font-size: 16px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.16s, transform 0.12s;
 }
+#lightbox-close:hover { background: rgba(255,255,255,0.28); }
+#lightbox-close:active { transform: scale(0.92); }
 
 /* MODAL */
 .modal-overlay {
@@ -578,7 +590,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   to   { opacity: 1; }
 }
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.96); }
+  from { opacity: 0; transform: scale(0.95); }
   to   { opacity: 1; transform: scale(1); }
 }
 .modal-header {
@@ -619,7 +631,8 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   font-size: 14px;
   line-height: 1.6;
 }
-.empty-state-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.35; }
+.empty-state-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.42; display:flex; justify-content:center; }
+.empty-state-icon svg { width: 32px; height: 32px; }
 .loading-state::after {
   content: '';
   display: block;
@@ -932,7 +945,8 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   margin-top: 10px;
   background: var(--gris-bg);
 }
-.upload-zone:hover { border-color: var(--azul); background: var(--azul-light); }
+.upload-zone:hover { border-color: var(--azul); background: var(--azul-light); color: var(--azul); }
+.upload-zone:hover svg { stroke: var(--azul); }
 .upload-zone input { display: none; }
 .upload-zone p { font-size: 12px; color: var(--gris-mid); margin-top: 3px; }
 .upload-prog { font-size: 11px; color: var(--gris-mid); font-family: 'DM Mono', monospace; margin-top: 4px; min-height: 14px; }
@@ -985,7 +999,9 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   cursor: pointer;
   user-select: none;
   gap: 10px;
+  transition: background 0.13s;
 }
+.etapa-header:hover { background: #ECEEF2; }
 .etapa-nombre { font-weight: 600; font-size: 13px; flex: 1; }
 .etapa-tecnico { font-size: 11px; color: var(--gris-mid); margin-top: 1px; }
 .etapa-body { padding: 16px; display: none; }
@@ -1111,7 +1127,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 }
 .srv-card-select:hover { border-color: #9AA3B0; }
 .srv-card-select.selected { border-color: var(--azul); background: var(--azul-light); }
-.srv-card-icon { font-size: 24px; margin-bottom: 8px; }
+.srv-card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; flex-shrink: 0; }
 .srv-card-name { font-weight: 700; font-size: 14px; color: var(--texto); }
 .srv-card-desc { font-size: 12px; color: var(--gris-mid); margin-top: 2px; }
 .etapas-grupo { margin-bottom: 18px; }
@@ -1288,7 +1304,9 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   border: 1.5px solid var(--gris-borde);
   border-radius: var(--radio);
   padding: 20px;
+  transition: box-shadow 0.2s var(--ease-out);
 }
+.dash-panel:hover { box-shadow: var(--shadow-sm); }
 .dash-panel-titulo {
   display: flex;
   align-items: center;
@@ -1311,7 +1329,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 }
 .dash-tiempo-label { font-size: 12px; font-weight: 700; }
 .dash-tiempo-bar-wrap { height: 20px; background: var(--gris-bg); border-radius: 4px; overflow: hidden; }
-.dash-tiempo-bar { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+.dash-tiempo-bar { height: 100%; border-radius: 4px; transition: width 0.6s var(--ease-out); }
 .dash-tiempo-val { font-size: 12px; font-weight: 700; text-align: right; }
 .dash-tiempo-n { font-size: 10px; color: var(--gris-mid); text-align: right; }
 
@@ -1355,7 +1373,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   width: 10px;
   border-radius: 3px 3px 0 0;
   min-height: 2px;
-  transition: height 0.5s ease;
+  transition: height 0.5s var(--ease-out);
 }
 .dash-bar-label { font-size: 10px; color: var(--gris-mid); font-family: 'DM Mono', monospace; }
 

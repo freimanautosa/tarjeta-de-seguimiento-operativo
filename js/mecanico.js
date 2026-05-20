@@ -67,7 +67,7 @@ async function cargarEtapasMecanico() {
   try {
     const etapas = await api(`/etapas?mecanico_id=eq.${sesion.id}&order=creado_en.asc`) || [];
     if (!etapas.length) {
-      cont.innerHTML = `<div class="empty-state"><div class="empty-state-icon">✅</div><p>No tienes etapas asignadas por el momento.</p></div>`;
+      cont.innerHTML = `<div class="empty-state"><div class="empty-state-icon">${ico('check', 32)}</div><p>No tienes etapas asignadas por el momento.</p></div>`;
       return;
     }
 
@@ -212,7 +212,7 @@ async function abrirMecDetalle(eid, oid) {
         <div class="fotos-grid" id="mec-fotos-grid">${fotosHtml}</div>
         <div class="upload-zone" onclick="document.getElementById('mec-fi-${k}').click()" style="margin-top:10px">
           <input type="file" id="mec-fi-${k}" accept="image/*" multiple onchange="mecSubirFotos(this,${eid},'${etapa.etapa || ''}',${oid})">
-          <div style="font-size:20px">📷</div>
+          <div style="opacity:0.45">${ico('camera', 20)}</div>
           <p>Subir fotos</p>
           <div class="upload-prog" id="mec-prog-${k}"></div>
         </div>
@@ -304,7 +304,7 @@ async function cargarHistorialMecanico() {
   try {
     const etapas = await api(`/etapas?mecanico_id=eq.${sesion.id}&fin=not.is.null&order=fin.desc&limit=100`) || [];
     if (!etapas.length) {
-      cont.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><p style="font-size:15px;font-weight:600;margin-bottom:6px">Sin historial aún</p><p>Cuando finalices etapas aparecerán aquí.</p></div>`;
+      cont.innerHTML = `<div class="empty-state"><div class="empty-state-icon">${ico('clipboard', 32)}</div><p style="font-size:15px;font-weight:600;margin-bottom:6px">Sin historial aún</p><p>Cuando finalices etapas aparecerán aquí.</p></div>`;
       return;
     }
     const oids = [...new Set(etapas.map(e => e.orden_id))];
