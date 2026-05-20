@@ -826,20 +826,52 @@ async function buscarPorPlaca() {
     return;
   }
   try {
-    const ordenes = await api(`/ordenes?placa=eq.${placa}&order=creado_en.desc&limit=5`);
-    if (ordenes?.length) {
-      const u = ordenes[0];
-      const flds = { 'n-marca': u.marca, 'n-linea': u.linea, 'n-modelo': u.modelo, 'n-color': u.color };
-      Object.entries(flds).forEach(([id, val]) => { const el = document.getElementById(id); if (el && val && !el.value) el.value = val; });
+    // Consultar vehículos registrados Y historial de órdenes en paralelo
+    const [vehiculo, ordenes] = await Promise.all([
+      api(`/vehiculos?placa=eq.${placa}&limit=1`).then(r => r?.[0]).catch(() => null),
+      api(`/ordenes?placa=eq.${placa}&order=creado_en.desc&limit=5`).catch(() => []) || []
+    ]);
+
+    // Prioridad: tabla vehiculos > última orden
+    const fuente = vehiculo || (ordenes?.length ? ordenes[0] : null);
+
+    if (fuente) {
+      const flds = { 'n-marca': fuente.marca, 'n-linea': fuente.linea, 'n-modelo': fuente.modelo, 'n-color': fuente.color };
+      Object.entries(flds).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el && val && !el.value) el.value = val;
+      });
       const prop = document.getElementById('n-propietario');
       const tel  = document.getElementById('n-telefono');
-      if (prop && !prop.value && u.propietario) prop.value = u.propietario;
-      if (tel  && !tel.value  && u.telefono)    tel.value  = u.telefono;
+      const ced  = document.getElementById('n-cedula-cliente');
+      if (prop && !prop.value && fuente.propietario) prop.value = fuente.propietario;
+      if (tel  && !tel.value  && fuente.telefono)    tel.value  = fuente.telefono;
+      if (ced  && !ced.value  && fuente.cedula_nit)  ced.value  = fuente.cedula_nit;
+
+      // Si el vehículo pertenece a una flotilla, pre-seleccionar
+      if (vehiculo?.flotilla_id) {
+        const tabFlot = document.getElementById('tcb-flotilla');
+        if (tabFlot && typeof selTipoCliente === 'function') {
+          const tipoActual = document.getElementById('n-tipo-cliente')?.value;
+          if (!tipoActual) {
+            selTipoCliente(tabFlot, 'flotilla');
+            setTimeout(() => {
+              const sel = document.getElementById('n-flotilla-sel');
+              if (sel) sel.value = vehiculo.flotilla_id;
+            }, 300);
+          }
+        }
+      }
+
       if (resultDiv) {
+        const origen = vehiculo ? '🚗 Vehículo en flotilla registrada' : '✔ Vehículo encontrado';
         resultDiv.className = 'placa-resultado encontrado';
-        resultDiv.innerHTML = '✔ Vehículo encontrado — datos autocompletados.';
+        resultDiv.innerHTML = `${origen} — datos autocompletados.`;
         resultDiv.style.display = 'block';
       }
+    }
+
+    if (ordenes?.length) {
       const historialLista = document.getElementById('historial-lista');
       if (historialLista && histDiv) {
         historialLista.innerHTML = ordenes.map(o => `
@@ -850,7 +882,7 @@ async function buscarPorPlaca() {
           </div>`).join('');
         histDiv.style.display = 'block';
       }
-    } else {
+    } else if (!fuente) {
       if (resultDiv) {
         resultDiv.className = 'placa-resultado nuevo';
         resultDiv.innerHTML = 'ℹ Placa nueva — sin registros anteriores.';
@@ -912,6 +944,15 @@ async function ocrTarjetaPropiedad(input) {
       const targetId = tipo === 'aseguradora' ? 'n-propietario-aseg' : 'n-propietario';
       const el = document.getElementById(targetId);
       if (el && !el.value) { el.value = parsed.propietario; encontrados.push('propietario'); }
+    }
+
+    // Cédula / NIT del propietario (extraída de la tarjeta)
+    const cedulaParsed = parsed.cedula_nit || parsed.cedula || parsed.documento;
+    if (cedulaParsed) {
+      const tipo = document.getElementById('n-tipo-cliente')?.value;
+      const cedId = tipo === 'aseguradora' ? 'n-cedula-aseg' : 'n-cedula-cliente';
+      const cedEl = document.getElementById(cedId);
+      if (cedEl && !cedEl.value) { cedEl.value = cedulaParsed; encontrados.push('cédula'); }
     }
 
     // Si encontró placa, buscar historial
@@ -1678,6 +1719,10 @@ function montarJefe() {
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         Reportes
       </button>
+      <button class="nav-item" id="nav-flotillas" onclick="navJefe('flotillas')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        Flotillas
+      </button>
     `;
   }
 
@@ -1718,7 +1763,7 @@ function montarJefe() {
 
 function navJefe(pag) {
   // Actualizar clases active en sidebar y bottom nav
-  const pages = ['ordenes', 'nueva', 'dashboard', 'cotizaciones', 'calendario', 'mecanicos', 'repuestos', 'reportes'];
+  const pages = ['ordenes', 'nueva', 'dashboard', 'cotizaciones', 'calendario', 'mecanicos', 'repuestos', 'reportes', 'flotillas'];
   pages.forEach(p => {
     const navBtn = document.getElementById('nav-' + p);
     const bnavBtn = document.getElementById('bnav-' + p);
@@ -1780,11 +1825,16 @@ function navJefe(pag) {
       titulo = 'Reportes';
       setTimeout(() => { if (typeof montarReportes === 'function') montarReportes(); }, 50);
       break;
+    case 'flotillas':
+      pagId = 'pag-flotillas';
+      titulo = 'Flotillas';
+      setTimeout(() => { if (typeof montarFlotillas === 'function') montarFlotillas(); }, 50);
+      break;
     default:
       pagId = 'pag-ordenes';
       titulo = 'Órdenes';
   }
-  
+
   mostrarPagina(pagId);
   
   const titleEl = document.getElementById('topbar-title');
