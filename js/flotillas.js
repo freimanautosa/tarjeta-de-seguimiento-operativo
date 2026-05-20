@@ -10,17 +10,106 @@ let _vehiculoEditar  = null;
 let _vehiculoFotoFile = null;
 
 // ═══════════════════════════════════════════════════════════
-// VISTA PRINCIPAL — Lista de flotillas
+// VISTA PRINCIPAL — Landing "Ingresar vehículo nuevo"
 // ═══════════════════════════════════════════════════════════
 async function montarFlotillas() {
+  const pag = document.getElementById('pag-flotillas');
+  if (!pag) return;
+  _flotillaActual = null;
+
+  // Pre-cargar flotillas en segundo plano
+  api('/flotillas?order=nombre.asc').catch(() => []).then(r => { if (r) _flotillas = r; });
+
+  pag.innerHTML = `
+    <div style="margin-bottom:24px">
+      <div style="font-size:18px;font-weight:700;color:var(--texto);margin-bottom:4px">Ingresar vehículo nuevo</div>
+      <div style="font-size:13px;color:var(--gris-mid)">¿Es un cliente particular o pertenece a una flotilla / empresa?</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:30px">
+
+      <!-- CARD: VEHÍCULO PARTICULAR -->
+      <div class="dash-panel" style="border:1.5px solid var(--gris-borde);transition:border-color .15s"
+           onmouseover="this.style.borderColor='var(--azul)'" onmouseout="this.style.borderColor='var(--gris-borde)'">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="width:44px;height:44px;background:var(--azul-bg,#EBF2FF);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="22" height="22" fill="none" stroke="var(--azul)" stroke-width="1.8" viewBox="0 0 24 24">
+              <path d="M19 17H5v-5l2.5-5h9L19 12v5z"/>
+              <circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/>
+              <path d="M5 12h14"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--texto)">Vehículo particular</div>
+            <div style="font-size:12px;color:var(--gris-mid)">Cliente independiente</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--gris-mid);line-height:1.65;margin-bottom:18px">
+          Vehículo de un cliente que no pertenece a ninguna empresa ni grupo. Se guarda para agilizar ingresos futuros.
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="abrirModalRegistrarVehiculo(null)">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Registrar vehículo particular
+        </button>
+      </div>
+
+      <!-- CARD: FLOTILLA / EMPRESA -->
+      <div class="dash-panel" style="border:1.5px solid var(--gris-borde);transition:border-color .15s"
+           onmouseover="this.style.borderColor='#7C3AED'" onmouseout="this.style.borderColor='var(--gris-borde)'">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="width:44px;height:44px;background:#F3E8FF;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="22" height="22" fill="none" stroke="#7C3AED" stroke-width="1.8" viewBox="0 0 24 24">
+              <rect x="1" y="3" width="15" height="13" rx="1"/>
+              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+              <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--texto)">Flotilla / Empresa</div>
+            <div style="font-size:12px;color:var(--gris-mid)">Empresa con varios vehículos</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--gris-mid);line-height:1.65;margin-bottom:18px">
+          Empresa, aseguradora u organización con múltiples vehículos. Organiza todos sus carros en un mismo grupo.
+        </div>
+        <button class="btn btn-primary" style="width:100%;background:#7C3AED;border-color:#7C3AED" onclick="_mostrarVistaFlotillas()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          Ver flotillas y empresas
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Lista de vehículos particulares registrados -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:14px;font-weight:700;color:var(--texto)">Vehículos particulares registrados</div>
+      <input type="text" id="flot-buscar" placeholder="Buscar por placa, nombre o cédula..."
+        style="padding:8px 14px;border:1px solid var(--gris-borde);border-radius:8px;font-size:13px;width:280px"
+        oninput="filtrarVehiculosFlotilla(this.value)">
+    </div>
+    <div id="flotilla-vehiculos-lista">
+      <div class="loading-state">Cargando vehículos...</div>
+    </div>
+  `;
+
+  await cargarVehiculosFlotilla(null);
+}
+
+// ═══════════════════════════════════════════════════════════
+// VISTA FLOTILLAS — Lista de flotillas/empresas
+// ═══════════════════════════════════════════════════════════
+async function _mostrarVistaFlotillas() {
   const pag = document.getElementById('pag-flotillas');
   if (!pag) return;
 
   pag.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">
-      <div>
-        <div style="font-size:18px;font-weight:700;color:var(--texto)">Flotillas y empresas</div>
-        <div style="font-size:12px;color:var(--gris-mid);margin-top:2px">Gestiona grupos de vehículos registrados</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="back-btn" style="position:static;margin:0" onclick="montarFlotillas()">← Volver</button>
+        <div>
+          <div style="font-size:18px;font-weight:700;color:var(--texto)">Flotillas y empresas</div>
+          <div style="font-size:12px;color:var(--gris-mid);margin-top:2px">Gestiona grupos de vehículos registrados</div>
+        </div>
       </div>
       <button class="btn btn-primary" onclick="abrirModalNuevaFlotilla()">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
@@ -29,7 +118,8 @@ async function montarFlotillas() {
     </div>
     <div id="flotillas-grid" class="ordenes-grid">
       <div class="loading-state">Cargando flotillas...</div>
-    </div>`;
+    </div>
+  `;
 
   await cargarFlotillas();
 }
@@ -50,12 +140,13 @@ async function cargarFlotillas() {
     });
     const sinFlotilla = (vehiculos || []).filter(v => !v.flotilla_id).length;
 
-    if (!_flotillas.length && !sinFlotilla) {
+    if (!_flotillas.length) {
       grid.innerHTML = `
         <div class="empty-state" style="grid-column:1/-1">
-          <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom:12px;color:var(--gris-mid)"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom:12px;color:var(--gris-mid)"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
           <div style="font-weight:600;margin-bottom:6px">No hay flotillas registradas</div>
-          <div style="font-size:13px;color:var(--gris-mid)">Crea una flotilla para empezar a registrar vehículos</div>
+          <div style="font-size:13px;color:var(--gris-mid);margin-bottom:14px">Crea la primera flotilla o empresa para organizar sus vehículos</div>
+          <button class="btn btn-primary btn-sm" onclick="abrirModalNuevaFlotilla()">+ Crear primera flotilla</button>
         </div>`;
       return;
     }
@@ -78,24 +169,8 @@ async function cargarFlotillas() {
         </div>
       </div>`).join('');
 
-    const cardSin = sinFlotilla ? `
-      <div class="orden-card" style="cursor:pointer;border-style:dashed" onclick="abrirFlotilla(null)">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-          <div>
-            <div style="font-weight:700;font-size:15px;color:var(--gris-mid)">Sin flotilla asignada</div>
-            <div style="font-size:11px;color:var(--gris-mid)">Vehículos registrados sin grupo</div>
-          </div>
-          <div style="background:var(--gris-bg);color:var(--gris-mid);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700">
-            ${sinFlotilla} vehículos
-          </div>
-        </div>
-        <div style="margin-top:10px;display:flex;justify-content:flex-end">
-          <span style="font-size:12px;color:var(--gris-mid);font-weight:600">Ver →</span>
-        </div>
-      </div>` : '';
-
-    grid.innerHTML = (cards + cardSin) ||
-      `<div class="empty-state" style="grid-column:1/-1">No hay flotillas todavía.</div>`;
+    grid.innerHTML = cards ||
+      `<div class="empty-state" style="grid-column:1/-1">No hay flotillas registradas todavía.</div>`;
 
   } catch (e) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">Error cargando flotillas: ${escapeHtml(e.message)}</div>`;
@@ -115,7 +190,7 @@ async function abrirFlotilla(flotillaId) {
   pag.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">
       <div style="display:flex;align-items:center;gap:12px">
-        <button class="back-btn" style="position:static;margin:0" onclick="montarFlotillas()">← Volver</button>
+        <button class="back-btn" style="position:static;margin:0" onclick="_mostrarVistaFlotillas()">← Volver</button>
         <div>
           <div style="font-size:18px;font-weight:700;color:var(--texto)">${nombre}</div>
           ${_flotillaActual?.nit ? `<div style="font-size:11px;color:var(--gris-mid)">NIT ${escapeHtml(_flotillaActual.nit)}</div>` : ''}
