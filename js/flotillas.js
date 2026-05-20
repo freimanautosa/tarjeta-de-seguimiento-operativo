@@ -382,12 +382,14 @@ function _abrirModalVehiculo(flotillaId, vehiculo) {
     </div>`;
 
   document.body.appendChild(modal);
+  requestAnimationFrame(() => modal.classList.add('show'));
   modal.addEventListener('click', e => { if (e.target === modal) cerrarModalVehiculo(); });
   setTimeout(() => { document.getElementById('vf-placa')?.focus(); }, 100);
 }
 
 function cerrarModalVehiculo() {
-  document.getElementById('modal-vehiculo-flot')?.remove();
+  const m = document.getElementById('modal-vehiculo-flot');
+  if (m) { m.classList.remove('show'); setTimeout(() => m.remove(), 150); }
   _vehiculoEditar = null;
   _vehiculoFotoFile = null;
 }
@@ -576,11 +578,15 @@ function _abrirModalFlotilla(flotilla) {
       </div>
     </div>`;
   document.body.appendChild(modal);
+  requestAnimationFrame(() => modal.classList.add('show'));
   modal.addEventListener('click', e => { if (e.target === modal) cerrarModalFlotilla(); });
   setTimeout(() => { document.getElementById('ff-nombre')?.focus(); }, 100);
 }
 
-function cerrarModalFlotilla() { document.getElementById('modal-nueva-flotilla')?.remove(); }
+function cerrarModalFlotilla() {
+  const m = document.getElementById('modal-nueva-flotilla');
+  if (m) { m.classList.remove('show'); setTimeout(() => m.remove(), 150); }
+}
 
 async function guardarFlotilla(flotillaId) {
   const nombre = document.getElementById('ff-nombre')?.value.trim();

@@ -117,6 +117,8 @@ function iniciarSesion(datos) {
 }
 
 async function logout() {
+  // Detener polling antes de limpiar la sesión
+  if (typeof detenerRealtime === 'function') detenerRealtime();
   if (sesion?.access_token) await supabaseSignOut(sesion.access_token);
   sessionStorage.removeItem('sesion_freiman');
   sesion = null;
