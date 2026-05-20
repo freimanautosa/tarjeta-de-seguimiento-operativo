@@ -183,8 +183,8 @@ async function generarReporte(tipo, fechaIni, fechaFin, formato) {
       api(`/etapas?fin=gte.${desdeISO}&fin=lte.${hastaISO}&select=id,orden_id,etapa,etapa_key,servicio,tecnico,mecanico_id,inicio,fin,valor,horas_facturadas,horas_adicionales,horas_estimadas,tiempo_pausado_min`).catch(()=>[]) || [],
       api(`/ordenes?select=id,placa,marca,linea,propietario,aseguradora,tipo_cliente,flotilla_id,estado,creado_en,entregada_en,fecha_entrega_1,fecha_entrega_2`).catch(()=>[]) || [],
       api(`/novedades?creado_en=gte.${desdeISO}&creado_en=lte.${hastaISO}&select=id,orden_id,etapa_id,tipo,responsable,motivo,desde,creado_en`).catch(()=>[]) || [],
-      api(`/ordenes?estado=eq.Entregada&entregada_en=gte.${desdeISO}&entregada_en=lte.${hastaISO}&select=id,placa,marca,linea,propietario,aseguradora,tipo_cliente,flotilla_id,creado_en,entregada_en,fecha_entrega_1`).catch(()=>[]) || [],
-      api(`/ordenes?creado_en=gte.${desdeISO}&creado_en=lte.${hastaISO}&select=id,placa,marca,linea,propietario,aseguradora,tipo_cliente,flotilla_id,creado_en,estado`).catch(()=>[]) || [],
+      api(`/ordenes?estado=eq.Entregada&entregada_en=gte.${desdeISO}&entregada_en=lte.${hastaISO}&select=id,placa,marca,linea,propietario,aseguradora,tipo_cliente,flotilla_id,creado_en,entregada_en,fecha_entrega_1,pulmon,pulmon_desde,pulmon_fin,pulmon_tipo`).catch(()=>[]) || [],
+      api(`/ordenes?creado_en=gte.${desdeISO}&creado_en=lte.${hastaISO}&select=id,placa,marca,linea,propietario,aseguradora,tipo_cliente,flotilla_id,creado_en,estado,pulmon,pulmon_desde,pulmon_fin,pulmon_tipo`).catch(()=>[]) || [],
       api(`/solicitudes_repuesto?creado_en=gte.${desdeISO}&creado_en=lte.${hastaISO}&select=id,orden_id,etapa_id,repuesto,unidades,estado,tiempo_espera_min,creado_en`).catch(()=>[]) || [],
       api(`/cotizaciones_repuesto?select=id,solicitud_id,opcion,precio_costo,precio_venta_jefe,estado_opcion`).catch(()=>[]) || [],
       api(`/flotillas?select=id,nombre&order=nombre.asc`).catch(()=>[]) || []
@@ -636,6 +636,46 @@ function _calcularMetricas(etapas, ordenes, novedades, ordenesEntregadas, ordene
   const totalConPromesa   = ordenesATiempo + ordenesTarde;
   const tasaCumplimiento  = totalConPromesa > 0 ? Math.round(ordenesATiempo / totalConPromesa * 100) : null;
 
+  // ── Análisis de tiempos en pulmón ──
+  // Unir ordenesIngresadas + ordenesEntregadas sin duplicados
+  const todasOrdenesIdsVistas = new Set();
+  const todasOrdenesPeriodo = [...ordenesIngresadas, ...ordenesEntregadas].filter(o => {
+    if (todasOrdenesIdsVistas.has(o.id)) return false;
+    todasOrdenesIdsVistas.add(o.id); return true;
+  });
+  const ordenesConPulmon = todasOrdenesPeriodo.filter(o => o.pulmon_desde);
+
+  const tiemposPulmonHrs = ordenesConPulmon.map(o => {
+    const fin = o.pulmon_fin || (o.pulmon ? new Date().toISOString() : null);
+    if (!fin) return null;
+    return (new Date(fin) - new Date(o.pulmon_desde)) / 3600000;
+  }).filter(t => t !== null);
+
+  const promedioPulmonHrs = tiemposPulmonHrs.length
+    ? Math.round(tiemposPulmonHrs.reduce((a,b)=>a+b,0)/tiemposPulmonHrs.length * 10) / 10 : 0;
+  const maxPulmonHrs      = tiemposPulmonHrs.length ? Math.round(Math.max(...tiemposPulmonHrs)*10)/10 : 0;
+  const ordenesEnPulmonAhora = ordenesConPulmon.filter(o => o.pulmon).length;
+
+  const distPulmon = { menos1d:0, uno3d:0, mas3d:0 };
+  tiemposPulmonHrs.forEach(h => {
+    if (h < 24) distPulmon.menos1d++;
+    else if (h < 72) distPulmon.uno3d++;
+    else distPulmon.mas3d++;
+  });
+
+  const pulmonPorTipoMap = {};
+  ordenesConPulmon.filter(o => o.pulmon_desde && o.pulmon_fin).forEach(o => {
+    const tipo = o.pulmon_tipo || 'sin tipo';
+    if (!pulmonPorTipoMap[tipo]) pulmonPorTipoMap[tipo] = { count:0, totalHrs:0 };
+    pulmonPorTipoMap[tipo].count++;
+    pulmonPorTipoMap[tipo].totalHrs += (new Date(o.pulmon_fin) - new Date(o.pulmon_desde)) / 3600000;
+  });
+  const pulmonPorTipo = Object.entries(pulmonPorTipoMap).map(([tipo, d]) => ({
+    tipo: tipo.charAt(0).toUpperCase()+tipo.slice(1),
+    count: d.count,
+    promedioHrs: Math.round(d.totalHrs/d.count*10)/10
+  }));
+
   // ── Cuellos de botella ──
   const etapaMap = {};
   etapas.forEach(e => {
@@ -668,7 +708,11 @@ function _calcularMetricas(etapas, ordenes, novedades, ordenesEntregadas, ordene
       tiempoEsperaPromedio,
       totalCostoRep, totalVentaRep, margenRep,
       // totales economicos
-      totalMOmasRep:          totalIngresos + totalVentaRep
+      totalMOmasRep:          totalIngresos + totalVentaRep,
+      // pulmón
+      ordenesConPulmon:       ordenesConPulmon.length,
+      promedioPulmonHrs,      maxPulmonHrs,
+      ordenesEnPulmonAhora,   distPulmon, pulmonPorTipo
     },
     servicios, tecnicos, cuellos,
     ordenesDetalle: ordenesConTiempo,
@@ -810,6 +854,40 @@ function _generarPDF(d, titulo, subtitulo) {
       <div class="kpi-lbl">Órdenes ingresadas al período</div>
     </div>
   </div>`}
+
+  <!-- PANEL PULMÓN -->
+  ${resumen.ordenesConPulmon > 0 ? `
+  <div style="background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:10px;padding:14px 20px;margin-bottom:22px">
+    <div style="font-size:10px;font-weight:800;color:#92400E;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">
+      ⏰ Análisis de tiempo en pulmón — ${resumen.ordenesConPulmon} órdenes registradas
+    </div>
+    <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+      <div>
+        <div style="font-size:11px;color:#92400E;margin-bottom:2px">Promedio</div>
+        <div style="font-size:24px;font-weight:800;color:#D97706">${resumen.promedioPulmonHrs}h</div>
+      </div>
+      <div style="border-left:1px solid #FDE68A;padding-left:24px">
+        <div style="font-size:11px;color:#92400E;margin-bottom:2px">Máximo registrado</div>
+        <div style="font-size:24px;font-weight:800;color:#D97706">${resumen.maxPulmonHrs}h</div>
+      </div>
+      <div style="border-left:1px solid #FDE68A;padding-left:24px">
+        <div style="font-size:11px;color:#92400E;margin-bottom:6px">Distribución</div>
+        <div style="font-size:12px;line-height:1.8;color:#78350F">
+          <span style="font-weight:700">${resumen.distPulmon.menos1d}</span> menor a 1 día &nbsp;·&nbsp;
+          <span style="font-weight:700">${resumen.distPulmon.uno3d}</span> de 1 a 3 días &nbsp;·&nbsp;
+          <span style="font-weight:700;color:${resumen.distPulmon.mas3d>0?'#DC2626':'#78350F'}">${resumen.distPulmon.mas3d}</span> más de 3 días
+        </div>
+      </div>
+      ${resumen.pulmonPorTipo.length ? `<div style="border-left:1px solid #FDE68A;padding-left:24px">
+        <div style="font-size:11px;color:#92400E;margin-bottom:6px">Por tipo</div>
+        ${resumen.pulmonPorTipo.map(p => `<div style="font-size:12px;color:#78350F"><strong>${p.tipo}</strong>: ${p.count} ord. · prom. ${p.promedioHrs}h</div>`).join('')}
+      </div>` : ''}
+      ${resumen.ordenesEnPulmonAhora > 0 ? `<div style="border-left:1px solid #FDE68A;padding-left:24px">
+        <div style="font-size:11px;color:#DC2626;margin-bottom:2px">Actualmente en pulmón</div>
+        <div style="font-size:24px;font-weight:800;color:#DC2626">${resumen.ordenesEnPulmonAhora}</div>
+      </div>` : ''}
+    </div>
+  </div>` : ''}
 
   <!-- ANÁLISIS POR SERVICIO -->
   <div class="section">
@@ -1099,6 +1177,14 @@ function _generarExcel(d, titulo) {
     ['Tasa de cumplimiento (%)', resumen.tasaCumplimiento !== null ? resumen.tasaCumplimiento : 'Sin datos'],
     ['Solicitudes de repuesto', resumen.solicitudesRep],
     ['Espera promedio por repuesto (min)', resumen.tiempoEsperaPromedio],
+    ['Órdenes que pasaron por pulmón', resumen.ordenesConPulmon],
+    ['Tiempo promedio en pulmón (hrs)', resumen.promedioPulmonHrs],
+    ['Tiempo máximo en pulmón (hrs)', resumen.maxPulmonHrs],
+    ['Actualmente en pulmón', resumen.ordenesEnPulmonAhora],
+    ['Distribución pulmón < 1 día', resumen.distPulmon.menos1d],
+    ['Distribución pulmón 1–3 días', resumen.distPulmon.uno3d],
+    ['Distribución pulmón > 3 días', resumen.distPulmon.mas3d],
+    [],
     ['Novedades totales', resumen.novedadesTotal],
     ['— Detenidos', resumen.novPorTipo.Detenido||0],
     ['— Reprocesos', resumen.novPorTipo.Reproceso||0],

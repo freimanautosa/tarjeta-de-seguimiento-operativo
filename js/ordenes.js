@@ -402,8 +402,10 @@ async function abrirOrden(id) {
             </div>
             <div id="d-pulmon-badge" style="font-size:13px;color:${orden.pulmon?'var(--amarillo)':'var(--gris-mid)'}">
               ${orden.pulmon
-                ? `En pulmón${orden.pulmon_tipo ? ` · ${orden.pulmon_tipo.charAt(0).toUpperCase()+orden.pulmon_tipo.slice(1)}` : ''} desde ${formatFecha(orden.pulmon_desde)}`
-                : 'Sin pulmón activo'}
+                ? `En pulmón${orden.pulmon_tipo ? ` · <strong>${orden.pulmon_tipo.charAt(0).toUpperCase()+orden.pulmon_tipo.slice(1)}</strong>` : ''} desde ${formatFecha(orden.pulmon_desde)}`
+                : (orden.pulmon_fin && orden.pulmon_desde)
+                  ? `<span style="color:var(--verde,#10B981)">✓ Salió de pulmón</span> · estuvo <strong>${_calcPulmonTiempo(orden.pulmon_desde, orden.pulmon_fin)}</strong>${orden.pulmon_tipo ? ` (${orden.pulmon_tipo})` : ''}`
+                  : 'Sin pulmón activo'}
             </div>
           </div>
           <div class="sidebar-card">
@@ -1596,10 +1598,17 @@ function _setPulmonUI(activo, tipo) {
   const btn   = document.getElementById('btn-pulmon');
   if (card)  card.classList.toggle('inactivo', !activo);
   if (badge) {
-    badge.textContent = activo
-      ? `En pulmón · ${tipo.charAt(0).toUpperCase()+tipo.slice(1)} desde ${formatFecha(ordenActual.pulmon_desde)}`
-      : 'Sin pulmón activo';
-    badge.style.color = activo ? 'var(--amarillo)' : 'var(--gris-mid)';
+    if (activo) {
+      badge.innerHTML = `En pulmón${tipo ? ` · <strong>${tipo.charAt(0).toUpperCase()+tipo.slice(1)}</strong>` : ''} desde ${formatFecha(ordenActual.pulmon_desde)}`;
+      badge.style.color = 'var(--amarillo)';
+    } else if (ordenActual.pulmon_fin && ordenActual.pulmon_desde) {
+      const tiempo = _calcPulmonTiempo(ordenActual.pulmon_desde, ordenActual.pulmon_fin);
+      badge.innerHTML = `<span style="color:var(--verde,#10B981)">✓ Salió de pulmón</span> · estuvo <strong>${tiempo}</strong>${tipo ? ` (${tipo})` : ''}`;
+      badge.style.color = 'var(--gris-mid)';
+    } else {
+      badge.textContent = 'Sin pulmón activo';
+      badge.style.color = 'var(--gris-mid)';
+    }
   }
   if (btn) btn.textContent = activo ? 'Sacar de pulmón' : 'Activar Pulmón';
 }
@@ -1607,6 +1616,17 @@ function _setPulmonUI(activo, tipo) {
 // ============================================================
 // PULMÓN
 // ============================================================
+function _calcPulmonTiempo(desde, fin) {
+  const min = Math.round((new Date(fin) - new Date(desde)) / 60000);
+  if (min < 1) return '< 1m';
+  const d = Math.floor(min / 1440);
+  const h = Math.floor((min % 1440) / 60);
+  const m = min % 60;
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
 function togglePulmon() {
   if (ordenActual.pulmon) {
     _desactivarPulmon();
@@ -1635,13 +1655,15 @@ async function activarPulmonCon(tipo) {
 }
 
 async function _desactivarPulmon() {
-  const patch = { pulmon: false, pulmon_desde: null, pulmon_tipo: null };
+  const ahora = new Date().toISOString();
+  // Guardamos pulmon_fin y NO borramos pulmon_desde — queda el historial
+  const patch = { pulmon: false, pulmon_fin: ahora };
   try {
     await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', patch);
-    ordenActual.pulmon = false;
-    ordenActual.pulmon_desde = null;
-    ordenActual.pulmon_tipo = null;
-    _setPulmonUI(false, '');
+    ordenActual.pulmon     = false;
+    ordenActual.pulmon_fin = ahora;
+    // pulmon_desde y pulmon_tipo se conservan para mostrar historial
+    _setPulmonUI(false, ordenActual.pulmon_tipo || '');
     toast('Pulmón desactivado ✓');
     _refrescarCapacidad();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
