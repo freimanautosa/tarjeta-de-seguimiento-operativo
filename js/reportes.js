@@ -178,18 +178,19 @@ async function generarReporte(tipo, fechaIni, fechaFin, formato) {
     const [
       etapas, ordenes, novedades,
       ordenesEntregadas, ordenesIngresadas,
-      solicitudesRep, cotizaciones
+      solicitudesRep, cotizaciones, flotillas
     ] = await Promise.all([
       api(`/etapas?fin=gte.${desdeISO}&fin=lte.${hastaISO}&select=id,orden_id,etapa,etapa_key,servicio,tecnico,mecanico_id,inicio,fin,valor,horas_facturadas,horas_adicionales,horas_estimadas,tiempo_pausado_min`).catch(()=>[]) || [],
-      api(`/ordenes?select=id,placa,marca,linea,propietario,aseguradora,tipo_cliente,estado,creado_en,entregada_en,fecha_entrega_1,fecha_entrega_2`).catch(()=>[]) || [],
+      api(`/ordenes?select=id,placa,marca,linea,propietario,aseguradora,tipo_cliente,flotilla_id,estado,creado_en,entregada_en,fecha_entrega_1,fecha_entrega_2`).catch(()=>[]) || [],
       api(`/novedades?creado_en=gte.${desdeISO}&creado_en=lte.${hastaISO}&select=id,orden_id,etapa_id,tipo,responsable,motivo,desde,creado_en`).catch(()=>[]) || [],
-      api(`/ordenes?estado=eq.Entregada&entregada_en=gte.${desdeISO}&entregada_en=lte.${hastaISO}&select=id,placa,marca,linea,propietario,aseguradora,tipo_cliente,creado_en,entregada_en,fecha_entrega_1`).catch(()=>[]) || [],
-      api(`/ordenes?creado_en=gte.${desdeISO}&creado_en=lte.${hastaISO}&select=id,placa,marca,linea,propietario,aseguradora,tipo_cliente,creado_en,estado`).catch(()=>[]) || [],
+      api(`/ordenes?estado=eq.Entregada&entregada_en=gte.${desdeISO}&entregada_en=lte.${hastaISO}&select=id,placa,marca,linea,propietario,aseguradora,tipo_cliente,flotilla_id,creado_en,entregada_en,fecha_entrega_1`).catch(()=>[]) || [],
+      api(`/ordenes?creado_en=gte.${desdeISO}&creado_en=lte.${hastaISO}&select=id,placa,marca,linea,propietario,aseguradora,tipo_cliente,flotilla_id,creado_en,estado`).catch(()=>[]) || [],
       api(`/solicitudes_repuesto?creado_en=gte.${desdeISO}&creado_en=lte.${hastaISO}&select=id,orden_id,etapa_id,repuesto,unidades,estado,tiempo_espera_min,creado_en`).catch(()=>[]) || [],
-      api(`/cotizaciones_repuesto?select=id,solicitud_id,opcion,precio_costo,precio_venta_jefe,estado_opcion`).catch(()=>[]) || []
+      api(`/cotizaciones_repuesto?select=id,solicitud_id,opcion,precio_costo,precio_venta_jefe,estado_opcion`).catch(()=>[]) || [],
+      api(`/flotillas?select=id,nombre&order=nombre.asc`).catch(()=>[]) || []
     ]);
 
-    const datos = _calcularMetricas(etapas, ordenes, novedades, ordenesEntregadas, ordenesIngresadas, solicitudesRep, cotizaciones, desdeISO, hastaISO);
+    const datos = _calcularMetricas(etapas, ordenes, novedades, ordenesEntregadas, ordenesIngresadas, solicitudesRep, cotizaciones, flotillas, desdeISO, hastaISO);
 
     if (formato === 'pdf') _generarPDF(datos, tituloReporte, subtitulo);
     else _cargarSheetJS(() => _generarExcel(datos, tituloReporte));
@@ -440,7 +441,7 @@ async function generarReporteMecanico(mecId, fechaIni, fechaFin, formato) {
 }
 
 // ─── Motor de cálculo de métricas ───────────────────────────
-function _calcularMetricas(etapas, ordenes, novedades, ordenesEntregadas, ordenesIngresadas, solicitudesRep, cotizaciones, desdeISO, hastaISO) {
+function _calcularMetricas(etapas, ordenes, novedades, ordenesEntregadas, ordenesIngresadas, solicitudesRep, cotizaciones, flotillas, desdeISO, hastaISO) {
   const minToHrs = ms => Math.round(ms / 3600000 * 10) / 10;
   const fmt      = n  => n != null ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : '$0';
   const hrStr    = m  => { const h=Math.floor(m/60); return h>0?`${h}h ${m%60}m`:`${m%60}m`; };
@@ -481,6 +482,16 @@ function _calcularMetricas(etapas, ordenes, novedades, ordenesEntregadas, ordene
     etapaMasRapida: d.durs.length ? Math.round(Math.min(...d.durs)*10)/10 : 0
   })).sort((a,b) => b.etapas - a.etapas);
 
+  // ── Calidad por técnico: novedades atribuibles ──
+  const calidadTecMap = {};
+  novedades.forEach(n => {
+    if (!n.responsable) return;
+    if (!calidadTecMap[n.responsable]) calidadTecMap[n.responsable] = { reprocesos:0, garantias:0, detenidos:0 };
+    if (n.tipo === 'Reproceso') calidadTecMap[n.responsable].reprocesos++;
+    if (n.tipo === 'Garantia')  calidadTecMap[n.responsable].garantias++;
+    if (n.tipo === 'Detenido')  calidadTecMap[n.responsable].detenidos++;
+  });
+
   // ── Eficiencia por técnico — con tiempos netos ──
   const tecMap = {};
   etapas.forEach(e => {
@@ -509,6 +520,7 @@ function _calcularMetricas(etapas, ordenes, novedades, ordenesEntregadas, ordene
   const tecnicos = Object.entries(tecMap).map(([tec, d]) => {
     const eficienciaEst = d.horasEst > 0
       ? Math.round((d.horasEst / Math.max(d.totalHrsNeto, 0.1)) * 100) : null;
+    const cal = calidadTecMap[tec] || { reprocesos:0, garantias:0, detenidos:0 };
     return {
       tecnico:            tec,
       etapas:             d.etapas,
@@ -522,7 +534,10 @@ function _calcularMetricas(etapas, ordenes, novedades, ordenesEntregadas, ordene
       ingresos:           d.totalVal,
       eficiencia:         eficienciaEst,
       promedioHrEtapa:    d.dursNeto.length ? Math.round((d.totalHrsNeto/d.dursNeto.length)*10)/10 : 0,
-      servicioTop:        Object.entries(d.servicios).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—'
+      servicioTop:        Object.entries(d.servicios).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—',
+      reprocesos:         cal.reprocesos,
+      garantias:          cal.garantias,
+      detenidos:          cal.detenidos
     };
   }).sort((a,b) => b.completadas - a.completadas);
 
@@ -578,6 +593,19 @@ function _calcularMetricas(etapas, ordenes, novedades, ordenesEntregadas, ordene
     .map(([nombre, d]) => ({ nombre, ...d }))
     .sort((a,b) => b.ordenes - a.ordenes).slice(0,10);
 
+  // ── Ranking flotillas / empresas ──
+  const flotillaById = {};
+  (flotillas || []).forEach(f => { flotillaById[f.id] = f.nombre; });
+  const flotMap2 = {};
+  ordenes.filter(o => o.tipo_cliente === 'flotilla' && o.flotilla_id).forEach(o => {
+    const nombre = flotillaById[o.flotilla_id] || `Empresa #${o.flotilla_id}`;
+    if (!flotMap2[o.flotilla_id]) flotMap2[o.flotilla_id] = { nombre, ordenes:0, valor:0 };
+    flotMap2[o.flotilla_id].ordenes++;
+    flotMap2[o.flotilla_id].valor += (valPorOrden[o.id]||0);
+  });
+  const rankingFlotillas = Object.values(flotMap2)
+    .sort((a,b) => b.ordenes - a.ordenes);
+
   // ── Análisis de novedades ──
   const novPorTipo = { Detenido:0, Reproceso:0, Garantia:0 };
   const novPorOrden = {};
@@ -603,8 +631,10 @@ function _calcularMetricas(etapas, ordenes, novedades, ordenesEntregadas, ordene
   });
   const tiempoPromedioCiclo = ordenesConTiempo.filter(o=>o.duracionHrs).length
     ? Math.round(ordenesConTiempo.filter(o=>o.duracionHrs).reduce((s,o)=>s+o.duracionHrs,0)/ordenesConTiempo.filter(o=>o.duracionHrs).length*10)/10 : 0;
-  const ordenesATiempo = ordenesConTiempo.filter(o=>o.diasVsPromesa!==null&&o.diasVsPromesa<=0).length;
-  const ordenesTarde   = ordenesConTiempo.filter(o=>o.diasVsPromesa!==null&&o.diasVsPromesa>0).length;
+  const ordenesATiempo    = ordenesConTiempo.filter(o=>o.diasVsPromesa!==null&&o.diasVsPromesa<=0).length;
+  const ordenesTarde      = ordenesConTiempo.filter(o=>o.diasVsPromesa!==null&&o.diasVsPromesa>0).length;
+  const totalConPromesa   = ordenesATiempo + ordenesTarde;
+  const tasaCumplimiento  = totalConPromesa > 0 ? Math.round(ordenesATiempo / totalConPromesa * 100) : null;
 
   // ── Cuellos de botella ──
   const etapaMap = {};
@@ -630,7 +660,7 @@ function _calcularMetricas(etapas, ordenes, novedades, ordenesEntregadas, ordene
       totalHorasAdicionales:  Math.round(totalHorasAdicionales*10)/10,
       totalMinutosPausados,
       tiempoPromedioCiclo,
-      ordenesATiempo, ordenesTarde,
+      ordenesATiempo, ordenesTarde, tasaCumplimiento,
       novedadesTotal:         novedades.length,
       novPorTipo, ordenesConNovedades,
       // repuestos
@@ -643,7 +673,7 @@ function _calcularMetricas(etapas, ordenes, novedades, ordenesEntregadas, ordene
     servicios, tecnicos, cuellos,
     ordenesDetalle: ordenesConTiempo,
     ordenesIngresadas, novedades,
-    topRepuestos, tiposCliente, rankingAseguradoras,
+    topRepuestos, tiposCliente, rankingAseguradoras, rankingFlotillas,
     fmt, hrStr
   };
 }
@@ -651,7 +681,7 @@ function _calcularMetricas(etapas, ordenes, novedades, ordenesEntregadas, ordene
 // ─── Generador PDF ───────────────────────────────────────────
 function _generarPDF(d, titulo, subtitulo) {
   const { resumen, servicios, tecnicos, cuellos, ordenesDetalle, ordenesIngresadas, novedades,
-          topRepuestos, tiposCliente, rankingAseguradoras, fmt, hrStr } = d;
+          topRepuestos, tiposCliente, rankingAseguradoras, rankingFlotillas, fmt, hrStr } = d;
 
   const fmtFecha = iso => iso ? new Date(iso).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) : '—';
   const fmtHora  = iso => iso ? new Date(iso).toLocaleString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}) : '—';
@@ -717,7 +747,11 @@ function _generarPDF(d, titulo, subtitulo) {
     <div class="kpi" style="border-top-color:#1E3A5F">
       <div class="kpi-val" style="color:#1E3A5F">${resumen.ordenesEntregadas}</div>
       <div class="kpi-lbl">Órdenes entregadas</div>
-      <div class="kpi-sub">${resumen.ordenesATiempo} a tiempo · ${resumen.ordenesTarde} tarde</div>
+      <div class="kpi-sub">
+        ${resumen.tasaCumplimiento !== null
+          ? `<span style="font-weight:700;color:${resumen.tasaCumplimiento>=90?'#059669':resumen.tasaCumplimiento>=70?'#D97706':'#DC2626'}">${resumen.tasaCumplimiento}% a tiempo</span> · ${resumen.ordenesTarde} tarde`
+          : `${resumen.ordenesATiempo} a tiempo · ${resumen.ordenesTarde} tarde`}
+      </div>
     </div>
     <div class="kpi" style="border-top-color:#059669">
       <div class="kpi-val" style="color:#059669;font-size:14px">${fmt(resumen.totalIngresos)}</div>
@@ -802,16 +836,16 @@ function _generarPDF(d, titulo, subtitulo) {
     </tbody></table>
   </div>
 
-  <!-- RENDIMIENTO POR TÉCNICO — con tiempo neto y pausas -->
+  <!-- RENDIMIENTO POR TÉCNICO — con tiempo neto, pausas y calidad -->
   <div class="section">
     <div class="section-title">Rendimiento por técnico</div>
     <div style="font-size:10px;color:#888;margin-bottom:8px;font-style:italic">
-      * Tiempo neto = tiempo bruto (inicio→fin) menos minutos pausados esperando repuestos.
-        Eficiencia compara tiempo neto vs estimado (>100% = más rápido).
+      * Tiempo neto = tiempo bruto menos minutos pausados esperando repuestos.
+        Eficiencia: tiempo neto vs estimado (>100% = más rápido que estimado).
     </div>
     <table><thead><tr>
       <th>Técnico</th><th>Etapas</th><th>T. Neto (h)</th><th>T. Bruto (h)</th>
-      <th>⏸ Pausado (min)</th><th>Eficiencia</th><th>Prom/etapa</th><th>Ingresos</th><th>H. Adicionales</th>
+      <th>⏸ Pausado</th><th>Eficiencia</th><th>Ingresos</th><th>Reprocesos</th><th>Garantías</th>
     </tr></thead><tbody>
       ${tecnicos.map(t => {
         const ef = t.eficiencia;
@@ -822,6 +856,12 @@ function _generarPDF(d, titulo, subtitulo) {
         const pausBadge = t.minutosPausados > 0
           ? `<span class="badge badge-pause">⏸ ${t.minutosPausados}m</span>`
           : '<span style="color:#aaa">—</span>';
+        const reproBadge = t.reprocesos > 0
+          ? `<span class="badge badge-amber">${t.reprocesos}</span>`
+          : '<span style="color:#aaa">0</span>';
+        const garBadge = t.garantias > 0
+          ? `<span class="badge badge-red">${t.garantias}</span>`
+          : '<span style="color:#aaa">0</span>';
         return `<tr>
           <td><strong>${t.tecnico}</strong></td>
           <td>${t.completadas}/${t.etapas}</td>
@@ -829,13 +869,41 @@ function _generarPDF(d, titulo, subtitulo) {
           <td style="color:#94A3B8">${t.horasBrutas}h</td>
           <td>${pausBadge}</td>
           <td>${efBadge}</td>
-          <td>${t.promedioHrEtapa}h</td>
           <td style="font-family:monospace">${fmt(t.ingresos)}</td>
-          <td style="color:${t.horasAdicionales>0?'#D97706':'#94A3B8'}">${t.horasAdicionales>0?t.horasAdicionales+'h':'—'}</td>
+          <td style="text-align:center">${reproBadge}</td>
+          <td style="text-align:center">${garBadge}</td>
         </tr>`;
       }).join('')}
     </tbody></table>
   </div>
+
+  <!-- CALIDAD POR TÉCNICO — sección destacada si hay novedades -->
+  ${tecnicos.some(t => t.reprocesos > 0 || t.garantias > 0) ? `<div class="section">
+    <div class="section-title">Calidad por técnico — reprocesos y garantías</div>
+    <div style="font-size:10px;color:#888;margin-bottom:10px;font-style:italic">
+      * Un reproceso es trabajo que tuvo que rehacerse. Una garantía es un reclamo posterior a la entrega.
+        Ambos afectan la rentabilidad real del trabajo.
+    </div>
+    <table><thead><tr>
+      <th>Técnico</th><th>Etapas completadas</th><th>Reprocesos</th>
+      <th>Garantías</th><th>Detenidos</th><th>Total incidencias</th><th>Tasa incidencia</th>
+    </tr></thead><tbody>
+      ${tecnicos.filter(t => t.reprocesos>0||t.garantias>0||t.detenidos>0).map(t => {
+        const total = t.reprocesos + t.garantias + t.detenidos;
+        const tasa  = t.completadas > 0 ? Math.round(total/t.completadas*100) : 0;
+        const tasaColor = tasa===0?'#059669':tasa<=10?'#D97706':'#DC2626';
+        return `<tr>
+          <td><strong>${t.tecnico}</strong></td>
+          <td>${t.completadas}</td>
+          <td style="text-align:center">${t.reprocesos>0?`<span class="badge badge-amber">${t.reprocesos}</span>`:'—'}</td>
+          <td style="text-align:center">${t.garantias>0?`<span class="badge badge-red">${t.garantias}</span>`:'—'}</td>
+          <td style="text-align:center">${t.detenidos>0?`<span class="badge badge-gray">${t.detenidos}</span>`:'—'}</td>
+          <td style="text-align:center;font-weight:700">${total}</td>
+          <td style="color:${tasaColor};font-weight:700">${tasa}%</td>
+        </tr>`;
+      }).join('')}
+    </tbody></table>
+  </div>` : ''}
 
   <!-- CUELLOS DE BOTELLA -->
   <div class="section">
@@ -866,7 +934,7 @@ function _generarPDF(d, titulo, subtitulo) {
   <!-- POR TIPO DE CLIENTE -->
   ${tiposCliente.length ? `<div class="section">
     <div class="section-title">Análisis por tipo de cliente</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
       <div>
         <table><thead><tr><th>Tipo</th><th>Órdenes</th><th>Valor MO</th></tr></thead><tbody>
           ${tiposCliente.map(t => {
@@ -888,6 +956,15 @@ function _generarPDF(d, titulo, subtitulo) {
           </div>`).join('')}
       </div>` : ''}
     </div>
+    ${rankingFlotillas.length ? `
+    <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Flotillas / Empresas</div>
+    <table><thead><tr><th>Empresa / Flotilla</th><th>Órdenes</th><th>Valor MO</th></tr></thead><tbody>
+      ${rankingFlotillas.map((f,i) => `<tr>
+        <td><span style="font-weight:${i===0?'700':'400'};color:#7C3AED">${f.nombre}</span></td>
+        <td><span class="badge" style="background:#F3E8FF;color:#7C3AED">${f.ordenes}</span></td>
+        <td style="font-family:monospace">${fmt(f.valor)}</td>
+      </tr>`).join('')}
+    </tbody></table>` : ''}
   </div>` : ''}
 
   <!-- REPUESTOS — COSTOS Y TIEMPOS -->
@@ -996,7 +1073,7 @@ function _generarPDF(d, titulo, subtitulo) {
 // ─── Generador Excel con SheetJS ────────────────────────────
 function _generarExcel(d, titulo) {
   const { resumen, servicios, tecnicos, cuellos, ordenesDetalle, ordenesIngresadas, novedades,
-          topRepuestos, tiposCliente, rankingAseguradoras, fmt } = d;
+          topRepuestos, tiposCliente, rankingAseguradoras, rankingFlotillas, fmt } = d;
   const wb = XLSX.utils.book_new();
   const fmtFecha = iso => iso ? new Date(iso).toLocaleDateString('es-CO') : '—';
 
@@ -1019,6 +1096,7 @@ function _generarExcel(d, titulo) {
     ['Tiempo promedio ciclo (hrs)', resumen.tiempoPromedioCiclo],
     ['Órdenes a tiempo', resumen.ordenesATiempo],
     ['Órdenes tarde', resumen.ordenesTarde],
+    ['Tasa de cumplimiento (%)', resumen.tasaCumplimiento !== null ? resumen.tasaCumplimiento : 'Sin datos'],
     ['Solicitudes de repuesto', resumen.solicitudesRep],
     ['Espera promedio por repuesto (min)', resumen.tiempoEsperaPromedio],
     ['Novedades totales', resumen.novedadesTotal],
@@ -1038,12 +1116,12 @@ function _generarExcel(d, titulo) {
   ws2['!cols'] = [{wch:18},{wch:10},{wch:18},{wch:20},{wch:16},{wch:16},{wch:14}];
   XLSX.utils.book_append_sheet(wb, ws2, 'Por Servicio');
 
-  // Hoja 3: Técnicos — con tiempo neto y pausas
+  // Hoja 3: Técnicos — con tiempo neto, pausas y calidad
   const ws3 = XLSX.utils.aoa_to_sheet([
-    ['Técnico','Etapas completadas','T. Neto (h)','T. Bruto (h)','Pausado (min)','T. Estimado (h)','Eficiencia (%)','Prom/etapa (h)','Ingresos (COP)','H. Adicionales','Servicio top'],
-    ...tecnicos.map(t => [t.tecnico,t.completadas,t.horasNetas,t.horasBrutas,t.minutosPausados,t.horasEstimadas,t.eficiencia,t.promedioHrEtapa,t.ingresos,t.horasAdicionales,t.servicioTop])
+    ['Técnico','Etapas completadas','T. Neto (h)','T. Bruto (h)','Pausado (min)','T. Estimado (h)','Eficiencia (%)','Prom/etapa (h)','Ingresos (COP)','H. Adicionales','Reprocesos','Garantías','Detenidos','Servicio top'],
+    ...tecnicos.map(t => [t.tecnico,t.completadas,t.horasNetas,t.horasBrutas,t.minutosPausados,t.horasEstimadas,t.eficiencia,t.promedioHrEtapa,t.ingresos,t.horasAdicionales,t.reprocesos,t.garantias,t.detenidos,t.servicioTop])
   ]);
-  ws3['!cols'] = [{wch:20},{wch:18},{wch:12},{wch:12},{wch:14},{wch:14},{wch:14},{wch:14},{wch:18},{wch:14},{wch:14}];
+  ws3['!cols'] = [{wch:20},{wch:18},{wch:12},{wch:12},{wch:14},{wch:14},{wch:14},{wch:14},{wch:18},{wch:14},{wch:12},{wch:10},{wch:10},{wch:14}];
   XLSX.utils.book_append_sheet(wb, ws3, 'Técnicos');
 
   // Hoja 4: Cuellos de botella
@@ -1054,14 +1132,22 @@ function _generarExcel(d, titulo) {
   ws4['!cols'] = [{wch:24},{wch:16},{wch:18},{wch:18}];
   XLSX.utils.book_append_sheet(wb, ws4, 'Cuellos de Botella');
 
-  // Hoja 5: Por tipo de cliente + aseguradoras
+  // Hoja 5: Por tipo de cliente + aseguradoras + flotillas
   const ws5 = XLSX.utils.aoa_to_sheet([
     ['TIPO DE CLIENTE','Órdenes','Valor MO (COP)'], [],
     ...tiposCliente.map(t => [t.tipo, t.ordenes, t.valor]),
-    [], ['RANKING ASEGURADORAS','Órdenes','Valor MO (COP)'], [],
-    ...rankingAseguradoras.map(a => [a.nombre, a.ordenes, a.valor])
+    [],
+    ['TASA DE CUMPLIMIENTO', resumen.tasaCumplimiento !== null ? resumen.tasaCumplimiento + '%' : 'Sin datos'],
+    ['Órdenes a tiempo', resumen.ordenesATiempo],
+    ['Órdenes tarde',    resumen.ordenesTarde],
+    [],
+    ['RANKING ASEGURADORAS','Órdenes','Valor MO (COP)'], [],
+    ...rankingAseguradoras.map(a => [a.nombre, a.ordenes, a.valor]),
+    [],
+    ['FLOTILLAS / EMPRESAS','Órdenes','Valor MO (COP)'], [],
+    ...rankingFlotillas.map(f => [f.nombre, f.ordenes, f.valor])
   ]);
-  ws5['!cols'] = [{wch:22},{wch:12},{wch:20}];
+  ws5['!cols'] = [{wch:28},{wch:12},{wch:20}];
   XLSX.utils.book_append_sheet(wb, ws5, 'Por Tipo Cliente');
 
   // Hoja 6: Repuestos
