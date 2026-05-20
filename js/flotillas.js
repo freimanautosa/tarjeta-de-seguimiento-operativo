@@ -601,10 +601,10 @@ async function guardarFlotilla(flotillaId) {
   };
   try {
     if (flotillaId) {
-      await api(`/flotillas?id=eq.${flotillaId}`, 'PATCH', datos);
+      await api(`/flotillas?id=eq.${flotillaId}`, 'PATCH', datos, { Prefer: 'return=minimal' });
       toast('Flotilla actualizada ✓');
     } else {
-      await api('/flotillas', 'POST', datos);
+      await api('/flotillas', 'POST', datos, { Prefer: 'return=minimal' });
       toast('Flotilla creada ✓');
     }
     cerrarModalFlotilla();
