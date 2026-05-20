@@ -83,12 +83,18 @@ async function cargarEtapasMecanico() {
     cont.innerHTML = Object.entries(porOrden).map(([oid, ets]) => {
       const orden = ordenes.find(o => o.id == oid) || {};
       const etapsHtml = ets.map(e => {
-        const badge = !e.inicio ? 'Pendiente' : (e.fin ? 'Completada' : 'En proceso');
-        const bCls = !e.inicio ? 'pendiente' : (e.fin ? 'completada' : 'iniciada');
+        const esPausado = e.pausado && !e.fin;
+        const badge = !e.inicio ? 'Pendiente' : (e.fin ? 'Completada' : esPausado ? 'Pausado ⏸' : 'En proceso');
+        const bCls  = !e.inicio ? 'pendiente'  : (e.fin ? 'completada' : esPausado ? 'pendiente' : 'iniciada');
         const hayActiva = ets.some(x => x.inicio && !x.fin);
         let acc = '';
         if (!e.inicio && !hayActiva)
           acc = `<button class="btn btn-success btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa || '')}" data-oid="${oid}" onclick="event.stopPropagation();mecIniciarEtapa(+this.dataset.eid,this.dataset.etapa,+this.dataset.oid)">▶ Iniciar</button>`;
+        else if (e.inicio && !e.fin && esPausado)
+          acc = `<span style="font-size:12px;color:#D97706;font-weight:600;display:flex;align-items:center;gap:4px">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            Esperando repuesto
+          </span>`;
         else if (e.inicio && !e.fin)
           acc = `<button class="btn btn-danger btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa || '')}" data-srv="${escapeHtml(e.servicio || '')}" data-oid="${oid}" onclick="event.stopPropagation();mecFinalizarEtapa(+this.dataset.eid,this.dataset.etapa,this.dataset.srv,+this.dataset.oid)">■ Finalizar</button>`;
         else if (e.fin)
@@ -96,14 +102,26 @@ async function cargarEtapasMecanico() {
         else
           acc = `<span style="font-size:12px;color:var(--gris-mid)">Esperando turno</span>`;
 
-        return `<div class="mec-etapa-item">
+        // Tiempo trabajado (descontando pausas)
+        let tiempoStr = '';
+        if (e.inicio && !e.fin) {
+          let pausadoAcum = e.tiempo_pausado_min || 0;
+          if (esPausado && e.pausa_inicio) {
+            pausadoAcum += Math.max(0, Math.round((Date.now() - new Date(e.pausa_inicio).getTime()) / 60000));
+          }
+          const m = Math.max(0, Math.round((Date.now() - new Date(e.inicio).getTime()) / 60000) - pausadoAcum);
+          tiempoStr = ` · ${Math.floor(m/60)}h ${m%60}m trabajados`;
+        }
+
+        return `<div class="mec-etapa-item" style="${esPausado ? 'background:rgba(254,243,199,.35);border-left:3px solid #F59E0B' : ''}">
           <div style="flex:1">
             <div style="font-weight:600;font-size:14px">${escapeHtml(e.etapa) || '—'}</div>
             <div style="font-size:11px;color:var(--gris-mid);margin-top:2px">
               ${escapeHtml(CATALOGO[e.servicio]?.nombre || e.servicio) || '—'}
               ${e.inicio ? ' · Inicio: ' + formatTS(e.inicio) : ''}
-              ${e.fin ? ' · Fin: ' + formatTS(e.fin) : ''}
+              ${e.fin ? ' · Fin: ' + formatTS(e.fin) : tiempoStr}
             </div>
+            ${esPausado ? `<div style="font-size:11px;color:#D97706;margin-top:3px;font-weight:600">⏸ Etapa pausada — esperando repuesto del jefe de taller</div>` : ''}
           </div>
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span class="badge badge-${bCls}">${badge}</span>
@@ -309,7 +327,12 @@ async function cargarHistorialMecanico() {
     }
     const oids = [...new Set(etapas.map(e => e.orden_id))];
     const ordenes = await api(`/ordenes?id=in.(${oids.join(',')})&select=id,placa,marca,linea`).catch(()=>[]) || [];
-    const totalMins = etapas.reduce((acc, e) => e.inicio && e.fin ? acc + Math.round((new Date(e.fin)-new Date(e.inicio))/60000) : acc, 0);
+    // Descontar el tiempo pausado (esperas de repuestos) del tiempo real trabajado
+    const totalMins = etapas.reduce((acc, e) => {
+      if (!e.inicio || !e.fin) return acc;
+      const bruto = Math.round((new Date(e.fin)-new Date(e.inicio))/60000);
+      return acc + Math.max(0, bruto - (e.tiempo_pausado_min || 0));
+    }, 0);
     const hTot = Math.floor(totalMins/60), mTot = totalMins%60;
     const promMin = etapas.length ? Math.round(totalMins/etapas.length) : 0;
     const hProm = Math.floor(promMin/60), mProm = promMin%60;
@@ -346,7 +369,8 @@ async function cargarHistorialMecanico() {
       </div>
       ${etapas.map(e => {
         const o = ordenes.find(ord => ord.id === e.orden_id)||{};
-        const mins = e.inicio&&e.fin ? Math.round((new Date(e.fin)-new Date(e.inicio))/60000) : 0;
+        const brutoMins = e.inicio&&e.fin ? Math.round((new Date(e.fin)-new Date(e.inicio))/60000) : 0;
+        const mins = Math.max(0, brutoMins - (e.tiempo_pausado_min || 0));
         const dur = mins<60?`${mins}m`:`${Math.floor(mins/60)}h ${mins%60}m`;
         const color = srvColor[e.servicio]||'#6B7280';
         return `<div style="display:grid;grid-template-columns:100px 1fr 80px 70px;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gris-borde)">

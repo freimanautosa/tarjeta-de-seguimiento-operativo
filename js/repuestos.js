@@ -119,6 +119,14 @@ async function enviarSolicitudRepuesto(ordenId, etapaId, placa) {
       repuesto, unidades, observaciones: obs, estado: 'pendiente_jefe'
     },{ Prefer:'return=minimal' });
 
+    // ── Pausar la etapa mientras se gestiona el repuesto ──
+    if (etapaId) {
+      await api(`/etapas?id=eq.${etapaId}`, 'PATCH', {
+        pausado: true,
+        pausa_inicio: new Date().toISOString()
+      }).catch(() => {});
+    }
+
     fetch(N8N_REPUESTO,{
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
@@ -130,7 +138,11 @@ async function enviarSolicitudRepuesto(ordenId, etapaId, placa) {
     }).catch(()=>{});
 
     document.getElementById('modal-solicitud-repuesto')?.remove();
-    toast('Solicitud enviada al jefe de taller ✓');
+    if (etapaId) {
+      toast('Solicitud enviada ✓ — ⏸ Etapa pausada hasta recibir el repuesto');
+    } else {
+      toast('Solicitud enviada al jefe de taller ✓');
+    }
     if (sesion.perfil==='jefe') actualizarBadgeRepuestos();
   } catch(e) { toast('Error: '+e.message,'err'); }
 }
@@ -216,13 +228,33 @@ async function cargarRepuestosJefe() {
                 <textarea id="nota-jefe-${s.id}" style="width:100%;min-height:48px;font-size:13px;border:1px solid var(--gris-borde);border-radius:6px;padding:6px 10px;resize:vertical">${escapeHtml(s.nota_jefe||'')}</textarea>
               </div>
               <div style="display:flex;gap:8px">
-                <button class="btn btn-success btn-sm" onclick="jefeProcesarSolicitud(${s.id},'aprobar')">✓ Aprobar y enviar</button>
-                <button class="btn btn-danger btn-sm"  onclick="jefeProcesarSolicitud(${s.id},'rechazar')">✕ Rechazar</button>
+                <button class="btn btn-success btn-sm" onclick="jefeProcesarSolicitud(${s.id},'aprobar',${s.etapa_id||'null'})">✓ Aprobar y enviar</button>
+                <button class="btn btn-danger btn-sm"  onclick="jefeProcesarSolicitud(${s.id},'rechazar',${s.etapa_id||'null'})">✕ Rechazar</button>
               </div>` : ''}
             ${s.estado==='cotizado' ? `
-              <button class="btn btn-outline btn-sm" onclick="abrirModalPrecioVenta(${s.id})">Ver cotizaciones y definir precio venta</button>` : ''}
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <button class="btn btn-outline btn-sm" onclick="abrirModalPrecioVenta(${s.id})">Ver cotizaciones y definir precio venta</button>
+                ${s.etapa_id ? `<button class="btn btn-success btn-sm" onclick="jefeConfirmarEntrega(${s.id},${s.etapa_id})">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+                  Confirmar entrega → Reanudar mecánico
+                </button>` : ''}
+              </div>` : ''}
+            ${s.estado==='pedido' ? `
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <span style="font-size:12px;color:var(--gris-mid);font-style:italic">Pedido al proveedor...</span>
+                ${s.etapa_id ? `<button class="btn btn-success btn-sm" onclick="jefeConfirmarEntrega(${s.id},${s.etapa_id})">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+                  Confirmar entrega → Reanudar mecánico
+                </button>` : ''}
+              </div>` : ''}
             ${s.estado==='enviado_repuestos' ? `
-              <div style="font-size:12px;color:var(--gris-mid);font-style:italic">Esperando cotización de repuestos...</div>` : ''}
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <span style="font-size:12px;color:var(--gris-mid);font-style:italic">Esperando cotización de repuestos...</span>
+                ${s.etapa_id ? `<button class="btn btn-success btn-sm" onclick="jefeConfirmarEntrega(${s.id},${s.etapa_id})">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+                  Confirmar entrega → Reanudar mecánico
+                </button>` : ''}
+              </div>` : ''}
           </div>`;
         }).join('')}
       </div>
@@ -237,11 +269,56 @@ async function cargarRepuestosJefe() {
   }
 }
 
-async function jefeProcesarSolicitud(id, accion) {
+// ── Reanuda el timer de una etapa pausada y registra el tiempo de espera ──
+async function _reanudarEtapa(etapaId, solicitudId) {
+  if (!etapaId) return;
+  try {
+    const etapa = await api(`/etapas?id=eq.${etapaId}`).then(r => r?.[0]);
+    if (!etapa || !etapa.pausado) return;
+    const pausaMs = etapa.pausa_inicio
+      ? Date.now() - new Date(etapa.pausa_inicio).getTime()
+      : 0;
+    const pausaMin = Math.max(0, Math.round(pausaMs / 60000));
+    const tiempoPausadoTotal = (etapa.tiempo_pausado_min || 0) + pausaMin;
+    await api(`/etapas?id=eq.${etapaId}`, 'PATCH', {
+      pausado: false,
+      pausa_inicio: null,
+      tiempo_pausado_min: tiempoPausadoTotal
+    });
+    if (solicitudId) {
+      await api(`/solicitudes_repuesto?id=eq.${solicitudId}`, 'PATCH', {
+        tiempo_espera_min: pausaMin
+      }).catch(() => {});
+    }
+  } catch(e) { console.error('Error reanudando etapa:', e); }
+}
+
+async function jefeProcesarSolicitud(id, accion, etapaId) {
   const nota = document.getElementById(`nota-jefe-${id}`)?.value.trim()||null;
   await api(`/solicitudes_repuesto?id=eq.${id}`,'PATCH',{estado:accion==='aprobar'?'enviado_repuestos':'rechazado',nota_jefe:nota});
-  toast(accion==='aprobar'?'Enviado a repuestos ✓':'Rechazado');
+
+  // Si se rechaza, reanudar inmediatamente la etapa del mecánico
+  if (accion === 'rechazar' && etapaId) {
+    await _reanudarEtapa(etapaId, id);
+    toast('Rechazado — ▶ Etapa del mecánico reanudada');
+  } else {
+    toast(accion==='aprobar' ? 'Enviado a repuestos ✓' : 'Rechazado');
+  }
   cargarRepuestosJefe(); actualizarBadgeRepuestos();
+}
+
+// Jefe confirma que el repuesto llegó y el mecánico puede continuar
+async function jefeConfirmarEntrega(solicitudId, etapaId) {
+  try {
+    await api(`/solicitudes_repuesto?id=eq.${solicitudId}`, 'PATCH', { estado: 'entregado' });
+    if (etapaId) {
+      await _reanudarEtapa(etapaId, solicitudId);
+      toast('Repuesto entregado ✓ — ▶ Etapa del mecánico reanudada');
+    } else {
+      toast('Repuesto marcado como entregado ✓');
+    }
+    cargarRepuestosJefe();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
 
 async function abrirModalPrecioVenta(solicitudId) {

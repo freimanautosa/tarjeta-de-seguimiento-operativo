@@ -460,22 +460,44 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
   const eid = e.id;
   const k = kid(eid);
   const nombre = e.etapa || '—';
-  const badge = !e.inicio ? 'Pendiente' : (e.fin ? 'Completada' : 'En proceso');
-  const bCls = !e.inicio ? 'pendiente' : (e.fin ? 'completada' : 'iniciada');
+  const esPausado = e.pausado && !e.fin;
+  const badge = !e.inicio ? 'Pendiente' : (e.fin ? 'Completada' : esPausado ? 'Pausado' : 'En proceso');
+  const bCls  = !e.inicio ? 'pendiente'  : (e.fin ? 'completada' : esPausado ? 'pendiente' : 'iniciada');
   const eFotos = fotos.filter(f => f.etapa_id === eid);
   const eNovs = novedades.filter(n => n.etapa_id === eid);
   const aprobEtapa = aprobaciones.filter(a => a.etapa_id === eid);
   const ultimaAprob = aprobEtapa.length ? aprobEtapa[aprobEtapa.length - 1] : null;
 
+  // ── Cálculo de duración descontando tiempo pausado ──
   let dur = '';
-  if (e.inicio && e.fin) {
-    const m = Math.round((new Date(e.fin) - new Date(e.inicio)) / 60000);
-    dur = `<div class="ts-chip">Duración: <strong>${Math.floor(m/60)}h ${m%60}m</strong></div>`;
+  if (e.inicio) {
+    const finRef = e.fin ? new Date(e.fin) : new Date();
+    const totalMs = finRef - new Date(e.inicio);
+    let pausadoAcum = e.tiempo_pausado_min || 0;
+    // Si está actualmente pausada, añadir la pausa en curso
+    if (esPausado && e.pausa_inicio) {
+      pausadoAcum += Math.max(0, Math.round((Date.now() - new Date(e.pausa_inicio).getTime()) / 60000));
+    }
+    const m = Math.max(0, Math.round(totalMs / 60000) - pausadoAcum);
+    const durStr = `${Math.floor(m/60)}h ${m%60}m`;
+    const pausaStr = pausadoAcum > 0
+      ? ` <span style="font-size:10px;color:var(--gris-mid)">(⏸ ${pausadoAcum}m en espera de repuesto)</span>`
+      : '';
+    if (e.fin) {
+      dur = `<div class="ts-chip">Duración: <strong>${durStr}</strong>${pausaStr}</div>`;
+    } else if (esPausado) {
+      dur = `<div class="ts-chip" style="color:#D97706;font-weight:600">⏸ Pausado · tiempo trabajado: <strong>${durStr}</strong>${pausaStr}</div>`;
+    }
   }
 
   let acc = '';
   if (!e.inicio)
     acc = `<button class="btn btn-success btn-sm" data-eid="${eid}" data-nombre="${escapeHtml(nombre)}" onclick="iniciarEtapa(+this.dataset.eid,this.dataset.nombre)">▶ Iniciar</button>`;
+  else if (e.inicio && !e.fin && esPausado)
+    acc = `<span style="font-size:12px;color:#D97706;font-weight:600;display:flex;align-items:center;gap:5px">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+      Esperando repuesto...
+    </span>`;
   else if (e.inicio && !e.fin)
     acc = `<button class="btn btn-danger btn-sm" data-eid="${eid}" data-nombre="${escapeHtml(nombre)}" data-srv="${escapeHtml(e.servicio||'')}" onclick="finalizarEtapa(+this.dataset.eid,this.dataset.nombre,this.dataset.srv)">■ Finalizar</button>`;
   else if (e.fin) {
@@ -514,6 +536,7 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
         </div>
         <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
           ${ultimaAprob ? `<span class="badge badge-${ultimaAprob.estado}">${ultimaAprob.estado==='aprobado'?'✓ Aprobada':'✗ Rechazada'}</span>` : ''}
+          ${esPausado ? `<span class="badge" style="background:#FEF3C7;color:#92400E;border:1px solid #F59E0B">⏸ Pausado</span>` : ''}
           <span class="badge badge-${bCls}">${badge}</span>
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="opacity:0.4"><path d="M6 9l6 6 6-6"/></svg>
         </div>
@@ -643,12 +666,16 @@ async function finalizarEtapa(eid, nombre, servicio) {
     const idxEnSrv = etapasMismoSrv.findIndex(e => e.id === eid);
     const siguiente = etapasMismoSrv.slice(idxEnSrv + 1).find(e => !e.fin) || null;
     const todasComp = etapasOrden.every(e => e.fin || e.id === eid);
-    const tiemposEtapas = etapasOrden.map(e => { 
-      const inicio = e.inicio ? new Date(e.inicio) : null; 
-      const fin = (e.id === eid) ? new Date() : (e.fin ? new Date(e.fin) : null); 
-      let duracion = null; 
-      if (inicio && fin) { const m = Math.round((fin - inicio) / 60000); duracion = `${Math.floor(m/60)}h ${m%60}m`; } 
-      return { etapa: e.etapa, servicio: e.servicio, tecnico: e.tecnico, duracion }; 
+    const tiemposEtapas = etapasOrden.map(e => {
+      const inicio = e.inicio ? new Date(e.inicio) : null;
+      const fin = (e.id === eid) ? new Date() : (e.fin ? new Date(e.fin) : null);
+      let duracion = null;
+      if (inicio && fin) {
+        const bruto = Math.round((fin - inicio) / 60000);
+        const m = Math.max(0, bruto - (e.tiempo_pausado_min || 0));
+        duracion = `${Math.floor(m/60)}h ${m%60}m`;
+      }
+      return { etapa: e.etapa, servicio: e.servicio, tecnico: e.tecnico, duracion };
     });
     fetch(N8N_WEBHOOK, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
