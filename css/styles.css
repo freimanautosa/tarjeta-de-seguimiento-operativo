@@ -192,6 +192,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .sidebar-brand {
   padding: 22px 20px 18px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
 }
 .sidebar-brand-logo {
   font-family: 'DM Mono', monospace;
@@ -213,6 +214,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 .sidebar-user-avatar {
   width: 36px;
@@ -284,6 +286,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .sidebar-footer {
   padding: 16px 12px;
   border-top: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
 }
 .btn-logout {
   display: flex;
@@ -1289,6 +1292,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 
   .sidebar {
     width: 64px;
+    height: auto;
     overflow: hidden;
     transition: width 0.26s var(--ease-out), box-shadow 0.26s;
   }
@@ -1355,7 +1359,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 /* ── MÓVIL: ≤768px ── */
 @media (max-width: 768px) {
   /* Sidebar deslizable como overlay — NO empuja el contenido */
-  .sidebar         { transform: translateX(-100%); width: 260px !important; position: fixed !important; z-index: 300; top: 0; bottom: 0; }
+  .sidebar         { transform: translateX(-100%); width: 260px !important; position: fixed !important; z-index: 300; top: 0; bottom: 0; height: auto !important; }
   .sidebar.mobile-open { transform: translateX(0); box-shadow: 8px 0 32px rgba(0,0,0,0.32); }
   .sidebar-overlay.show { display: block; z-index: 299; }
 
