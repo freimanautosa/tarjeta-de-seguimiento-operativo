@@ -89,6 +89,8 @@ async function abrirModalSolicitudRepuesto(ordenId, etapaId, placa) {
       </div>
     </div>`;
   document.body.appendChild(div);
+  // Auto-focus el campo repuesto al abrir para que el usuario empiece por ahí
+  setTimeout(() => document.getElementById('sr-repuesto')?.focus(), 80);
 }
 
 function filtrarSugerenciasRepuesto(val) {
@@ -109,7 +111,24 @@ async function enviarSolicitudRepuesto(ordenId, etapaId, placa) {
   const repuesto = document.getElementById('sr-repuesto')?.value.trim();
   const unidades = parseFloat(document.getElementById('sr-unidades')?.value)||1;
   const obs      = document.getElementById('sr-obs')?.value.trim()||null;
-  if (!repuesto) { toast('Indica el repuesto','err'); return; }
+
+  if (!repuesto) {
+    // Scroll al campo repuesto, resaltarlo y enfocar
+    const input = document.getElementById('sr-repuesto');
+    const modal = document.getElementById('modal-solicitud-repuesto')?.querySelector('.modal');
+    if (modal) modal.scrollTo({ top: 0, behavior: 'smooth' });
+    if (input) {
+      input.style.borderColor = 'var(--rojo, #DC2626)';
+      input.style.boxShadow   = '0 0 0 3px rgba(220,38,38,0.15)';
+      setTimeout(() => input.focus(), 200);
+      input.addEventListener('input', () => {
+        input.style.borderColor = '';
+        input.style.boxShadow   = '';
+      }, { once: true });
+    }
+    toast('Indica el repuesto antes de enviar', 'err');
+    return;
+  }
 
   try {
     const orden = await api(`/ordenes?id=eq.${ordenId}&select=placa,marca,linea,modelo,vin`).then(r=>r?.[0]).catch(()=>null);
