@@ -56,18 +56,59 @@ async function cargarOrdenes() {
       const ahora2 = new Date();
       const primerDiaMes = new Date(ahora2.getFullYear(), ahora2.getMonth(), 1);
       const esMesAnterior = o.creado_en && new Date(o.creado_en) < primerDiaMes && o.estado === 'Activa';
-      const alertaMesAnt = esMesAnterior
-        ? `<span style="font-size:10px;font-weight:700;background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;border-radius:4px;padding:2px 7px;margin-left:4px;vertical-align:middle">MES ANT.</span>`
-        : '';
 
-      return `<div class="orden-card" draggable="true" id="card-${o.id}"
+      // ── Alerta de vencimiento ────────────────────────────────
+      let alertaVenc = '', borderStyle = '', cardClass = '';
+      if (o.fecha_entrega_1 && o.estado !== 'Entregada') {
+        const hoy    = new Date(); hoy.setHours(0,0,0,0);
+        const entrega = new Date(o.fecha_entrega_1); entrega.setHours(0,0,0,0);
+        const diasRestantes = Math.round((entrega - hoy) / 86400000);
+
+        if (diasRestantes < 0) {
+          // Vencida
+          const diasVencida = Math.abs(diasRestantes);
+          alertaVenc = `<div class="orden-alerta orden-alerta-roja">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            VENCIDA hace ${diasVencida === 1 ? '1 día' : diasVencida + ' días'}
+          </div>`;
+          borderStyle = 'border-left: 3px solid #C0392B;';
+          cardClass   = 'orden-card-vencida';
+        } else if (diasRestantes === 0) {
+          alertaVenc = `<div class="orden-alerta orden-alerta-naranja">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Entrega HOY
+          </div>`;
+          borderStyle = 'border-left: 3px solid #EA580C;';
+          cardClass   = 'orden-card-urgente';
+        } else if (diasRestantes === 1) {
+          alertaVenc = `<div class="orden-alerta orden-alerta-naranja">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Entrega MAÑANA
+          </div>`;
+          borderStyle = 'border-left: 3px solid #EA580C;';
+          cardClass   = 'orden-card-urgente';
+        } else if (diasRestantes <= 3) {
+          alertaVenc = `<div class="orden-alerta orden-alerta-amarilla">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Entrega en ${diasRestantes} días
+          </div>`;
+          borderStyle = 'border-left: 3px solid #D97706;';
+        } else if (esMesAnterior) {
+          borderStyle = 'border-left: 3px solid #F59E0B;';
+        }
+      } else if (esMesAnterior) {
+        borderStyle = 'border-left: 3px solid #F59E0B;';
+      }
+
+      return `<div class="orden-card ${cardClass}" draggable="true" id="card-${o.id}"
         ondragstart="dragStart(event,'${o.id}')"
         ondragover="dragOver(event)"
         ondragleave="dragLeave(event)"
         ondrop="dragDrop(event,'${o.id}')"
         ondragend="dragEnd(event)"
         onclick="abrirOrden(${o.id})"
-        style="${esMesAnterior ? 'border-left:3px solid #F59E0B;' : ''}">
+        style="${borderStyle}">
+        ${alertaVenc}
         <div class="orden-card-top">
           <div>
             <div class="orden-placa">${escapeHtml(o.placa)}</div>
