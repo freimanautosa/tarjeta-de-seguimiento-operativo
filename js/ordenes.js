@@ -1617,12 +1617,36 @@ async function guardarAprobacion() {
   const obs = document.getElementById('aprob-obs')?.value.trim() || '';
   if (!estado) { toast('Selecciona Aprobado o Rechazado', 'err'); return; }
   try {
-    await api('/aprobaciones_etapa', 'POST', { 
-      etapa_id: aprobEtapaId, orden_id: ordenActual.id, estado, 
-      registrado_por: sesion?.nombre || 'Jefe', observacion: obs || null 
+    await api('/aprobaciones_etapa', 'POST', {
+      etapa_id: aprobEtapaId, orden_id: ordenActual.id, estado,
+      registrado_por: sesion?.nombre || 'Jefe', observacion: obs || null
     });
     toast(`Etapa ${estado} ✓`);
     cerrarModalAprobacion();
+
+    // Si aprobó, verificar si TODAS las etapas de la orden quedaron aprobadas
+    if (estado === 'aprobado') {
+      const [etapas, aprobaciones] = await Promise.all([
+        api(`/etapas?orden_id=eq.${ordenActual.id}&select=id`).catch(() => []),
+        api(`/aprobaciones_etapa?orden_id=eq.${ordenActual.id}&order=creado_en.desc&select=etapa_id,estado`).catch(() => [])
+      ]);
+      // Tomar el estado más reciente por etapa
+      const ultimaPorEtapa = {};
+      aprobaciones.forEach(a => { if (!ultimaPorEtapa[a.etapa_id]) ultimaPorEtapa[a.etapa_id] = a.estado; });
+      const todasAprobadas = etapas.length > 0 && etapas.every(e => ultimaPorEtapa[e.id] === 'aprobado');
+      if (todasAprobadas) {
+        fetch(N8N_WEBHOOK, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            evento: 'orden_calidad_aprobada',
+            orden: { id: ordenActual.id, placa: ordenActual.placa, propietario: ordenActual.propietario, marca: ordenActual.marca, linea: ordenActual.linea },
+            aprobado_por: sesion?.nombre || 'Jefe',
+            link: `${window.location.origin}${window.location.pathname}`
+          })
+        }).catch(() => {});
+      }
+    }
+
     if (ordenActual) abrirOrden(ordenActual.id);
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
