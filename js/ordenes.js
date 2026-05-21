@@ -2089,17 +2089,13 @@ async function cargarMecanicosVista() {
     const srvColor = { latoneria:'#DC2626', pintura:'#D97706', mecanica:'#2563EB', adicionales:'#059669' };
 
     cont.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap">
-        ${sesion?.perfil === 'gerente' ? `
+      ${sesion?.perfil === 'gerente' ? `
+      <div style="margin-bottom:12px">
         <button class="btn btn-ghost btn-sm" onclick="abrirCambiarPassJefe()" style="color:var(--azul)">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           Contraseña del Jefe
-        </button>` : '<div></div>'}
-        <button class="btn btn-ghost btn-sm" onclick="abrirReporteTodosTecnicos()">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Reporte general de técnicos
         </button>
-      </div>
+      </div>` : ''}
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">
         ${mecsData.map(m => {
           const etapas = etapasActivas.filter(e => e.mecanico_id === m.id);
@@ -2127,15 +2123,9 @@ async function cargarMecanicosVista() {
                 <div style="font-weight:600;font-size:14px">${escapeHtml(m.nombre)}</div>
                 <div style="font-size:11px;color:var(--gris-mid)">${escapeHtml(m.rol)||'Técnico'} · ${etapas.length} etapa${etapas.length!==1?'s':''} activa${etapas.length!==1?'s':''}</div>
               </div>
-              <div style="display:flex;gap:6px">
-                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirCambiarPassMecanico(${m.id},'${escapeHtml(m.nombre)}')" title="Cambiar contraseña">
-                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                </button>
-                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirReporteTecnico(${m.id})" title="Reporte del técnico">
-                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                  Reporte
-                </button>
-              </div>
+              <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirCambiarPassMecanico(${m.id},'${escapeHtml(m.nombre)}')" title="Cambiar contraseña">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </button>
             </div>
             <div style="padding:0 16px 8px">${etapsHtml}</div>
           </div>`;

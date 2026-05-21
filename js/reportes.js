@@ -100,6 +100,25 @@ async function montarReportes() {
         </div>
       </div>
 
+      <!-- COMPARATIVO DE TÉCNICOS -->
+      <div class="dash-panel" style="grid-column:1/-1">
+        <div class="dash-panel-titulo">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Comparativo general de técnicos
+        </div>
+        <div style="font-size:12px;color:var(--gris-mid);margin:6px 0 12px">
+          Tabla comparativa de todos los técnicos: etapas completadas, horas netas, ingresos generados, eficiencia y novedades (reprocesos/garantías) en el período seleccionado.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;align-items:end;max-width:420px">
+          <div class="field"><label style="font-size:11px">Desde</label><input type="date" id="rep-tec-ini" value="${inicioMes}" max="${hoy}"></div>
+          <div class="field"><label style="font-size:11px">Hasta</label><input type="date" id="rep-tec-fin" value="${hoy}" max="${hoy}"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm" onclick="_lanzarReporteTecnicos('pdf')" style="font-size:12px">${ico('file',13)} PDF</button>
+          <button class="btn btn-primary btn-sm" onclick="_lanzarReporteTecnicos('excel')" style="font-size:12px">${ico('chart',13)} Excel</button>
+        </div>
+      </div>
+
       <!-- REPORTE POR MECÁNICO -->
       <div class="dash-panel" style="grid-column:1/-1;border:1.5px solid var(--azul);background:var(--azul-light,#EBF2FF)">
         <div class="dash-panel-titulo" style="color:var(--azul)">
@@ -129,6 +148,13 @@ async function montarReportes() {
     </div>
     <div id="rep-loading" style="display:none" class="loading-state">Generando reporte, por favor espera...</div>
   `;
+}
+
+function _lanzarReporteTecnicos(formato) {
+  const ini = document.getElementById('rep-tec-ini')?.value;
+  const fin = document.getElementById('rep-tec-fin')?.value;
+  if (!ini || !fin) { toast('Define el rango de fechas', 'err'); return; }
+  generarReporte('rango', ini, fin, formato);
 }
 
 function _lanzarReporteMec(formato) {
