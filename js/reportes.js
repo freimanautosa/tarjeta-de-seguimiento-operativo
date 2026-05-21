@@ -214,11 +214,15 @@ async function generarReporteMecanico(mecId, fechaIni, fechaFin, formato) {
     const hastaISO = hasta.toISOString();
     const fd       = d => d.toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'});
 
-    const [etapas, mecData, solicitudesRep, novedades] = await Promise.all([
+    // Primero obtener datos del mecánico (necesitamos su nombre para las novedades)
+    const mecData = await api(`/mecanicos?id=eq.${mecId}&select=id,nombre,rol`).then(r=>r?.[0]).catch(()=>null);
+
+    // Luego las demás consultas en paralelo
+    const [etapas, novedades] = await Promise.all([
       api(`/etapas?mecanico_id=eq.${mecId}&fin=gte.${desdeISO}&fin=lte.${hastaISO}&select=id,orden_id,etapa,servicio,inicio,fin,valor,horas_facturadas,horas_adicionales,tiempo_pausado_min&order=fin.asc`).catch(()=>[]) || [],
-      api(`/mecanicos?id=eq.${mecId}&select=id,nombre,rol`).then(r=>r?.[0]).catch(()=>null),
-      api(`/solicitudes_repuesto?solicitado_por=eq.${encodeURIComponent('')}&creado_en=gte.${desdeISO}&creado_en=lte.${hastaISO}&select=id,orden_id,repuesto,estado,tiempo_espera_min,creado_en`).catch(()=>[]) || [],
-      api(`/novedades?responsable=eq.${encodeURIComponent(mecData?.nombre||'')}&creado_en=gte.${desdeISO}&creado_en=lte.${hastaISO}&select=*`).catch(()=>[]) || []
+      mecData?.nombre
+        ? api(`/novedades?responsable=eq.${encodeURIComponent(mecData.nombre)}&creado_en=gte.${desdeISO}&creado_en=lte.${hastaISO}&select=*`).catch(()=>[]) || []
+        : Promise.resolve([])
     ]);
 
     // Obtener etapas del mecánico también por solicitudes usando etapa_id
