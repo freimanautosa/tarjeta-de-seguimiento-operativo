@@ -180,6 +180,8 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   width: var(--sidebar-w);
   background: #111827;
   min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   position: fixed;
