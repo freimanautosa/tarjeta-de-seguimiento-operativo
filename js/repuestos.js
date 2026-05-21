@@ -143,7 +143,7 @@ async function enviarSolicitudRepuesto(ordenId, etapaId, placa) {
     } else {
       toast('Solicitud enviada al jefe de taller ✓');
     }
-    if (sesion.perfil==='jefe') actualizarBadgeRepuestos();
+    if (esJefe()) actualizarBadgeRepuestos();
   } catch(e) { toast('Error: '+e.message,'err'); }
 }
 

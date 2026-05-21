@@ -179,7 +179,7 @@ function dragEnd(e) {
 // DETALLE DE ORDEN
 // ============================================================
 function volverALista() {
-  if (sesion?.perfil === 'jefe') navJefe('ordenes');
+  if (esJefe()) navJefe('ordenes');
 }
 
 async function abrirOrden(id) {
@@ -342,7 +342,7 @@ async function abrirOrden(id) {
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <div class="seccion-titulo" style="margin-bottom:0">Datos del vehículo y cliente</div>
-            ${sesion?.perfil === 'jefe' && orden.estado !== 'Entregada' ? `<button class="btn btn-ghost btn-sm" onclick="abrirEditarOrden(${orden.id})">
+            ${esJefe() && orden.estado !== 'Entregada' ? `<button class="btn btn-ghost btn-sm" onclick="abrirEditarOrden(${orden.id})">
               <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               Editar datos
             </button>` : ''}
@@ -362,7 +362,7 @@ async function abrirOrden(id) {
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <div class="seccion-titulo" style="margin-bottom:0">Servicios y Etapas</div>
-            ${sesion?.perfil === 'jefe' ? '<button class="btn btn-ghost btn-sm" onclick="abrirModalAgregar()">+ Agregar etapas</button>' : ''}
+            ${esJefe() ? '<button class="btn btn-ghost btn-sm" onclick="abrirModalAgregar()">+ Agregar etapas</button>' : ''}
           </div>
           ${serviciosHtml}
         </div>
@@ -424,7 +424,7 @@ async function abrirOrden(id) {
               </div>
             </div>
           </div>
-          ${sesion?.perfil === 'jefe' ? `
+          ${esJefe() ? `
           <div class="sidebar-card">
             <div class="sidebar-card-header">Estado de la orden</div>
             <div class="sidebar-card-body">
@@ -736,8 +736,8 @@ function resetNuevaOrden() {
   if (historial) historial.style.display = 'none';
 }
 
-function cancelarNuevaOrden() { 
-  if (sesion?.perfil === 'jefe') navJefe('ordenes'); 
+function cancelarNuevaOrden() {
+  if (esJefe()) navJefe('ordenes');
 }
 
 function toggleInv(el, key) {
@@ -2040,7 +2040,12 @@ async function cargarMecanicosVista() {
     const srvColor = { latoneria:'#DC2626', pintura:'#D97706', mecanica:'#2563EB', adicionales:'#059669' };
 
     cont.innerHTML = `
-      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap">
+        ${sesion?.perfil === 'gerente' ? `
+        <button class="btn btn-ghost btn-sm" onclick="abrirCambiarPassJefe()" style="color:var(--azul)">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Contraseña del Jefe
+        </button>` : '<div></div>'}
         <button class="btn btn-ghost btn-sm" onclick="abrirReporteTodosTecnicos()">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           Reporte general de técnicos
@@ -2073,10 +2078,15 @@ async function cargarMecanicosVista() {
                 <div style="font-weight:600;font-size:14px">${escapeHtml(m.nombre)}</div>
                 <div style="font-size:11px;color:var(--gris-mid)">${escapeHtml(m.rol)||'Técnico'} · ${etapas.length} etapa${etapas.length!==1?'s':''} activa${etapas.length!==1?'s':''}</div>
               </div>
-              <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirReporteTecnico(${m.id})" title="Reporte del técnico">
-                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                Reporte
-              </button>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirCambiarPassMecanico(${m.id},'${escapeHtml(m.nombre)}')" title="Cambiar contraseña">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </button>
+                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirReporteTecnico(${m.id})" title="Reporte del técnico">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  Reporte
+                </button>
+              </div>
             </div>
             <div style="padding:0 16px 8px">${etapsHtml}</div>
           </div>`;
@@ -2087,6 +2097,99 @@ async function cargarMecanicosVista() {
     cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
   }
 }
+// ═══════════════════════════════════════════════════════════
+// GESTIÓN DE CONTRASEÑAS (jefe/gerente)
+// ═══════════════════════════════════════════════════════════
+function _modalPass(titulo, cedula, nombre) {
+  document.getElementById('modal-cambiar-pass')?.remove();
+  const m = document.createElement('div');
+  m.id = 'modal-cambiar-pass';
+  m.className = 'modal-overlay show';
+  m.innerHTML = `
+    <div class="modal-card" style="max-width:380px">
+      <div class="modal-header">
+        <div class="modal-titulo">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          ${titulo}
+        </div>
+        <button class="modal-cerrar" onclick="document.getElementById('modal-cambiar-pass').remove()">✕</button>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div style="background:var(--gris-bg);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--gris-mid)">
+          Usuario: <strong style="color:var(--texto)">${escapeHtml(nombre)}</strong>
+        </div>
+        <div>
+          <label class="form-label">Nueva contraseña</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="form-input" id="pass-nueva" type="password" placeholder="Mínimo 6 caracteres" style="flex:1">
+            <button class="login-eye" type="button" onclick="const i=document.getElementById('pass-nueva');i.type=i.type==='password'?'text':'password'" style="height:42px;width:42px">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Confirmar contraseña</label>
+          <input class="form-input" id="pass-confirmar" type="password" placeholder="Repite la contraseña">
+        </div>
+        <div id="pass-error" style="display:none;background:var(--rojo-bg);color:var(--rojo);border-radius:6px;padding:10px 14px;font-size:13px"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+          <button class="btn btn-ghost" onclick="document.getElementById('modal-cambiar-pass').remove()">Cancelar</button>
+          <button class="btn btn-primary" onclick="_guardarNuevaPass('${cedula}','${escapeHtml(nombre)}')">Guardar contraseña</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+  document.getElementById('pass-nueva').focus();
+}
+
+function abrirCambiarPassMecanico(mecId, nombre) {
+  // Buscar la cédula del mecánico para usarla como identificador de Supabase Auth
+  api(`/mecanicos?id=eq.${mecId}&select=cedula,nombre`).then(data => {
+    const mec = data?.[0];
+    if (!mec?.cedula) { toast('Este técnico no tiene cédula registrada', 'err'); return; }
+    _modalPass(`Cambiar contraseña — ${mec.nombre || nombre}`, mec.cedula, mec.nombre || nombre);
+  }).catch(() => toast('Error al obtener datos del técnico', 'err'));
+}
+
+function abrirCambiarPassJefe() {
+  // Solo visible para gerente
+  if (sesion?.perfil !== 'gerente') return;
+  api(`/configuracion?clave=eq.jefe_cedula`).then(data => {
+    const cedula = data?.[0]?.valor;
+    const nombre = 'Jefe de Taller';
+    if (!cedula) { toast('No se encontró la cédula del jefe', 'err'); return; }
+    _modalPass('Cambiar contraseña — Jefe de Taller', cedula, nombre);
+  }).catch(() => toast('Error al obtener datos del jefe', 'err'));
+}
+
+async function _guardarNuevaPass(cedula, nombre) {
+  const nueva    = document.getElementById('pass-nueva')?.value || '';
+  const confirma = document.getElementById('pass-confirmar')?.value || '';
+  const errEl    = document.getElementById('pass-error');
+
+  const mostrarError = (msg) => { errEl.textContent = msg; errEl.style.display = 'block'; };
+  errEl.style.display = 'none';
+
+  if (nueva.length < 6)        { mostrarError('La contraseña debe tener al menos 6 caracteres.'); return; }
+  if (nueva !== confirma)       { mostrarError('Las contraseñas no coinciden.'); return; }
+
+  const btn = document.querySelector('#modal-cambiar-pass .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+
+  try {
+    const result = await api('/rpc/admin_cambiar_contrasena', 'POST', {
+      p_target_cedula: cedula,
+      p_nueva_password: nueva
+    });
+    if (result === false) throw new Error('Usuario no encontrado en el sistema');
+    document.getElementById('modal-cambiar-pass')?.remove();
+    toast(`Contraseña de ${nombre} actualizada ✓`);
+  } catch(e) {
+    mostrarError('Error al cambiar contraseña: ' + (e.message || 'Intenta de nuevo'));
+    if (btn) { btn.disabled = false; btn.textContent = 'Guardar contraseña'; }
+  }
+}
+
 // ═══════════════════════════════════════════════════════════
 // DRAG & DROP — PANELES DE SERVICIO
 // ═══════════════════════════════════════════════════════════

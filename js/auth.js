@@ -100,6 +100,13 @@ async function doLogin() {
 
 // Determina perfil y datos del usuario a partir de la cédula
 async function detectarPerfil(cedula) {
+  // Gerente tiene prioridad máxima
+  const gerenteCfg = await api(`/configuracion?clave=eq.gerente_cedula`);
+  if (gerenteCfg?.[0]?.valor && gerenteCfg[0].valor === cedula) {
+    const nombreGerente = (await api(`/configuracion?clave=eq.gerente_nombre`))?.[0]?.valor || 'Gerente General';
+    return { perfil: 'gerente', nombre: nombreGerente, id: null };
+  }
+
   const config = await api(`/configuracion?clave=eq.jefe_cedula`);
   if (config?.[0]?.valor === cedula) {
     const nombreJefe = (await api(`/configuracion?clave=eq.jefe_nombre`))?.[0]?.valor || 'Jefe de Taller';

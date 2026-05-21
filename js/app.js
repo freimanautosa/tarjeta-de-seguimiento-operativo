@@ -7,6 +7,7 @@ function montarApp() {
   document.getElementById('app').classList.add('show');
 
   const rolLabels = {
+    gerente:   'Gerente General',
     jefe:      'Jefe de Taller',
     mecanico:  'Mecánico',
     taller:    'Pantalla Taller',
@@ -19,9 +20,10 @@ function montarApp() {
   document.getElementById('sb-rol').textContent = rolLabels[sesion.perfil] || sesion.perfil;
 
   const capEl = document.getElementById('sidebar-capacidad');
-  if (capEl) capEl.style.display = sesion.perfil === 'jefe' ? 'block' : 'none';
+  if (capEl) capEl.style.display = esJefe() ? 'block' : 'none';
 
   switch (sesion.perfil) {
+    case 'gerente':   montarJefe();      break;
     case 'jefe':      montarJefe();      break;
     case 'mecanico':  montarMecanico();  break;
     case 'taller':    montarTaller();    break;

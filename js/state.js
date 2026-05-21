@@ -7,6 +7,10 @@ let sesion = null;
 // Con true: solo 'taller' puede entrar sin Supabase Auth.
 // Con false: todos pueden entrar con login legacy (modo transición).
 const MODO_ESTRICTO_AUTH = true;
+
+// Helper: true si el usuario logueado tiene permisos de administración del taller
+function esJefe() { return sesion?.perfil === 'jefe' || sesion?.perfil === 'gerente'; }
+
 let mecanicos = [];
 let ordenActual = null;
 let filtroEstado = 'Activa';
