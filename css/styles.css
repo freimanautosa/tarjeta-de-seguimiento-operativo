@@ -20,7 +20,7 @@
   --amarillo-bg: #FEF3C7;
   --sidebar-w:   240px;
   --header-h:    56px;
-  --nav-h:       60px;
+  --nav-h:       64px;
   --radio:       8px;
   --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
   --ease-ui:     cubic-bezier(0.16, 1, 0.3, 1);
@@ -1342,33 +1342,36 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 
 /* ── MÓVIL: ≤768px ── */
 @media (max-width: 768px) {
-  /* Sidebar deslizable */
-  .sidebar         { transform: translateX(-100%); width: 240px !important; }
-  .sidebar.mobile-open { transform: translateX(0); box-shadow: 6px 0 28px rgba(0,0,0,0.28); }
-  .sidebar-overlay.show { display: block; }
+  /* Sidebar deslizable como overlay — NO empuja el contenido */
+  .sidebar         { transform: translateX(-100%); width: 260px !important; position: fixed !important; z-index: 300; top: 0; bottom: 0; }
+  .sidebar.mobile-open { transform: translateX(0); box-shadow: 8px 0 32px rgba(0,0,0,0.32); }
+  .sidebar-overlay.show { display: block; z-index: 299; }
 
   /* Textos del sidebar visibles cuando abre */
   .nav-label, .sidebar-brand-name, .sidebar-brand-logo,
   .sidebar-user-info, .sidebar-capacidad, .nav-section-label { display: revert; }
 
-  /* Hamburger visible en móvil también */
+  /* Hamburger visible */
   .hamburger { display: flex !important; align-items: center; justify-content: center; }
 
-  /* Main sin margen (sidebar está fuera de flujo) */
-  .main { margin-left: 0 !important; padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px)); }
+  /* Main ocupa toda la pantalla — sidebar no empuja */
+  .main { margin-left: 0 !important; padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px)); overflow-x: hidden; }
 
-  /* Content padding reducido */
-  .content { padding: 14px; }
+  /* Content con padding correcto */
+  .content { padding: 16px 14px 14px 14px; max-width: 100%; overflow-x: hidden; }
 
   /* Topbar más compacto */
   .topbar { padding: 0 14px; gap: 10px; }
   .topbar-title { font-size: 14px; }
 
+  /* Dashboard: 2 cols en móvil normal, 1 col en pantallas estrechas */
+  .dash-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dash-row-2 { grid-template-columns: 1fr; }
+
   /* Grids de 1 columna */
   .detalle-grid  { grid-template-columns: 1fr; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .srv-grid-select { grid-template-columns: 1fr; }
-  .dash-row-2    { grid-template-columns: 1fr; }
 
   /* Tablas: scroll horizontal */
   .tabla-scroll  { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -1377,17 +1380,17 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   .etapas-timeline-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .etapas-timeline { min-width: max-content; }
 
-  /* Modales más anchos en móvil */
-  .modal { width: 96% !important; max-height: 92vh !important; }
+  /* Modales */
+  .modal { width: 96% !important; max-height: 90vh !important; }
 
-  /* Bottom nav visible */
+  /* Bottom nav visible y más grande */
   .bottom-nav { display: flex; }
   #toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 12px); }
 
-  /* Bottom nav: labels visibles y tamaño cómodo */
-  .bnav-item { padding: 6px 2px; flex: 1; min-width: 0; }
-  .bnav-item svg { width: 22px; height: 22px; }
-  .bnav-item span { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Bottom nav ítems cómodos */
+  .bnav-item { padding: 8px 2px 4px; flex: 1; min-width: 0; gap: 3px; }
+  .bnav-item svg { width: 24px; height: 24px; flex-shrink: 0; }
+  .bnav-item span { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
 
   /* Cards */
   .orden-card { padding: 14px 16px; }
@@ -1396,12 +1399,11 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   .btn-row { flex-wrap: wrap; }
   .btn-row .btn { flex: 1; min-width: 120px; }
 
-  /* iPhone muy pequeño: solo iconos */
-  @media (max-width: 360px) {
-    .content { padding: 10px; }
-    .bnav-item span { display: none; }
-    .bnav-item { padding: 8px 0; }
-    .bnav-item svg { width: 24px; height: 24px; }
+  /* Pantallas muy estrechas (≤390px): dashboard 1 columna */
+  @media (max-width: 390px) {
+    .content { padding: 12px 10px; }
+    .dash-grid { grid-template-columns: 1fr; }
+    .bnav-item span { font-size: 9px; }
   }
 }
 
