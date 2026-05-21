@@ -182,6 +182,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   min-height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   position: fixed;
