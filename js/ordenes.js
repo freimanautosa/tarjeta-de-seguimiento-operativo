@@ -2163,25 +2163,25 @@ function _modalPass(titulo, cedula, nombre) {
         </div>
         <button class="modal-cerrar" onclick="document.getElementById('modal-cambiar-pass').remove()">✕</button>
       </div>
-      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
         <div style="background:var(--gris-bg);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--gris-mid)">
           Usuario: <strong style="color:var(--texto)">${escapeHtml(nombre)}</strong>
         </div>
-        <div>
-          <label class="form-label">Nueva contraseña</label>
+        <div class="field">
+          <label>Nueva contraseña</label>
           <div style="display:flex;gap:8px;align-items:center">
-            <input class="form-input" id="pass-nueva" type="password" placeholder="Mínimo 6 caracteres" style="flex:1">
-            <button class="login-eye" type="button" onclick="const i=document.getElementById('pass-nueva');i.type=i.type==='password'?'text':'password'" style="height:42px;width:42px">
+            <input id="pass-nueva" type="password" placeholder="Mínimo 6 caracteres" style="flex:1;min-width:0;padding:10px 13px;border:1.5px solid var(--gris-borde);border-radius:6px;font-size:14px;color:var(--texto);outline:none;transition:border-color 0.15s">
+            <button type="button" onclick="const i=document.getElementById('pass-nueva');i.type=i.type==='password'?'text':'password'" style="flex-shrink:0;width:42px;height:42px;border:1.5px solid var(--gris-borde);border-radius:6px;background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--gris-mid)">
               <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
           </div>
         </div>
-        <div>
-          <label class="form-label">Confirmar contraseña</label>
-          <input class="form-input" id="pass-confirmar" type="password" placeholder="Repite la contraseña">
+        <div class="field">
+          <label>Confirmar contraseña</label>
+          <input id="pass-confirmar" type="password" placeholder="Repite la contraseña">
         </div>
         <div id="pass-error" style="display:none;background:var(--rojo-bg);color:var(--rojo);border-radius:6px;padding:10px 14px;font-size:13px"></div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+        <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="btn btn-ghost" onclick="document.getElementById('modal-cambiar-pass').remove()">Cancelar</button>
           <button class="btn btn-primary" onclick="_guardarNuevaPass('${cedula}','${escapeHtml(nombre)}')">Guardar contraseña</button>
         </div>
