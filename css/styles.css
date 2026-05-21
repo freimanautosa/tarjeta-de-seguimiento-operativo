@@ -146,6 +146,15 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   display: none;
 }
 .login-error.show { display: block; }
+.login-pass-wrap { overflow: hidden; transition: max-height 0.28s ease, opacity 0.25s ease; max-height: 120px; opacity: 1; }
+.login-pass-wrap.oculto { max-height: 0; opacity: 0; pointer-events: none; }
+.login-pass-row { position: relative; display: flex; align-items: center; gap: 8px; }
+.login-pass-row .login-input { flex: 1; }
+.login-eye { flex-shrink: 0; width: 42px; height: 50px; border: 1.5px solid var(--borde); border-radius: 10px; background: var(--fondo); color: var(--gris-mid); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s, color 0.15s; }
+.login-eye:hover { border-color: var(--azul); color: var(--azul); }
+.login-cliente-link { margin-top: 20px; background: none; border: none; padding: 0; font-size: 13px; color: var(--azul); cursor: pointer; text-decoration: none; opacity: 0.8; transition: opacity 0.15s; display: block; text-align: center; width: 100%; }
+.login-cliente-link:hover { opacity: 1; text-decoration: underline; }
+.login-modo-badge { display: inline-block; background: var(--verde-bg); color: var(--verde); border-radius: 99px; padding: 3px 10px; font-size: 11px; font-weight: 600; margin-bottom: 8px; }
 
 /* ═══════════════════════════════════════════════════════════
    APP SHELL

@@ -6,20 +6,66 @@
 // 'taller' queda EXCLUIDO — es la pantalla de TV del taller, siempre abierta.
 const PERFILES_CON_AUTH = new Set(['jefe', 'mecanico', 'repuestos', 'cliente']);
 
+// true = modo cliente (sin contraseña), false = modo staff (cédula + contraseña)
+let _loginModoCliente = false;
+
+function toggleModoCliente() {
+  _loginModoCliente = !_loginModoCliente;
+  const passWrap  = document.getElementById('login-pass-wrap');
+  const sub       = document.getElementById('login-sub');
+  const btn       = document.getElementById('login-cliente-btn');
+  const passInput = document.getElementById('login-pass');
+
+  if (_loginModoCliente) {
+    passWrap.classList.add('oculto');
+    if (passInput) passInput.value = '';
+    if (sub)  sub.innerHTML = '<span class="login-modo-badge">Modo cliente</span><br>Ingresa tu cédula para ver el estado de tu vehículo';
+    if (btn)  btn.textContent = '← Volver al acceso del taller';
+  } else {
+    passWrap.classList.remove('oculto');
+    if (sub)  sub.textContent = 'Ingresa tus credenciales para continuar';
+    if (btn)  btn.textContent = '¿Eres cliente? Consulta tu vehículo sin contraseña →';
+  }
+  document.getElementById('login-error').classList.remove('show');
+}
+
+function toggleLoginPass() {
+  const input = document.getElementById('login-pass');
+  if (!input) return;
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+
 async function doLogin() {
-  const cedula = document.getElementById('login-cedula').value.trim();
+  const cedula    = document.getElementById('login-cedula').value.trim();
+  const password  = document.getElementById('login-pass')?.value || '';
+
   if (!cedula) { mostrarErrorLogin('Ingresa tu número de cédula.'); return; }
+  if (!_loginModoCliente && !password) { mostrarErrorLogin('Ingresa tu contraseña.'); return; }
 
   const btn = document.getElementById('login-btn');
   btn.disabled = true; btn.textContent = 'Verificando...';
   document.getElementById('login-error').classList.remove('show');
 
   try {
-    // ── Intento 1: Supabase Auth (usuarios ya migrados) ───────────────
-    const authData = await supabaseLogin(cedula);
+    // ── MODO CLIENTE: solo cédula, sin contraseña ─────────────────────
+    if (_loginModoCliente) {
+      const perfil = await detectarPerfil(cedula);
+      if (!perfil) {
+        mostrarErrorLogin('No encontramos ninguna cuenta con esa cédula. Contacta al taller.');
+        return;
+      }
+      if (perfil.perfil !== 'cliente') {
+        mostrarErrorLogin('Esta cédula corresponde a personal del taller. Usa el acceso normal con contraseña.');
+        return;
+      }
+      iniciarSesion({ ...perfil, cedula });
+      return;
+    }
+
+    // ── MODO STAFF: cédula + contraseña vía Supabase Auth ─────────────
+    const authData = await supabaseLogin(cedula, password);
 
     if (authData?.access_token) {
-      // Usar el JWT real para detectar el perfil
       sesion = { access_token: authData.access_token };
       const perfil = await detectarPerfil(cedula);
       if (perfil) {
@@ -35,44 +81,14 @@ async function doLogin() {
       sesion = null;
     }
 
-    // ── Intento 2: login legacy ───────────────────────────────────────
+    // ── Excepción: perfil taller (pantalla TV) siempre entra ──────────
     const perfil = await detectarPerfil(cedula);
-
-    if (perfil) {
-      if (perfil.perfil === 'taller') {
-        // Taller siempre entra sin Auth — es la pantalla TV del taller
-        iniciarSesion({ ...perfil, cedula });
-        return;
-      }
-
-      if (perfil.perfil === 'cliente') {
-        // Auto-crear cuenta de Auth la primera vez que un cliente ingresa.
-        // Si ya existe, supabaseSignUp falla silenciosamente — está bien.
-        // La próxima vez que ingrese, supabaseLogin (intento 1) lo capturará.
-        supabaseSignUp(cedula).catch(() => {});
-
-        if (MODO_ESTRICTO_AUTH) {
-          // Con modo estricto activo, el cliente debe usar Supabase Auth.
-          mostrarErrorLogin('Acceso no autorizado. Vuelve a intentarlo en un momento.');
-          return;
-        }
-
-        iniciarSesion({ ...perfil, cedula });
-        return;
-      }
-
-      if (MODO_ESTRICTO_AUTH) {
-        // Jefe / mecánicos / repuestos deben usar Supabase Auth
-        mostrarErrorLogin('Credenciales incorrectas. Contacta al administrador del taller.');
-        return;
-      }
-
-      // Modo transición: staff aún no migrado puede seguir entrando
+    if (perfil?.perfil === 'taller') {
       iniciarSesion({ ...perfil, cedula });
       return;
     }
 
-    mostrarErrorLogin('No encontramos ninguna cuenta con esa cédula. Contacta al taller.');
+    mostrarErrorLogin('Cédula o contraseña incorrectos. Contacta al administrador del taller.');
   } catch(e) {
     sesion = null;
     mostrarErrorLogin('Error de conexión. Intenta de nuevo.');

@@ -34,13 +34,26 @@
   <div class="login-card">
     <div class="login-logo">Freimanautos · Sistema Operativo</div>
     <div class="login-titulo">Bienvenido</div>
-    <div class="login-sub">Ingresa tu número de cédula para continuar</div>
+    <div class="login-sub" id="login-sub">Ingresa tus credenciales para continuar</div>
     <label class="login-label" for="login-cedula">Número de cédula</label>
     <input class="login-input" id="login-cedula" type="text" placeholder="Ej: 1234567890"
       oninput="this.value=this.value.replace(/\D/g,'')"
       onkeydown="if(event.key==='Enter')doLogin()">
+    <div id="login-pass-wrap">
+      <label class="login-label" for="login-pass" style="margin-top:16px">Contraseña</label>
+      <div class="login-pass-row">
+        <input class="login-input" id="login-pass" type="password" placeholder="••••••••"
+          onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="login-eye" type="button" onclick="toggleLoginPass()" title="Mostrar/ocultar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+    </div>
     <button class="login-btn" onclick="doLogin()" id="login-btn">Ingresar</button>
     <div class="login-error" id="login-error"></div>
+    <button class="login-cliente-link" type="button" onclick="toggleModoCliente()" id="login-cliente-btn">
+      ¿Eres cliente? Consulta tu vehículo sin contraseña →
+    </button>
   </div>
 </div>
 
