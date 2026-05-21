@@ -140,14 +140,28 @@ function mostrarErrorLogin(msg) {
   el.textContent = msg; el.classList.add('show');
 }
 
+let _tokenRefreshInterval = null;
+
 function iniciarSesion(datos) {
   sesion = datos;
   sessionStorage.setItem('sesion_freiman', JSON.stringify(datos));
+  _iniciarRefreshPeriodico();
   montarApp();
 }
 
+// Refresca el token cada 45 minutos para evitar que expire (dura 1 hora)
+function _iniciarRefreshPeriodico() {
+  if (_tokenRefreshInterval) clearInterval(_tokenRefreshInterval);
+  if (!sesion?.refresh_token) return;
+  _tokenRefreshInterval = setInterval(async () => {
+    if (!sesion?.refresh_token) { clearInterval(_tokenRefreshInterval); return; }
+    await refrescarToken();
+  }, 45 * 60 * 1000); // cada 45 minutos
+}
+
 async function logout() {
-  // Detener polling antes de limpiar la sesión
+  // Detener timers antes de limpiar la sesión
+  if (_tokenRefreshInterval) { clearInterval(_tokenRefreshInterval); _tokenRefreshInterval = null; }
   if (typeof detenerRealtime === 'function') detenerRealtime();
   if (sesion?.access_token) await supabaseSignOut(sesion.access_token);
   sessionStorage.removeItem('sesion_freiman');

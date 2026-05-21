@@ -124,20 +124,48 @@ function normalizarStoragePath(file, path) {
 async function api(path, method = 'GET', body = null, extra = {}) {
   const verb = String(method || 'GET').toUpperCase();
   if (!API_METHODS.has(verb)) throw new Error('Metodo no permitido');
-  const opts = {
+
+  const _buildOpts = () => ({
     method: verb,
     headers: {
       'Content-Type': 'application/json',
       apikey: SUPABASE_KEY,
       Authorization: `Bearer ${_getBearer()}`,
       ...extra
+    },
+    ...(body ? { body: JSON.stringify(body) } : {})
+  });
+
+  const _exec = async () => {
+    const res = await fetch(SUPABASE_URL + '/rest/v1' + validarApiPath(path), _buildOpts());
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = String(err.message || err.error_description || res.statusText || '');
+      // Devuelve el mensaje y el status para que el llamador decida
+      const e = new Error(msg);
+      e.status = res.status;
+      throw e;
     }
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
   };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(SUPABASE_URL + '/rest/v1' + validarApiPath(path), opts);
-  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || res.statusText); }
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
+
+  try {
+    return await _exec();
+  } catch (err) {
+    // Si el JWT expiró → intentar refrescar y reintentar UNA vez
+    const esJwtExp = err.status === 401
+      || /jwt expired|invalid jwt|jwt/i.test(err.message);
+
+    if (esJwtExp && typeof sesion !== 'undefined' && sesion?.refresh_token) {
+      const ok = typeof refrescarToken === 'function' ? await refrescarToken() : false;
+      if (ok) return await _exec();           // Reintento con token nuevo
+      // Si el refresh falla → cerrar sesión limpiamente
+      if (typeof logout === 'function') await logout();
+      throw new Error('Tu sesión expiró. Por favor vuelve a iniciar sesión.');
+    }
+    throw err;
+  }
 }
 
 async function storageUpload(file, path) {
