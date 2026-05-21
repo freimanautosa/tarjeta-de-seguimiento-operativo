@@ -17,7 +17,11 @@ function montarApp() {
 
   document.getElementById('sb-nombre').textContent = sesion.nombre;
   document.getElementById('sb-avatar').innerHTML = '<img src="icons/logoFreimanpfp.png" style="width:100%;height:100%;object-fit:contain;border-radius:50%">';
-  document.getElementById('sb-rol').textContent = rolLabels[sesion.perfil] || sesion.perfil;
+  // Mostrar rol específico del mecánico si existe, si no el label genérico
+  const rolMostrar = (sesion.perfil === 'mecanico' && sesion.datos?.rol)
+    ? sesion.datos.rol
+    : (rolLabels[sesion.perfil] || sesion.perfil);
+  document.getElementById('sb-rol').textContent = rolMostrar;
 
   const capEl = document.getElementById('sidebar-capacidad');
   if (capEl) capEl.style.display = esJefe() ? 'block' : 'none';
