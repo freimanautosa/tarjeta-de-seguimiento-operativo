@@ -25,7 +25,15 @@ async function cargarOrdenes() {
   if (!lista) return;
   lista.innerHTML = '<div class="loading-state">Cargando órdenes...</div>';
   try {
-    const data = await api(`/ordenes?estado=eq.${filtroEstado}${filtroEstado==='Activa'?'&pulmon=eq.false':''}&order=creado_en.desc&limit=60`);
+    // Para 'Activa': incluir filas con estado NULL (órdenes sin estado asignado)
+    // y pulmon NULL/false. Para otros estados (Entregada) filtrar exacto.
+    let query;
+    if (filtroEstado === 'Activa') {
+      query = `/ordenes?or=(estado.eq.Activa,estado.is.null)&or=(pulmon.eq.false,pulmon.is.null)&order=creado_en.desc&limit=60`;
+    } else {
+      query = `/ordenes?estado=eq.${filtroEstado}&order=creado_en.desc&limit=60`;
+    }
+    const data = await api(query);
     if (!data?.length) {
       lista.innerHTML = `<div class="empty-state"><div class="empty-state-icon">${ico('clipboard', 32)}</div>No hay órdenes ${filtroEstado.toLowerCase()}s.</div>`;
       return;
