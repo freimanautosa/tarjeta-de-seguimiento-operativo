@@ -40,7 +40,14 @@ async function doLogin() {
   const password  = document.getElementById('login-pass')?.value || '';
 
   if (!cedula) { mostrarErrorLogin('Ingresa tu número de cédula.'); return; }
-  if (!_loginModoCliente && !password) { mostrarErrorLogin('Ingresa tu contraseña.'); return; }
+
+  // Sin contraseña: solo permitir si es perfil taller (pantalla TV, siempre abierta)
+  if (!_loginModoCliente && !password) {
+    const tp = await detectarPerfil(cedula).catch(() => null);
+    if (tp?.perfil === 'taller') { iniciarSesion({ ...tp, cedula }); return; }
+    mostrarErrorLogin('Ingresa tu contraseña.');
+    return;
+  }
 
   const btn = document.getElementById('login-btn');
   btn.disabled = true; btn.textContent = 'Verificando...';
