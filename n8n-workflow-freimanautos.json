@@ -1,0 +1,311 @@
+{
+  "name": "Freimanautos — Notificaciones Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "notificar-etapa",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-main",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [{ "leftValue": "={{ $json.body.evento }}", "rightValue": "orden_creada", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "orden_creada"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [{ "leftValue": "={{ $json.body.evento }}", "rightValue": "etapa_finalizada", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "etapa_finalizada"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [{ "leftValue": "={{ $json.body.evento }}", "rightValue": "orden_completada", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "orden_completada"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [{ "leftValue": "={{ $json.body.evento }}", "rightValue": "cotizacion_subida", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cotizacion_subida"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "conditions": [{ "leftValue": "={{ $json.body.evento }}", "rightValue": "repuesto_solicitado", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "repuesto_solicitado"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "switch-evento",
+      "name": "Switch por evento",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [460, 300]
+    },
+
+    {
+      "parameters": {
+        "chatId": "-5195463580",
+        "text": "=🆕 *Nueva orden ingresada*\n🚗 *{{ $('Webhook').item.json.body.orden.placa }}* — {{ $('Webhook').item.json.body.orden.marca }} {{ $('Webhook').item.json.body.orden.linea }}\n👤 {{ $('Webhook').item.json.body.orden.propietario }}\n{{ $('Webhook').item.json.body.orden.aseguradora ? '🏢 Aseguradora: ' + $('Webhook').item.json.body.orden.aseguradora + '\\n' : '' }}📋 *Etapas:*\n{{ $('Webhook').item.json.body.etapas.map(e => '   • ' + e.etapa + ' → ' + e.tecnico).join('\\n') }}\n📅 Entrega estimada: {{ $('Webhook').item.json.body.orden.fecha_entrega_1 ? new Date($('Webhook').item.json.body.orden.fecha_entrega_1).toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'}) : 'Sin definir' }}\n🔗 {{ $('Webhook').item.json.body.link }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "id": "tg-creada-grupo",
+      "name": "TG Grupo — orden creada",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [700, 80],
+      "credentials": { "telegramApi": { "id": "REEMPLAZAR_CON_TU_CREDENTIAL_ID", "name": "Telegram Bot" } }
+    },
+    {
+      "parameters": {
+        "chatId": "8647322879",
+        "text": "=🆕 *Nueva orden ingresada*\n🚗 *{{ $('Webhook').item.json.body.orden.placa }}* — {{ $('Webhook').item.json.body.orden.marca }} {{ $('Webhook').item.json.body.orden.linea }}\n👤 {{ $('Webhook').item.json.body.orden.propietario }}\n{{ $('Webhook').item.json.body.orden.aseguradora ? '🏢 Aseguradora: ' + $('Webhook').item.json.body.orden.aseguradora + '\\n' : '' }}📋 *Etapas:*\n{{ $('Webhook').item.json.body.etapas.map(e => '   • ' + e.etapa + ' → ' + e.tecnico).join('\\n') }}\n📅 Entrega estimada: {{ $('Webhook').item.json.body.orden.fecha_entrega_1 ? new Date($('Webhook').item.json.body.orden.fecha_entrega_1).toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'}) : 'Sin definir' }}\n🔗 {{ $('Webhook').item.json.body.link }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "id": "tg-creada-jefe",
+      "name": "TG Jefe — orden creada",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [700, 200],
+      "credentials": { "telegramApi": { "id": "REEMPLAZAR_CON_TU_CREDENTIAL_ID", "name": "Telegram Bot" } }
+    },
+
+    {
+      "parameters": {
+        "url": "=https://xjavnpwuhpmvpjdbjdeg.supabase.co/rest/v1/mecanicos?nombre=eq.{{ encodeURIComponent($json.body.siguiente_etapa?.tecnico || '') }}&select=nombre,telegram_chat_id",
+        "options": {
+          "response": { "response": { "neverError": true } }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqYXZucHd1aHBtdnBqZGJqZGVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4Njc5MDcsImV4cCI6MjA5MjQ0MzkwN30.07f6cGVrFhtm-B-I7iBLaHnPSuozFDpEf9vOHrliGRs" },
+            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqYXZucHd1aHBtdnBqZGJqZGVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4Njc5MDcsImV4cCI6MjA5MjQ0MzkwN30.07f6cGVrFhtm-B-I7iBLaHnPSuozFDpEf9vOHrliGRs" }
+          ]
+        }
+      },
+      "id": "http-buscar-tecnico",
+      "name": "Buscar telegram técnico",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [700, 340]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{ "leftValue": "={{ $json[0]?.telegram_chat_id }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty" } }],
+          "combinator": "and"
+        }
+      },
+      "id": "if-tiene-telegram",
+      "name": "¿Técnico tiene Telegram?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [920, 340]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json[0].telegram_chat_id }}",
+        "text": "=👷 *Te toca una etapa*\n🚗 *{{ $('Webhook').item.json.body.orden.placa }}* — {{ $('Webhook').item.json.body.orden.marca }} {{ $('Webhook').item.json.body.orden.linea }}\n🔧 *{{ $('Webhook').item.json.body.siguiente_etapa.nombre }}*\nLa etapa anterior ({{ $('Webhook').item.json.body.etapa_finalizada.nombre }}) fue completada ✅\n🔗 {{ $('Webhook').item.json.body.link }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "id": "tg-tecnico-etapa",
+      "name": "TG Técnico — su etapa",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1140, 280],
+      "credentials": { "telegramApi": { "id": "REEMPLAZAR_CON_TU_CREDENTIAL_ID", "name": "Telegram Bot" } }
+    },
+    {
+      "parameters": {
+        "chatId": "-5195463580",
+        "text": "=✅ *Etapa completada*\n🚗 *{{ $('Webhook').item.json.body.orden.placa }}*\n🔧 {{ $('Webhook').item.json.body.etapa_finalizada.nombre }} finalizada por {{ $('Webhook').item.json.body.etapa_finalizada.tecnico || 'técnico' }}\n{{ $('Webhook').item.json.body.siguiente_etapa ? '➡️ Sigue: ' + $('Webhook').item.json.body.siguiente_etapa.nombre + ' → ' + ($('Webhook').item.json.body.siguiente_etapa.tecnico || 'Sin asignar') : '📋 Sin más etapas pendientes' }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "id": "tg-grupo-etapa",
+      "name": "TG Grupo — etapa finalizada",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1140, 400],
+      "credentials": { "telegramApi": { "id": "REEMPLAZAR_CON_TU_CREDENTIAL_ID", "name": "Telegram Bot" } }
+    },
+    {
+      "parameters": {
+        "chatId": "8647322879",
+        "text": "=✅ *Etapa completada*\n🚗 *{{ $('Webhook').item.json.body.orden.placa }}*\n🔧 {{ $('Webhook').item.json.body.etapa_finalizada.nombre }} finalizada por {{ $('Webhook').item.json.body.etapa_finalizada.tecnico || 'técnico' }}\n{{ $('Webhook').item.json.body.siguiente_etapa ? '➡️ Sigue: ' + $('Webhook').item.json.body.siguiente_etapa.nombre + ' → ' + ($('Webhook').item.json.body.siguiente_etapa.tecnico || 'Sin asignar') : '📋 Sin más etapas pendientes' }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "id": "tg-jefe-etapa",
+      "name": "TG Jefe — etapa finalizada",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1140, 500],
+      "credentials": { "telegramApi": { "id": "REEMPLAZAR_CON_TU_CREDENTIAL_ID", "name": "Telegram Bot" } }
+    },
+
+    {
+      "parameters": {
+        "chatId": "-5195463580",
+        "text": "=🏁 *¡Orden completada!*\n🚗 *{{ $('Webhook').item.json.body.orden.placa }}* — {{ $('Webhook').item.json.body.orden.marca }} {{ $('Webhook').item.json.body.orden.linea }}\n👤 {{ $('Webhook').item.json.body.orden.propietario }}\n✅ Todos los servicios han sido finalizados\n🔗 {{ $('Webhook').item.json.body.link }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "id": "tg-grupo-completada",
+      "name": "TG Grupo — orden completada",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [700, 540],
+      "credentials": { "telegramApi": { "id": "REEMPLAZAR_CON_TU_CREDENTIAL_ID", "name": "Telegram Bot" } }
+    },
+    {
+      "parameters": {
+        "chatId": "8647322879",
+        "text": "=🏁 *¡Orden completada!*\n🚗 *{{ $('Webhook').item.json.body.orden.placa }}* — {{ $('Webhook').item.json.body.orden.marca }} {{ $('Webhook').item.json.body.orden.linea }}\n👤 {{ $('Webhook').item.json.body.orden.propietario }}\n✅ Todos los servicios han sido finalizados\n🔗 {{ $('Webhook').item.json.body.link }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "id": "tg-jefe-completada",
+      "name": "TG Jefe — orden completada",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [700, 660],
+      "credentials": { "telegramApi": { "id": "REEMPLAZAR_CON_TU_CREDENTIAL_ID", "name": "Telegram Bot" } }
+    },
+
+    {
+      "parameters": {
+        "chatId": "-5195463580",
+        "text": "=📄 *Cotización subida*\n🚗 *{{ $('Webhook').item.json.body.orden.placa }}*\n👤 {{ $('Webhook').item.json.body.orden.propietario }}\n{{ $('Webhook').item.json.body.orden.aseguradora ? '🏢 ' + $('Webhook').item.json.body.orden.aseguradora + '\\n' : '' }}🔗 [Ver PDF]({{ $('Webhook').item.json.body.cotizacion_url }})",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "id": "tg-grupo-cotizacion",
+      "name": "TG Grupo — cotización",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [700, 800],
+      "credentials": { "telegramApi": { "id": "REEMPLAZAR_CON_TU_CREDENTIAL_ID", "name": "Telegram Bot" } }
+    },
+    {
+      "parameters": {
+        "chatId": "8647322879",
+        "text": "=📄 *Cotización subida*\n🚗 *{{ $('Webhook').item.json.body.orden.placa }}*\n👤 {{ $('Webhook').item.json.body.orden.propietario }}\n{{ $('Webhook').item.json.body.orden.aseguradora ? '🏢 ' + $('Webhook').item.json.body.orden.aseguradora + '\\n' : '' }}🔗 [Ver PDF]({{ $('Webhook').item.json.body.cotizacion_url }})",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "id": "tg-jefe-cotizacion",
+      "name": "TG Jefe — cotización",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [700, 920],
+      "credentials": { "telegramApi": { "id": "REEMPLAZAR_CON_TU_CREDENTIAL_ID", "name": "Telegram Bot" } }
+    },
+
+    {
+      "parameters": {
+        "chatId": "8647322879",
+        "text": "=🔩 *Solicitud de repuesto*\n🚗 *{{ $('Webhook').item.json.body.placa }}* — {{ $('Webhook').item.json.body.marca }} {{ $('Webhook').item.json.body.modelo }}\n📦 {{ $('Webhook').item.json.body.unidades }}x *{{ $('Webhook').item.json.body.repuesto }}*\n👷 Solicitado por: {{ $('Webhook').item.json.body.solicitado_por }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "id": "tg-jefe-repuesto",
+      "name": "TG Jefe — repuesto",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [700, 1060],
+      "credentials": { "telegramApi": { "id": "REEMPLAZAR_CON_TU_CREDENTIAL_ID", "name": "Telegram Bot" } }
+    },
+    {
+      "parameters": {
+        "chatId": "-5195463580",
+        "text": "=🔩 *Solicitud de repuesto*\n🚗 *{{ $('Webhook').item.json.body.placa }}* — {{ $('Webhook').item.json.body.marca }} {{ $('Webhook').item.json.body.modelo }}\n📦 {{ $('Webhook').item.json.body.unidades }}x *{{ $('Webhook').item.json.body.repuesto }}*\n👷 Solicitado por: {{ $('Webhook').item.json.body.solicitado_por }}",
+        "additionalFields": { "parse_mode": "Markdown" }
+      },
+      "id": "tg-grupo-repuesto",
+      "name": "TG Grupo — repuesto",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [700, 1180],
+      "credentials": { "telegramApi": { "id": "REEMPLAZAR_CON_TU_CREDENTIAL_ID", "name": "Telegram Bot" } }
+    }
+  ],
+
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Switch por evento", "type": "main", "index": 0 }]]
+    },
+    "Switch por evento": {
+      "main": [
+        [
+          { "node": "TG Grupo — orden creada", "type": "main", "index": 0 },
+          { "node": "TG Jefe — orden creada", "type": "main", "index": 0 }
+        ],
+        [{ "node": "Buscar telegram técnico", "type": "main", "index": 0 }],
+        [
+          { "node": "TG Grupo — orden completada", "type": "main", "index": 0 },
+          { "node": "TG Jefe — orden completada", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "TG Grupo — cotización", "type": "main", "index": 0 },
+          { "node": "TG Jefe — cotización", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "TG Jefe — repuesto", "type": "main", "index": 0 },
+          { "node": "TG Grupo — repuesto", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Buscar telegram técnico": {
+      "main": [[{ "node": "¿Técnico tiene Telegram?", "type": "main", "index": 0 }]]
+    },
+    "¿Técnico tiene Telegram?": {
+      "main": [
+        [{ "node": "TG Técnico — su etapa", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "TG Técnico — su etapa": {
+      "main": [[
+        { "node": "TG Grupo — etapa finalizada", "type": "main", "index": 0 },
+        { "node": "TG Jefe — etapa finalizada", "type": "main", "index": 0 }
+      ]]
+    },
+    "¿Técnico tiene Telegram? (false)": {
+      "main": [[
+        { "node": "TG Grupo — etapa finalizada", "type": "main", "index": 0 },
+        { "node": "TG Jefe — etapa finalizada", "type": "main", "index": 0 }
+      ]]
+    }
+  },
+
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
