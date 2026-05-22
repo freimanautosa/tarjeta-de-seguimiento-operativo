@@ -460,9 +460,10 @@ async function abrirOrden(id) {
           <div id="pulmon-card" class="pulmon-card ${orden.pulmon?'':'inactivo'}">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
               <div style="font-size:12px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;color:${orden.pulmon?'var(--amarillo)':'var(--gris-mid)'}">Pulmón</div>
+              ${orden.estado !== 'Entregada' && orden.estado !== 'Archivada' ? `
               <button class="btn btn-sm btn-ghost" id="btn-pulmon" onclick="togglePulmon()">
                 ${orden.pulmon ? 'Sacar de pulmón' : 'Activar Pulmón'}
-              </button>
+              </button>` : `<span id="btn-pulmon" style="font-size:11px;color:var(--gris-mid)">Orden cerrada</span>`}
             </div>
             <div id="d-pulmon-badge" style="font-size:13px;color:${orden.pulmon?'var(--amarillo)':'var(--gris-mid)'}">
               ${orden.pulmon
@@ -629,11 +630,6 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
       <div class="etapa-body" id="eb-${k}">
         <div class="etapa-actions" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           ${acc}
-          <button class="btn btn-ghost btn-sm" style="font-size:12px;display:flex;align-items:center;gap:4px"
-            data-oid="${ordenActual?.id||e.orden_id}" data-eid="${eid}" data-placa="${escapeHtml(ordenActual?.placa||'')}" onclick="abrirModalSolicitudRepuesto(+this.dataset.oid,+this.dataset.eid,this.dataset.placa)" >
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-            + Repuesto
-          </button>
         </div>
         <div class="timestamps">
           <div class="ts-chip">Inicio: <strong>${e.inicio?formatTS(e.inicio):'—'}</strong></div>
@@ -676,31 +672,37 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
           </div>
         </div>
         <div class="novedad-section">
-          <div class="novedad-section-titulo">Novedades</div>
-          <div id="nlist-${eid}">${novsHtml}</div>
-          <div class="grid-2" style="margin-top:10px">
-            <div class="field"><label>Tipo</label>
-              <select id="ntype-${eid}">
-                <option value="Detenido">Detenido</option>
-                <option value="Reproceso">Reproceso</option>
-                <option value="Garantia">Garantía</option>
-              </select>
-            </div>
-            <div class="field"><label>Responsable</label>
-              <select id="nresp-${eid}">
-                <option value="S.C.">Servicio al Cliente</option>
-                <option value="A.S.">Asesor de Servicio</option>
-                <option value="C.P.">Control de Producción</option>
-                <option value="A">Almacén</option>
-              </select>
-            </div>
-            <div class="field full"><label>Motivo</label>
-              <textarea id="nmot-${eid}" placeholder="Describe la novedad..." style="min-height:52px"></textarea>
-            </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${eNovs.length?'8px':'0'}">
+            <div class="novedad-section-titulo" style="margin:0">Novedades</div>
+            <button class="btn btn-ghost btn-xs" onclick="_toggleNovForm(${eid})" style="font-size:11px">+ Agregar</button>
           </div>
-          <div class="field" style="margin-top:8px"><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--gris-mid)">Valor adicional COP</label><input id="nvalor-${eid}" type="number" step="1000" min="0" placeholder="0 (opcional)"></div>
-          <div class="btn-row" style="margin-top:8px">
-            <button class="btn btn-danger btn-sm" onclick="guardarNovedad(${eid})">Guardar novedad</button>
+          ${eNovs.length ? `<div id="nlist-${eid}" style="margin-bottom:8px">${novsHtml}</div>` : `<div id="nlist-${eid}"></div>`}
+          <div id="nov-form-${eid}" style="display:none;border-top:1px solid var(--gris-borde);padding-top:10px;margin-top:${eNovs.length?'8px':'0'}">
+            <div class="grid-2" style="margin-top:4px">
+              <div class="field"><label>Tipo</label>
+                <select id="ntype-${eid}">
+                  <option value="Detenido">Detenido</option>
+                  <option value="Reproceso">Reproceso</option>
+                  <option value="Garantia">Garantía</option>
+                </select>
+              </div>
+              <div class="field"><label>Responsable</label>
+                <select id="nresp-${eid}">
+                  <option value="S.C.">Servicio al Cliente</option>
+                  <option value="A.S.">Asesor de Servicio</option>
+                  <option value="C.P.">Control de Producción</option>
+                  <option value="A">Almacén</option>
+                </select>
+              </div>
+              <div class="field full"><label>Motivo</label>
+                <textarea id="nmot-${eid}" placeholder="Describe la novedad..." style="min-height:52px"></textarea>
+              </div>
+            </div>
+            <div class="field" style="margin-top:8px"><label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--gris-mid)">Valor adicional COP</label><input id="nvalor-${eid}" type="number" step="1000" min="0" placeholder="0 (opcional)"></div>
+            <div class="btn-row" style="margin-top:8px">
+              <button class="btn btn-ghost btn-xs" onclick="_toggleNovForm(${eid})">Cancelar</button>
+              <button class="btn btn-danger btn-sm" onclick="guardarNovedad(${eid})">Guardar novedad</button>
+            </div>
           </div>
         </div>
         ${ultimaAprob ? `
@@ -716,13 +718,20 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
     </div>`;
 }
 
-function togglePanel(id) { 
+function togglePanel(id) {
   const el = document.getElementById(id);
-  if (el) el.classList.toggle('open'); 
+  if (el) el.classList.toggle('open');
 }
-function toggleEtapa(id) { 
+function toggleEtapa(id) {
   const el = document.getElementById(id);
-  if (el) el.classList.toggle('open'); 
+  if (el) el.classList.toggle('open');
+}
+function _toggleNovForm(eid) {
+  const form = document.getElementById(`nov-form-${eid}`);
+  if (!form) return;
+  const visible = form.style.display !== 'none';
+  form.style.display = visible ? 'none' : 'block';
+  if (!visible) setTimeout(() => document.getElementById(`nmot-${eid}`)?.focus(), 60);
 }
 
 // ============================================================
@@ -2477,17 +2486,23 @@ async function abrirOrdenMecanico(id) {
   if (!cont) return;
   cont.innerHTML = '<div class="loading-state">Cargando...</div>';
   try {
-    const [orden, todasEtapas, fotosEt, novedades] = await Promise.all([
+    const [orden, todasEtapas, fotosEt, solicitudes] = await Promise.all([
       api(`/ordenes?id=eq.${id}`).then(d => d[0]),
       api(`/etapas?orden_id=eq.${id}&order=creado_en.asc`).catch(()=>[]) || [],
       api(`/fotos_etapas?orden_id=eq.${id}&order=creado_en.desc`).catch(()=>[]) || [],
-      api(`/novedades?orden_id=eq.${id}&order=creado_en.desc`).catch(()=>[]) || []
+      api(`/solicitudes_repuesto?orden_id=eq.${id}&order=creado_en.desc&select=*`).catch(()=>[]) || []
     ]);
 
     // Solo etapas del mecánico actual
     const misEtapas = todasEtapas.filter(e => e.mecanico_id === sesion.id);
     const total = todasEtapas.length;
     const comp  = todasEtapas.filter(e => e.fin).length;
+    const todasMisEtapasFin = misEtapas.length > 0 && misEtapas.every(e => !!e.fin);
+
+    // Mapa solicitudes por etapa
+    const _estC  = {pendiente_jefe:'#D97706',enviado_repuestos:'#7C3AED',cotizado:'#2563EB',pedido:'#0891B2',recibido_taller:'#059669',entregado:'#059669',rechazado:'#DC2626'};
+    const _estBg = {pendiente_jefe:'#FEF3C7',enviado_repuestos:'#EDE9FE',cotizado:'#EBF2FF',pedido:'#E0F2FE',recibido_taller:'#E6F5EF',entregado:'#E6F5EF',rechazado:'#FEE2E2'};
+    const _estL  = {pendiente_jefe:'Pendiente',enviado_repuestos:'En gestión',cotizado:'Cotizado',pedido:'Pedido',recibido_taller:'¡Llegó!',entregado:'Entregado ✓',rechazado:'Rechazado'};
     const pct   = total ? Math.round((comp/total)*100) : 0;
     const circ  = 2 * Math.PI * 22;
 
@@ -2506,17 +2521,31 @@ async function abrirOrdenMecanico(id) {
       const badge = !e.inicio ? 'Pendiente' : e.fin ? 'Completada' : 'En proceso';
       const bCls  = !e.inicio ? 'pendiente' : e.fin ? 'completada' : 'iniciada';
       const eFotos = fotosEt.filter(f => f.etapa_id === e.id);
-      const eNovs  = novedades.filter(n => n.etapa_id === e.id);
       let acc = '';
       if (!e.inicio) acc = `<button class="btn btn-success btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa||'')}" data-oid="${id}" onclick="mecIniciarEtapa(+this.dataset.eid,this.dataset.etapa,+this.dataset.oid)">▶ Iniciar</button>`;
       else if (!e.fin) acc = `<button class="btn btn-danger btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa||'')}" data-srv="${escapeHtml(e.servicio||'')}" data-oid="${id}" onclick="mecFinalizarEtapaDetalle(+this.dataset.eid,this.dataset.etapa,this.dataset.srv,+this.dataset.oid)">■ Finalizar</button>`;
 
       const fotosHtml = eFotos.map(f=>`<div class="foto-thumb" data-url="${escapeHtml(f.url)}" onclick="abrirLightbox(this.dataset.url)"><img src="${escapeHtml(f.url)}" alt="" loading="lazy"></div>`).join('');
-      const novsHtml = eNovs.length ? eNovs.map(n=>`<div class="novedad-item">
-        <div class="novedad-item-top"><span class="novedad-tipo ${escapeHtml((n.tipo||'').toLowerCase())}">${escapeHtml(n.tipo)}</span><span class="novedad-fecha">${formatTS(n.creado_en)}</span></div>
-        <div class="novedad-motivo">${escapeHtml(n.motivo)||'—'}</div>
-        ${n.valor?`<div style="font-size:12px;font-weight:600;color:var(--rojo);margin-top:2px;display:flex;align-items:center;gap:4px">${ico('money',12)} ${new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n.valor)}</div>`:''}
-      </div>`).join('') : '<div style="font-size:12px;color:var(--gris-mid)">Sin novedades.</div>';
+
+      // Solicitudes de repuesto para esta etapa
+      const etapaSols = solicitudes.filter(s => s.etapa_id === e.id);
+      const solsRepHtml = etapaSols.length
+        ? etapaSols.map(s => {
+            const est = s.estado || 'pendiente_jefe';
+            const c = _estC[est] || '#6B7280';
+            const bg = _estBg[est] || '#F3F4F6';
+            const lbl = _estL[est] || est;
+            return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--gris-borde)">
+              <div style="min-width:0">
+                <div style="font-size:13px;font-weight:600">${escapeHtml(s.repuesto||'Repuesto')}</div>
+                <div style="font-size:11px;color:var(--gris-mid)">x${s.unidades||1}${s.observaciones?' · '+escapeHtml(s.observaciones):''}</div>
+                ${est==='recibido_taller'?'<div style="font-size:11px;color:#059669;font-weight:600;margin-top:2px">📦 El repuesto llegó. El jefe te lo entregará pronto.</div>':''}
+                ${s.nota_jefe && est!=='recibido_taller'?`<div style="font-size:11px;color:var(--gris-mid);margin-top:2px;font-style:italic">${escapeHtml(s.nota_jefe)}</div>`:''}
+              </div>
+              <span style="font-size:10px;font-weight:800;color:${c};background:${bg};padding:3px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0">${lbl}</span>
+            </div>`;
+          }).join('')
+        : '<div style="font-size:12px;color:var(--gris-mid)">Sin solicitudes.</div>';
 
       return `<div class="etapa-card" style="margin-bottom:12px">
         <div class="etapa-header" onclick="toggleEtapa('meb-${k}')">
@@ -2540,27 +2569,13 @@ async function abrirOrdenMecanico(id) {
               <div class="upload-prog" id="mec-prog2-${k}"></div>
             </div>
           </div>
-          <div class="novedad-section" style="margin-top:14px">
-            <div class="novedad-section-titulo">Novedades</div>
-            <div>${novsHtml}</div>
-            <div class="grid-2" style="margin-top:10px">
-              <div class="field"><label>Tipo</label>
-                <select id="mec2-ntype-${e.id}">
-                  <option value="Detenido">Detenido</option>
-                  <option value="Reproceso">Reproceso</option>
-                  <option value="Garantia">Garantía</option>
-                </select>
-              </div>
-              <div class="field"><label>Valor adicional COP</label>
-                <input id="mec2-nvalor-${e.id}" type="number" step="1000" min="0" placeholder="0 (opcional)">
-              </div>
-              <div class="field full"><label>Motivo</label>
-                <textarea id="mec2-nmot-${e.id}" placeholder="Describe la novedad..." style="min-height:52px"></textarea>
-              </div>
+          <div style="margin-top:14px;border-top:1px solid var(--gris-borde);padding-top:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gris-mid)">Repuestos</span>
+              ${!e.fin ? `<button class="btn btn-ghost btn-xs" style="font-size:11px;padding:3px 10px"
+                onclick="event.stopPropagation();abrirModalSolicitudRepuesto(${id},${e.id},'${escapeHtml(orden.placa||'').replace(/'/g,"\\x27")}')">+ Solicitar</button>` : ''}
             </div>
-            <div class="btn-row" style="margin-top:8px">
-              <button class="btn btn-danger btn-sm" onclick="mecGuardarNovedadDetalle(${e.id},${id})">Guardar novedad</button>
-            </div>
+            ${solsRepHtml}
           </div>
         </div>
       </div>`;
@@ -2576,7 +2591,6 @@ async function abrirOrdenMecanico(id) {
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
             <span class="badge badge-${orden.pulmon?'pulmon':(orden.estado||'activa').toLowerCase()}">${orden.pulmon?'En Pulmón':escapeHtml(orden.estado)||'Activa'}</span>
-            <button class="btn btn-primary btn-sm" onclick="abrirModalSolicitudRepuesto(${id},null,'Orden #${id}')">+ Solicitar repuesto</button>
           </div>
         </div>
         <div class="donut-section">
