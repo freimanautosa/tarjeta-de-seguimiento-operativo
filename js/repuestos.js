@@ -197,12 +197,13 @@ async function cargarRepuestosJefe() {
     const om = {}; ordenes.forEach(o=>{ om[o.id]=o; });
 
     const estMap = {
-      pendiente_jefe:    {txt:'Pendiente revisión',cls:'badge-pendiente'},
-      enviado_repuestos: {txt:'En repuestos',      cls:'badge-iniciada'},
-      cotizado:          {txt:'Cotizado',           cls:'badge-cotizada'},
-      pedido:            {txt:'Pedido',             cls:'badge-iniciada'},
-      entregado:         {txt:'Entregado',          cls:'badge-completada'},
-      rechazado:         {txt:'Rechazado',          cls:'badge-pendiente'}
+      pendiente_jefe:    {txt:'Pendiente revisión', cls:'badge-pendiente'},
+      enviado_repuestos: {txt:'En repuestos',       cls:'badge-iniciada'},
+      cotizado:          {txt:'Cotizado',            cls:'badge-cotizada'},
+      pedido:            {txt:'Pedido',              cls:'badge-iniciada'},
+      recibido_taller:   {txt:'Llegó al taller',    cls:'badge-completada'},
+      entregado:         {txt:'Entregado al técnico',cls:'badge-completada'},
+      rechazado:         {txt:'Rechazado',           cls:'badge-pendiente'}
     };
 
     const barraHtml = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -213,7 +214,8 @@ async function cargarRepuestosJefe() {
         <option value="enviado_repuestos">En repuestos</option>
         <option value="cotizado">Cotizado</option>
         <option value="pedido">Pedido</option>
-        <option value="entregado">Entregado</option>
+        <option value="recibido_taller">Llegó al taller</option>
+        <option value="entregado">Entregado al técnico</option>
         <option value="rechazado">Rechazado</option>
       </select>
     </div>`;
@@ -260,19 +262,28 @@ async function cargarRepuestosJefe() {
               </div>` : ''}
             ${s.estado==='pedido' ? `
               <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-                <span style="font-size:12px;color:var(--gris-mid);font-style:italic">Pedido al proveedor...</span>
+                <span style="font-size:12px;color:var(--gris-mid);font-style:italic">⏳ Esperando llegada del proveedor...</span>
+                <button class="btn btn-success btn-sm" onclick="jefeConfirmarLlegada(${s.id})">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+                  Llegó al taller
+                </button>
+              </div>` : ''}
+            ${s.estado==='recibido_taller' ? `
+              <div style="background:#E6F5EF;border:1px solid #A7F3D0;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:13px;color:#065F46;font-weight:600">
+                📦 El repuesto está en el taller. Entrégalo al técnico para reanudar su trabajo.
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
                 ${s.etapa_id ? `<button class="btn btn-success btn-sm" onclick="jefeConfirmarEntrega(${s.id},${s.etapa_id})">
                   <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
-                  Confirmar entrega → Reanudar mecánico
-                </button>` : ''}
+                  Entregar al técnico → Reanudar timer
+                </button>` : `<button class="btn btn-success btn-sm" onclick="jefeConfirmarEntrega(${s.id},null)">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+                  Marcar como entregado
+                </button>`}
               </div>` : ''}
             ${s.estado==='enviado_repuestos' ? `
               <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-                <span style="font-size:12px;color:var(--gris-mid);font-style:italic">Esperando cotización de repuestos...</span>
-                ${s.etapa_id ? `<button class="btn btn-success btn-sm" onclick="jefeConfirmarEntrega(${s.id},${s.etapa_id})">
-                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
-                  Confirmar entrega → Reanudar mecánico
-                </button>` : ''}
+                <span style="font-size:12px;color:var(--gris-mid);font-style:italic">⏳ Esperando cotización de repuestos...</span>
               </div>` : ''}
           </div>`;
         }).join('')}
@@ -326,15 +337,30 @@ async function jefeProcesarSolicitud(id, accion, etapaId) {
   cargarRepuestosJefe(); actualizarBadgeRepuestos();
 }
 
-// Jefe confirma que el repuesto llegó y el mecánico puede continuar
+// Jefe confirma que el repuesto llegó al taller (paso 1 de 2)
+async function jefeConfirmarLlegada(solicitudId) {
+  try {
+    await api(`/solicitudes_repuesto?id=eq.${solicitudId}`, 'PATCH', {
+      estado: 'recibido_taller',
+      nota_jefe: 'El repuesto llegó al taller. Pendiente de entrega al técnico.'
+    });
+    toast('✓ Repuesto recibido en taller — entrega al técnico para reanudar');
+    cargarRepuestosJefe();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+// Jefe entrega el repuesto al técnico y reanuda su timer (paso 2 de 2)
 async function jefeConfirmarEntrega(solicitudId, etapaId) {
   try {
-    await api(`/solicitudes_repuesto?id=eq.${solicitudId}`, 'PATCH', { estado: 'entregado' });
+    await api(`/solicitudes_repuesto?id=eq.${solicitudId}`, 'PATCH', {
+      estado: 'entregado',
+      nota_jefe: '✅ Repuesto entregado — puedes continuar con tu trabajo.'
+    });
     if (etapaId) {
       await _reanudarEtapa(etapaId, solicitudId);
-      toast('Repuesto entregado ✓ — ▶ Etapa del mecánico reanudada');
+      toast('Repuesto entregado al técnico ✓ — ▶ Timer reanudado');
     } else {
-      toast('Repuesto marcado como entregado ✓');
+      toast('Repuesto entregado ✓');
     }
     cargarRepuestosJefe();
   } catch(e) { toast('Error: ' + e.message, 'err'); }

@@ -401,17 +401,17 @@ async function cargarRepuestosMecanico() {
     const estadoColor = {
       pendiente_jefe:'#D97706', enviado_repuestos:'#7C3AED',
       cotizado:'#2563EB', pedido:'#0891B2',
-      entregado:'#059669', rechazado:'#DC2626'
+      recibido_taller:'#059669', entregado:'#059669', rechazado:'#DC2626'
     };
     const estadoBg = {
       pendiente_jefe:'#FEF3C7', enviado_repuestos:'#EDE9FE',
       cotizado:'#EBF2FF', pedido:'#E0F2FE',
-      entregado:'#E6F5EF', rechazado:'#FEE2E2'
+      recibido_taller:'#E6F5EF', entregado:'#E6F5EF', rechazado:'#FEE2E2'
     };
     const estadoLabel = {
-      pendiente_jefe:'Pendiente revision', enviado_repuestos:'En gestion',
+      pendiente_jefe:'Pendiente revisión', enviado_repuestos:'En gestión',
       cotizado:'Cotizado', pedido:'Pedido al proveedor',
-      entregado:'Entregado', rechazado:'Rechazado'
+      recibido_taller:'¡Llegó al taller!', entregado:'Entregado', rechazado:'Rechazado'
     };
     const conteos = solicitudes.reduce((acc, s) => {
       const estado = s.estado || 'pendiente_jefe';
@@ -440,6 +440,14 @@ async function cargarRepuestosMecanico() {
           </div>
           <div style="font-weight:700;margin-bottom:4px">${escapeHtml(s.repuesto) || 'Repuesto sin nombre'}</div>
           <div style="font-size:12px;color:var(--gris-mid)">Cantidad: ${s.unidades || 1}${s.observaciones ? ' · ' + escapeHtml(s.observaciones) : ''}</div>
+          ${estado === 'recibido_taller' ? `
+            <div style="background:#E6F5EF;border:1.5px solid #34D399;border-radius:8px;padding:10px 14px;margin-top:10px;display:flex;align-items:center;gap:10px">
+              <span style="font-size:20px">📦</span>
+              <div>
+                <div style="font-weight:700;color:#065F46;font-size:13px">¡Tu repuesto llegó al taller!</div>
+                <div style="font-size:12px;color:#047857;margin-top:2px">El jefe te lo entregará en breve — tu tiempo continúa al recibirlo.</div>
+              </div>
+            </div>` : ''}
           ${s.nota_jefe ? `
             <div style="
               font-size:12px;padding:10px 12px;border-radius:8px;margin-top:10px;line-height:1.6;

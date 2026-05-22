@@ -430,9 +430,18 @@ function iniciarRelojTaller() {
   setInterval(tick, 1000);
 }
 
-function _tvTimerStr(inicioISO) {
+function _tvTimerStr(etapaOinicio) {
+  const inicioISO = typeof etapaOinicio === 'string' ? etapaOinicio : etapaOinicio?.inicio;
   if (!inicioISO) return '';
-  const secs = Math.floor((Date.now() - new Date(inicioISO)) / 1000);
+  let secs = Math.floor((Date.now() - new Date(inicioISO)) / 1000);
+  // Descontar tiempo en pausa acumulado
+  if (typeof etapaOinicio === 'object' && etapaOinicio) {
+    secs -= (etapaOinicio.tiempo_pausado_min || 0) * 60;
+    if (etapaOinicio.pausado && etapaOinicio.pausa_inicio) {
+      secs -= Math.floor((Date.now() - new Date(etapaOinicio.pausa_inicio)) / 1000);
+    }
+  }
+  secs = Math.max(0, secs);
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
   const s = secs % 60;
@@ -520,7 +529,7 @@ async function cargarPantallaTaller() {
     const [ordenesActivas, entregadasHoy, etapasActivas, etapasTodas, aprobacionesTodas] = await Promise.all([
       api(`/ordenes?estado=eq.Activa&order=fecha_entrega_1.asc`).catch(()=>[]) || [],
       api(`/ordenes?estado=eq.Entregada&entregada_en=gte.${hoy.toISOString()}&order=entregada_en.desc`).catch(()=>[]) || [],
-      api(`/etapas?fin=is.null&inicio=not.is.null&select=id,orden_id,etapa,servicio,mecanico_id,tecnico,inicio`).catch(()=>[]) || [],
+      api(`/etapas?fin=is.null&inicio=not.is.null&select=id,orden_id,etapa,servicio,mecanico_id,tecnico,inicio,pausado,pausa_inicio,tiempo_pausado_min`).catch(()=>[]) || [],
       api(`/etapas?select=id,orden_id,etapa,servicio,inicio,fin,tecnico&order=creado_en.asc`).catch(()=>[]) || [],
       api(`/aprobaciones_etapa?estado=eq.aprobado&select=etapa_id`).catch(()=>[]) || []
     ]);
@@ -626,7 +635,7 @@ async function cargarPantallaTaller() {
       // Timer(es)
       const timerHtml = etapasActOrden.length
         ? etapasActOrden.map(e =>
-            `<div class="tv-timer-val" id="tv-et-${e.id}">${_tvTimerStr(e.inicio)}</div>`
+            `<div class="tv-timer-val" id="tv-et-${e.id}" ${e.pausado ? 'style="color:rgba(252,211,77,.35)"' : ''}>${e.pausado ? '⏸ ' : ''}${_tvTimerStr(e)}</div>`
           ).join('')
         : `<div style="font-size:.7vw;color:rgba(255,255,255,.18)">—</div>`;
 
@@ -744,7 +753,7 @@ async function cargarPantallaTaller() {
     window._tallerTimerInterval = setInterval(() => {
       etapasActivas.forEach(e => {
         const el = document.getElementById(`tv-et-${e.id}`);
-        if (el) el.textContent = _tvTimerStr(e.inicio);
+        if (el) el.textContent = (e.pausado ? '⏸ ' : '') + _tvTimerStr(e);
       });
     }, 1000);
 
