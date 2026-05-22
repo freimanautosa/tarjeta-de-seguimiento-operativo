@@ -13,7 +13,9 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "Bash(git pull *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(findstr /R /S /I \"INGRESOS Y ENTREGAS\" \"C:\\\\Users\\\\juanm\\\\OneDrive\\\\Documentos\\\\appProcesos\\\\js\\\\*.js\")",
+      "Bash(findstr /i \"INGRESOS\" js\\\\dashboard.js)"
     ]
   }
 }
