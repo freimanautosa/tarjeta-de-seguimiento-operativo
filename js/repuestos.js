@@ -341,62 +341,147 @@ async function jefeConfirmarEntrega(solicitudId, etapaId) {
 }
 
 async function abrirModalPrecioVenta(solicitudId) {
-  const [cots,sol] = await Promise.all([
-    api(`/cotizaciones_repuesto?solicitud_id=eq.${solicitudId}&order=opcion.asc&select=*,proveedores(nombre,whatsapp)`).catch(()=>[]) || [],
-    api(`/solicitudes_repuesto?id=eq.${solicitudId}`).then(r=>r?.[0]).catch(()=>null)
+  const [cots, sol] = await Promise.all([
+    api(`/cotizaciones_repuesto?solicitud_id=eq.${solicitudId}&order=opcion.asc&select=*,proveedores(nombre,whatsapp)`).catch(() => []) || [],
+    api(`/solicitudes_repuesto?id=eq.${solicitudId}`).then(r => r?.[0]).catch(() => null)
   ]);
-  const existing = document.getElementById('modal-precio-venta');
-  if (existing) existing.remove();
-  const fmt = n => n!=null ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : '—';
-  const opLbl = {1:'Opción 1 — Precio alto',2:'Opción 2 — Precio medio',3:'Opción 3 — Precio bajo'};
+  document.getElementById('modal-precio-venta')?.remove();
+
+  const fmt = n => n != null ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n) : '—';
+  const opLbl = { 1: 'Opción 1 — Precio alto', 2: 'Opción 2 — Precio medio', 3: 'Opción 3 — Precio bajo' };
+
+  // Pre-seleccionar la que ya tenga precio_venta_jefe, o la primera
+  const presel = cots.find(c => c.precio_venta_jefe) || cots[0];
+  window._pvSeleccionada = presel?.id || null;
 
   const div = document.createElement('div');
   div.id = 'modal-precio-venta';
   div.className = 'modal-overlay show';
   div.innerHTML = `
-    <div class="modal" style="max-width:560px">
+    <div class="modal" style="max-width:580px">
       <div class="modal-header">
-        <div class="modal-titulo">Precio venta — ${escapeHtml(sol?.repuesto||'')}</div>
+        <div class="modal-titulo">Precio venta — ${escapeHtml(sol?.repuesto || '')}</div>
         <button class="modal-close" onclick="document.getElementById('modal-precio-venta').remove()">✕</button>
       </div>
       <div class="modal-body">
-        <p style="font-size:13px;color:var(--gris-mid);margin-bottom:16px">El precio sugerido es el costo del taller + 40%.</p>
-        ${cots.map(c => {
-          const sug = c.precio_costo ? Math.round(c.precio_costo*1.4) : null;
-          return `<div style="background:var(--gris-bg);border-radius:8px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--gris-borde)">
-            <div style="font-weight:700;font-size:13px;margin-bottom:6px;color:var(--azul)">${opLbl[c.opcion]||'Opción '+c.opcion}</div>
-            <div style="font-size:12px;color:var(--gris-mid);margin-bottom:10px">
-              Proveedor: <strong>${escapeHtml(c.proveedores?.nombre||'—')}</strong><br>
-              Costo taller: <strong>${fmt(c.precio_costo)}</strong>
-              ${sug ? `· <span style="color:var(--verde);font-weight:600">Sugerido +40%: ${fmt(sug)}</span>` : ''}
+        <p style="font-size:13px;color:var(--gris-mid);margin-bottom:16px">
+          Selecciona la opción que le presentarás al cliente. El precio sugerido es costo del taller + 40%.
+        </p>
+        ${cots.length ? cots.map(c => {
+          const sug = c.precio_costo ? Math.round(c.precio_costo * 1.4) : null;
+          const seleccionado = c.id === window._pvSeleccionada;
+          return `
+          <div id="pv-card-${c.id}"
+            onclick="_pvSeleccionar(${c.id}, [${cots.map(x => x.id).join(',')}])"
+            style="
+              border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;
+              transition:border-color .15s, background .15s;
+              border:2px solid ${seleccionado ? 'var(--azul)' : 'var(--gris-borde)'};
+              background:${seleccionado ? 'var(--azul-bg,#EBF2FF)' : 'var(--gris-bg)'};
+            ">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+              <div id="pv-radio-${c.id}" style="
+                width:18px;height:18px;border-radius:50%;flex-shrink:0;
+                border:2px solid ${seleccionado ? 'var(--azul)' : 'var(--gris-mid)'};
+                background:${seleccionado ? 'var(--azul)' : 'transparent'};
+                display:flex;align-items:center;justify-content:center;
+              ">${seleccionado ? '<div style="width:7px;height:7px;border-radius:50%;background:#fff"></div>' : ''}</div>
+              <div style="font-weight:700;font-size:13px;color:${seleccionado ? 'var(--azul)' : 'var(--texto)'}">
+                ${opLbl[c.opcion] || 'Opción ' + c.opcion}
+              </div>
             </div>
-            <div class="field">
-              <label>Precio venta al cliente (COP)</label>
+            <div style="font-size:12px;color:var(--gris-mid);margin-bottom:10px;padding-left:28px">
+              Proveedor: <strong>${escapeHtml(c.proveedores?.nombre || '—')}</strong> &nbsp;·&nbsp;
+              Costo taller: <strong>${fmt(c.precio_costo)}</strong>
+              ${sug ? `&nbsp;·&nbsp;<span style="color:var(--verde);font-weight:600">Sugerido +40%: ${fmt(sug)}</span>` : ''}
+            </div>
+            <div style="padding-left:28px" onclick="event.stopPropagation()">
+              <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gris-mid);display:block;margin-bottom:5px">
+                Precio venta al cliente (COP)
+              </label>
               <div style="display:flex;gap:8px;align-items:center">
-                <input type="number" id="pv-${c.id}" value="${c.precio_venta_jefe||(sug||'')}" placeholder="0" min="0" style="font-family:'DM Mono',monospace;flex:1">
-                ${sug ? `<button type="button" class="btn btn-ghost btn-sm" data-sug="${sug}" onclick="document.getElementById('pv-${c.id}').value=this.dataset.sug" style="white-space:nowrap;font-size:11px">Usar sugerido</button>` : ''}
+                <input type="number" id="pv-${c.id}"
+                  value="${c.precio_venta_jefe || (sug || '')}"
+                  placeholder="0" min="0"
+                  style="font-family:'DM Mono',monospace;flex:1;padding:9px 12px;border:1px solid var(--gris-borde);border-radius:7px;font-size:14px">
+                ${sug ? `<button type="button" class="btn btn-ghost btn-sm"
+                  onclick="document.getElementById('pv-${c.id}').value='${sug}'"
+                  style="white-space:nowrap;font-size:11px">Usar sugerido</button>` : ''}
               </div>
             </div>
           </div>`;
-        }).join('')}
-        ${!cots.length ? '<p style="color:var(--gris-mid)">Sin cotizaciones aún.</p>' : ''}
+        }).join('') : '<p style="color:var(--gris-mid)">Sin cotizaciones aún.</p>'}
+
+        <!-- Devolver al técnico -->
+        <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--gris-borde)">
+          <div style="font-size:12px;font-weight:700;color:var(--rojo);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">
+            ¿Ninguna opción funciona?
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start">
+            <input id="pv-nota-devolucion" type="text" placeholder="Motivo para el técnico (opcional)"
+              style="flex:1;padding:9px 12px;border:1px solid var(--gris-borde);border-radius:7px;font-size:13px">
+            <button class="btn btn-sm" onclick="devolverRepuestoATecnico(${solicitudId})"
+              style="background:var(--rojo-bg,#FEE2E2);color:var(--rojo,#DC2626);border:1px solid var(--rojo,#DC2626);white-space:nowrap;flex-shrink:0">
+              ↩ Devolver al técnico
+            </button>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="document.getElementById('modal-precio-venta').remove()">Cancelar</button>
-        ${cots.length ? `<button class="btn btn-primary" onclick="guardarPreciosVenta([${cots.map(c=>c.id).join(',')}],${solicitudId})">Guardar y notificar cliente</button>` : ''}
+        ${cots.length ? `<button class="btn btn-primary" onclick="guardarPrecioVentaSeleccionado(${solicitudId})">
+          Guardar y notificar cliente
+        </button>` : ''}
       </div>
     </div>`;
   document.body.appendChild(div);
 }
 
-async function guardarPreciosVenta(cotIds, solicitudId) {
-  for (const id of cotIds) {
-    const val = parseFloat(document.getElementById(`pv-${id}`)?.value)||0;
-    await api(`/cotizaciones_repuesto?id=eq.${id}`,'PATCH',{precio_venta_jefe:val});
-  }
-  toast('Precios guardados ✓');
-  document.getElementById('modal-precio-venta')?.remove();
-  cargarRepuestosJefe();
+function _pvSeleccionar(cotId, todosIds) {
+  window._pvSeleccionada = cotId;
+  todosIds.forEach(id => {
+    const card  = document.getElementById(`pv-card-${id}`);
+    const radio = document.getElementById(`pv-radio-${id}`);
+    const lbl   = card?.querySelector('div[style*="font-weight:700;font-size:13px"]');
+    const sel   = id === cotId;
+    if (card) {
+      card.style.borderColor = sel ? 'var(--azul)' : 'var(--gris-borde)';
+      card.style.background  = sel ? 'var(--azul-bg,#EBF2FF)' : 'var(--gris-bg)';
+    }
+    if (radio) {
+      radio.style.borderColor = sel ? 'var(--azul)' : 'var(--gris-mid)';
+      radio.style.background  = sel ? 'var(--azul)' : 'transparent';
+      radio.innerHTML = sel ? '<div style="width:7px;height:7px;border-radius:50%;background:#fff"></div>' : '';
+    }
+    if (lbl) lbl.style.color = sel ? 'var(--azul)' : 'var(--texto)';
+  });
+}
+
+async function guardarPrecioVentaSeleccionado(solicitudId) {
+  const cotId = window._pvSeleccionada;
+  if (!cotId) { toast('Selecciona una opción primero', 'err'); return; }
+  const val = parseFloat(document.getElementById(`pv-${cotId}`)?.value) || 0;
+  if (!val) { toast('Ingresa el precio de venta', 'err'); document.getElementById(`pv-${cotId}`)?.focus(); return; }
+  try {
+    await api(`/cotizaciones_repuesto?id=eq.${cotId}`, 'PATCH', { precio_venta_jefe: val });
+    await api(`/solicitudes_repuesto?id=eq.${solicitudId}`, 'PATCH', { estado: 'cotizado' });
+    toast('Precio guardado ✓');
+    document.getElementById('modal-precio-venta')?.remove();
+    cargarRepuestosJefe();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+async function devolverRepuestoATecnico(solicitudId) {
+  const nota = document.getElementById('pv-nota-devolucion')?.value.trim() || 'Sin opciones viables — repuesto devuelto al técnico.';
+  try {
+    await api(`/solicitudes_repuesto?id=eq.${solicitudId}`, 'PATCH', {
+      estado: 'rechazado',
+      nota_jefe: nota
+    });
+    toast('Solicitud devuelta al técnico ✓');
+    document.getElementById('modal-precio-venta')?.remove();
+    cargarRepuestosJefe();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
 
 // ─────────────────────────────────────────────────────────
