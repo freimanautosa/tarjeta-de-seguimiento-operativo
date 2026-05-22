@@ -534,7 +534,7 @@ async function abrirModalPrecioVenta(solicitudId) {
       </div>
       <div class="modal-body">
         <p style="font-size:13px;color:var(--gris-mid);margin-bottom:16px">
-          Selecciona la opción que le presentarás al cliente. El precio sugerido es costo del taller + 40%.
+          Selecciona la opción y define el precio de venta. Llama al cliente, confirma el valor y luego guarda aquí el precio acordado.
         </p>
         ${cots.length ? cots.map(c => {
           const sug = c.precio_costo ? Math.round(c.precio_costo * 1.4) : null;
@@ -573,9 +573,6 @@ async function abrirModalPrecioVenta(solicitudId) {
                   value="${c.precio_venta_jefe || (sug || '')}"
                   placeholder="0" min="0"
                   style="font-family:'DM Mono',monospace;flex:1;padding:9px 12px;border:1px solid var(--gris-borde);border-radius:7px;font-size:14px">
-                ${sug ? `<button type="button" class="btn btn-ghost btn-sm"
-                  onclick="document.getElementById('pv-${c.id}').value='${sug}'"
-                  style="white-space:nowrap;font-size:11px">Usar sugerido</button>` : ''}
               </div>
             </div>
           </div>`;
@@ -599,7 +596,7 @@ async function abrirModalPrecioVenta(solicitudId) {
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="document.getElementById('modal-precio-venta').remove()">Cancelar</button>
         ${cots.length ? `<button class="btn btn-primary" onclick="guardarPrecioVentaSeleccionado(${solicitudId})">
-          Guardar y notificar cliente
+          Confirmar precio de venta
         </button>` : ''}
       </div>
     </div>`;
@@ -815,12 +812,14 @@ async function cargarSolicitudesRepuestos() {
                     ${s.estado==='enviado_repuestos' ? '+ Cotizar' : 'Ver / editar cotizaciones'}
                   </button>`
                 : ''}
-              ${s.estado === 'pedido'
+              ${s.estado === 'pedido' && !s.pedido_proveedor_confirmado
                 ? `<button class="btn btn-success btn-sm" onclick="marcarRepuestoSolicitadoProveedor(${s.id})"
                     style="display:flex;align-items:center;gap:5px">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
                     Confirmar pedido al proveedor
                   </button>`
+                : s.estado === 'pedido' && s.pedido_proveedor_confirmado
+                ? `<span style="font-size:12px;color:#059669;font-weight:600">✓ Pedido confirmado al proveedor</span>`
                 : ''}
             </div>
           </div>`;
@@ -865,7 +864,12 @@ async function marcarRepuestoSolicitadoProveedor(solicitudId) {
       }).catch(()=>{});
     }
 
-    toast('✓ Pedido confirmado — técnico notificado');
+    // Marcar en DB que ya se confirmó el pedido al proveedor
+    await api(`/solicitudes_repuesto?id=eq.${solicitudId}`, 'PATCH', {
+      pedido_proveedor_confirmado: true
+    }).catch(() => {});
+
+    toast('✓ Pedido confirmado al proveedor — técnico notificado');
     cargarSolicitudesRepuestos();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }

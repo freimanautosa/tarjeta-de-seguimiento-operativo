@@ -15,11 +15,6 @@ function montarMecanico() {
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         Mi historial
       </button>
-      <button class="nav-item" id="nav-mec-solicitudes" onclick="navMec('solicitudes')" style="position:relative">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83"/></svg>
-        Solicitudes
-        <span id="badge-mec-repuestos" style="display:none;position:absolute;top:6px;right:8px;background:#059669;color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;line-height:16px;text-align:center">!</span>
-      </button>
     `;
   }
   
@@ -33,11 +28,6 @@ function montarMecanico() {
       <button class="bnav-item" id="bnav-mec-historial" onclick="navMec('historial')">
         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <span>Historial</span>
-      </button>
-      <button class="bnav-item" id="bnav-mec-solicitudes" onclick="navMec('solicitudes')" style="position:relative">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4"/></svg>
-        <span>Solicitudes</span>
-        <span id="badge-bnav-mec-repuestos" style="display:none;position:absolute;top:4px;right:12px;background:#059669;color:white;border-radius:50%;width:14px;height:14px;font-size:8px;font-weight:700;line-height:14px;text-align:center">!</span>
       </button>
     `;
   }
@@ -62,20 +52,19 @@ async function actualizarBadgeMecRepuestos() {
 }
 
 function navMec(pag) {
-  ['ordenes','historial','solicitudes'].forEach(p => {
+  ['ordenes','historial'].forEach(p => {
     const nb = document.getElementById('nav-mec-'+p);
     const bb = document.getElementById('bnav-mec-'+p);
     if (nb) nb.classList.toggle('active', p===pag);
     if (bb) bb.classList.toggle('active', p===pag);
   });
-  const titles = { ordenes:'Mis Órdenes', historial:'Mi Historial', solicitudes:'Solicitudes' };
-  const pages  = { ordenes:'pag-mecanico', historial:'pag-mec-historial', solicitudes:'pag-mec-repuestos' };
+  const titles = { ordenes:'Mis Órdenes', historial:'Mi Historial' };
+  const pages  = { ordenes:'pag-mecanico', historial:'pag-mec-historial' };
   mostrarPagina(pages[pag]||'pag-mecanico');
   const title = document.getElementById('topbar-title');
   if (title) title.textContent = titles[pag]||'Mis Órdenes';
   if (pag==='ordenes') cargarEtapasMecanico();
   if (pag==='historial') cargarHistorialMecanico();
-  if (pag==='solicitudes') cargarRepuestosMecanico();
   closeSidebar();
 }
 
@@ -172,10 +161,13 @@ async function cargarEtapasMecanico() {
 
       // ── Solicitudes de repuestos para esta orden ──────────────────────
       const solsOrden = solsByOrden[oid] || [];
-      let solsHtml = '<div style="border-top:1px solid var(--gris-borde);margin-top:12px;padding-top:12px" onclick="event.stopPropagation()">';
-      solsHtml += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+      const todasEtapasFin = ets.every(e => !!e.fin);
+      // Solo mostrar sección de repuestos si hay solicitudes O si no terminaron todas las etapas
+      let solsHtml = '';
+      if (solsOrden.length > 0 || !todasEtapasFin) {
+      solsHtml = '<div style="border-top:1px solid var(--gris-borde);margin-top:12px;padding-top:12px" onclick="event.stopPropagation()">';
+      solsHtml += '<div style="margin-bottom:8px">';
       solsHtml += '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gris-mid)">Repuestos</span>';
-      solsHtml += `<button class="btn btn-ghost btn-xs" style="padding:2px 10px;font-size:11px" onclick="event.stopPropagation();abrirSolicitudRapida(${oid},'${escapeHtml(orden.placa||'').replace(/'/g,'&#39;')}')">+ Solicitar</button>`;
       solsHtml += '</div>';
       if (solsOrden.length) {
         solsOrden.forEach((s, i) => {
@@ -193,8 +185,8 @@ async function cargarEtapasMecanico() {
           solsHtml += '<div style="flex:1;min-width:0">';
           solsHtml += `<div style="font-weight:600;font-size:13px">${escapeHtml(s.repuesto) || 'Repuesto'}</div>`;
           solsHtml += `<div style="font-size:11px;color:var(--gris-mid)">x${s.unidades || 1}${s.observaciones ? ' · ' + escapeHtml(s.observaciones) : ''}</div>`;
-          if (s.nota_jefe) solsHtml += `<div style="font-size:11px;padding:5px 8px;border-radius:6px;margin-top:4px;line-height:1.5;${notaStyle}">${escapeHtml(s.nota_jefe)}</div>`;
-          if (est === 'recibido_taller') solsHtml += '<div style="background:#E6F5EF;border:1.5px solid #34D399;border-radius:6px;padding:8px 10px;margin-top:6px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">📦</span><div style="font-weight:700;color:#065F46;font-size:12px">¡Tu repuesto llegó! El jefe te lo entregará pronto.</div></div>';
+          if (s.nota_jefe && est !== 'recibido_taller') solsHtml += `<div style="font-size:11px;padding:5px 8px;border-radius:6px;margin-top:4px;line-height:1.5;${notaStyle}">${escapeHtml(s.nota_jefe)}</div>`;
+          if (est === 'recibido_taller') solsHtml += '<div style="background:#E6F5EF;border:1.5px solid #34D399;border-radius:6px;padding:8px 10px;margin-top:6px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">📦</span><div style="font-weight:700;color:#065F46;font-size:12px">El repuesto llegó al taller. El jefe te lo entregará pronto.</div></div>';
           solsHtml += `</div><span style="font-size:10px;font-weight:800;color:${c};background:${bg};padding:3px 8px;border-radius:99px;white-space:nowrap;text-transform:uppercase;flex-shrink:0;margin-top:2px">${lbl}</span>`;
           solsHtml += '</div>';
         });
@@ -202,6 +194,7 @@ async function cargarEtapasMecanico() {
         solsHtml += '<div style="font-size:12px;color:var(--gris-mid);padding:2px 0">Sin solicitudes activas.</div>';
       }
       solsHtml += '</div>';
+      } // end if(solsOrden.length > 0 || !todasEtapasFin)
 
       return `<div class="mec-orden-card" onclick="abrirOrdenMecanico(${oid})" style="cursor:pointer">
         <div class="mec-orden-header">
@@ -266,7 +259,7 @@ let mecEtapaActual = null;
 async function abrirMecDetalle(eid, oid) {
   mostrarPagina('pag-mec-detalle');
   const title = document.getElementById('topbar-title');
-  if (title) title.textContent = 'Fotos y Novedades';
+  if (title) title.textContent = 'Fotos';
   const cont = document.getElementById('mec-detalle-contenido');
   if (!cont) return;
   cont.innerHTML = '<div class="loading-state">Cargando...</div>';
@@ -309,25 +302,10 @@ async function abrirMecDetalle(eid, oid) {
           <div class="upload-prog" id="mec-prog-${k}"></div>
         </div>
       </div>
-      <div class="card" style="padding:24px">
-        <div class="seccion-titulo">Novedades</div>
+      ${novedades.length ? `<div class="card" style="padding:24px">
+        <div class="seccion-titulo">Novedades registradas</div>
         <div id="mec-novs-${eid}">${novsHtml}</div>
-        <div class="grid-2" style="margin-top:12px">
-          <div class="field"><label>Tipo</label>
-            <select id="mec-ntype-${eid}">
-              <option value="Detenido">Detenido</option>
-              <option value="Reproceso">Reproceso</option>
-              <option value="Garantia">Garantía</option>
-            </select>
-          </div>
-          <div class="field full"><label>Motivo</label>
-            <textarea id="mec-nmot-${eid}" placeholder="Describe la novedad..." style="min-height:52px"></textarea>
-          </div>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-danger btn-sm" onclick="mecGuardarNovedad(${eid},${oid})">Guardar novedad</button>
-        </div>
-      </div>`;
+      </div>` : ''}`;
   } catch(e) { 
     cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`; 
   }
