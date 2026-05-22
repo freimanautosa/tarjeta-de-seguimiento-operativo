@@ -499,38 +499,42 @@ async function abrirOrden(id) {
                        <span style="width:8px;height:8px;border-radius:50%;background:var(--azul-mid);display:inline-block"></span>
                        <span style="font-size:13px;font-weight:700;color:var(--azul)">${orden.estado === 'Entregada' ? 'Finalizada' : 'Archivada'}</span>
                      </div>
-                     <button class="btn btn-ghost btn-sm" style="width:100%" onclick="generarPreliquidacion(${orden.id})">
-                       <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                       Preliquidación
-                     </button>
+                     <div style="display:flex;gap:6px;width:100%">
+                       <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},false)">📋 Sin precios</button>
+                       <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},true)">💰 Con precios</button>
+                     </div>
                    </div>`
                 : todasCalidadAprobada
                 ? `<button class="btn btn-success" style="width:100%" onclick="cambiarEstado('Entregada')">
                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
                      Marcar como Finalizada
                    </button>
-                   <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:6px" onclick="generarPreliquidacion(${orden.id})">
-                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                     Generar preliquidación
-                   </button>
+                   <div style="display:flex;gap:6px;margin-top:6px">
+                     <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},false)">
+                       📋 Sin precios
+                     </button>
+                     <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},true)">
+                       💰 Con precios
+                     </button>
+                   </div>
                    <div style="font-size:11px;color:var(--gris-mid);margin-top:8px;text-align:center">✓ Calidad aprobada en todas las etapas</div>`
                 : comp === total && total > 0
                 ? `<div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:8px">
                      ⚠️ Todas las etapas completadas. Aprueba la calidad de cada etapa para poder finalizar la orden.
                    </div>
-                   <button class="btn btn-ghost btn-sm" style="width:100%" onclick="generarPreliquidacion(${orden.id})">
-                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                     Preliquidación
-                   </button>`
+                   <div style="display:flex;gap:6px">
+                     <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},false)">📋 Sin precios</button>
+                     <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},true)">💰 Con precios</button>
+                   </div>`
                 : `<div style="display:flex;flex-direction:column;gap:8px">
                      <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:var(--azul-light);border-radius:20px">
                        <span style="width:8px;height:8px;border-radius:50%;background:var(--azul-mid);display:inline-block"></span>
                        <span style="font-size:13px;font-weight:700;color:var(--azul)">Activa</span>
                      </div>
-                     <button class="btn btn-ghost btn-sm" style="width:100%" onclick="generarPreliquidacion(${orden.id})">
-                       <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                       Preliquidación
-                     </button>
+                     <div style="display:flex;gap:6px;width:100%">
+                       <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},false)">📋 Sin precios</button>
+                       <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},true)">💰 Con precios</button>
+                     </div>
                    </div>`
               }
             </div>
@@ -3004,15 +3008,23 @@ async function recargarListasNuevaOrden() {
 // ═══════════════════════════════════════════════════════════
 // PRELIQUIDACIÓN — PDF con resumen de la orden
 // ═══════════════════════════════════════════════════════════
-async function generarPreliquidacion(ordenId) {
+async function generarPreliquidacion(ordenId, conPrecios = false) {
   try {
     toast('Generando preliquidación...');
 
-    const [orden, etapas, novedades] = await Promise.all([
+    const [orden, etapas, novedades, solicitudes] = await Promise.all([
       api(`/ordenes?id=eq.${ordenId}`).then(r => r?.[0]).catch(()=>null),
       api(`/etapas?orden_id=eq.${ordenId}&order=creado_en.asc&select=*`).catch(()=>[]) || [],
-      api(`/novedades?orden_id=eq.${ordenId}&select=*`).catch(()=>[]) || []
+      api(`/novedades?orden_id=eq.${ordenId}&select=*`).catch(()=>[]) || [],
+      api(`/solicitudes_repuesto?orden_id=eq.${ordenId}&estado=in.(pedido,recibido_taller,entregado)&select=*`).catch(()=>[]) || []
     ]);
+
+    // Cotizaciones e ítems de cada solicitud de repuesto
+    const solIds = solicitudes.map(s => s.id);
+    const [cotizaciones, solItems] = solIds.length ? await Promise.all([
+      api(`/cotizaciones_repuesto?solicitud_id=in.(${solIds.join(',')})&precio_venta_jefe=not.is.null&select=*,proveedores(nombre)`).catch(()=>[]) || [],
+      api(`/solicitud_items?solicitud_id=in.(${solIds.join(',')})&order=creado_en.asc`).catch(()=>[]) || []
+    ]) : [[], []];
 
     if (!orden) { toast('No se encontró la orden', 'err'); return; }
 
@@ -3078,6 +3090,49 @@ async function generarPreliquidacion(ordenId) {
         </table>
       </div>`).join('');
 
+    // ── Repuestos ──────────────────────────────────────────
+    const totalRepuestos = solicitudes.reduce((acc, sol) => {
+      const cot = cotizaciones.find(c => c.solicitud_id === sol.id);
+      return acc + (cot?.precio_venta_jefe || 0);
+    }, 0);
+
+    const repuestosHtml = solicitudes.length ? `
+      <div style="margin-bottom:20px">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#7C3AED;border-bottom:2px solid #7C3AED;padding-bottom:5px;margin-bottom:10px">
+          Repuestos utilizados
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:#F5F3FF">
+              <th style="padding:7px 10px;text-align:left;color:#7C3AED;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #DDD6FE">Repuesto</th>
+              <th style="padding:7px 10px;text-align:center;color:#7C3AED;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #DDD6FE">Cant.</th>
+              <th style="padding:7px 10px;text-align:left;color:#7C3AED;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #DDD6FE">Proveedor</th>
+              <th style="padding:7px 10px;text-align:center;color:#7C3AED;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #DDD6FE">Tipo</th>
+              ${conPrecios ? '<th style="padding:7px 10px;text-align:right;color:#7C3AED;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #DDD6FE">Precio venta</th>' : ''}
+            </tr>
+          </thead>
+          <tbody>
+            ${solicitudes.map(sol => {
+              const cot   = cotizaciones.find(c => c.solicitud_id === sol.id);
+              const items = solItems.filter(i => i.solicitud_id === sol.id);
+              const filas = items.length ? items : [{ repuesto: sol.repuesto, unidades: sol.unidades||1 }];
+              return filas.map((item, idx) => `
+                <tr style="border-bottom:1px solid #F1F5F9">
+                  <td style="padding:7px 10px;font-weight:600;color:#1E293B">${escapeHtml(item.repuesto||'—')}</td>
+                  <td style="padding:7px 10px;text-align:center;color:#64748B">${item.unidades||1}</td>
+                  <td style="padding:7px 10px;color:#64748B">${escapeHtml(cot?.proveedores?.nombre||'—')}</td>
+                  <td style="padding:7px 10px;text-align:center;color:#64748B">${cot?.es_original === false ? 'Genérico' : 'Original'}</td>
+                  ${conPrecios ? `<td style="padding:7px 10px;text-align:right;font-family:monospace;font-weight:600;color:#1E293B">${idx === 0 ? fmt(cot?.precio_venta_jefe) : ''}</td>` : ''}
+                </tr>`).join('');
+            }).join('')}
+          </tbody>
+          ${conPrecios ? `<tfoot><tr style="background:#F5F3FF">
+            <td colspan="4" style="padding:8px 10px;font-weight:700;color:#5B21B6">Total repuestos</td>
+            <td style="padding:8px 10px;text-align:right;font-family:monospace;font-weight:700;color:#5B21B6">${fmt(totalRepuestos)}</td>
+          </tr></tfoot>` : ''}
+        </table>
+      </div>` : '';
+
     const novedadesHtml = novedades.length ? `
       <div style="margin-bottom:20px">
         <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#DC2626;border-bottom:2px solid #DC2626;padding-bottom:5px;margin-bottom:10px">Novedades</div>
@@ -3127,6 +3182,7 @@ async function generarPreliquidacion(ordenId) {
     </div>
     <div style="text-align:right">
       <div style="font-size:18px;font-weight:700;color:#1E3A5F">PRELIQUIDACIÓN</div>
+      <div style="font-size:11px;font-weight:600;color:${conPrecios?'#7C3AED':'#64748B'};margin-top:2px;letter-spacing:.5px;text-transform:uppercase">${conPrecios?'Con precios — Para cliente':'Sin precios — Uso interno'}</div>
       <div style="font-family:monospace;font-size:13px;font-weight:700;color:#64748B;letter-spacing:1.5px;margin-top:2px">${formatOT(orden.id)}</div>
       <div style="font-family:monospace;font-size:20px;font-weight:800;color:#1E3A5F;letter-spacing:3px;margin-top:4px">${escapeHtml(orden.placa)}</div>
       <div style="font-size:11px;color:#94A3B8;margin-top:4px">Generada: ${fmtHora(new Date().toISOString())}</div>
@@ -3176,6 +3232,9 @@ async function generarPreliquidacion(ordenId) {
   <!-- ETAPAS POR SERVICIO -->
   ${etapasHtml}
 
+  <!-- REPUESTOS -->
+  ${repuestosHtml}
+
   <!-- NOVEDADES -->
   ${novedadesHtml}
 
@@ -3191,9 +3250,18 @@ async function generarPreliquidacion(ordenId) {
           <span style="color:#64748B">Horas adicionales</span>
           <span style="font-weight:600">${totalHorasAdi}h</span>
         </div>
-        <div style="display:flex;justify-content:space-between;padding:12px 0 0;font-size:16px;font-weight:800;color:#1E3A5F">
-          <span>TOTAL MANO DE OBRA</span>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F1F5F9;font-size:14px;font-weight:700;color:#1E3A5F">
+          <span>Mano de obra</span>
           <span style="font-family:monospace">${fmt(totalManoObra)}</span>
+        </div>
+        ${conPrecios && totalRepuestos > 0 ? `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F1F5F9;font-size:14px;font-weight:700;color:#5B21B6">
+          <span>Repuestos</span>
+          <span style="font-family:monospace">${fmt(totalRepuestos)}</span>
+        </div>` : ''}
+        <div style="display:flex;justify-content:space-between;padding:12px 0 0;font-size:17px;font-weight:800;color:#1E3A5F;border-top:2px solid #1E3A5F;margin-top:4px">
+          <span>TOTAL${conPrecios ? ' GENERAL' : ' MANO DE OBRA'}</span>
+          <span style="font-family:monospace">${fmt(conPrecios ? totalManoObra + totalRepuestos : totalManoObra)}</span>
         </div>
       </div>
     </div>
