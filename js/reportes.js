@@ -41,7 +41,7 @@ async function montarReportes() {
       <div style="font-size:13px;color:var(--gris-mid)">Tiempos, costos, repuestos, eficiencia y rendimiento del taller</div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px">
+    <div class="grid-2-resp" style="margin-bottom:24px">
 
       <div class="dash-panel">
         <div class="dash-panel-titulo">
@@ -109,7 +109,7 @@ async function montarReportes() {
         <div style="font-size:12px;color:var(--gris-mid);margin:6px 0 12px">
           Tabla comparativa de todos los técnicos: etapas completadas, horas netas, ingresos generados, eficiencia y novedades (reprocesos/garantías) en el período seleccionado.
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;align-items:end;max-width:420px">
+        <div class="grid-2-resp" style="margin-bottom:12px;max-width:420px">
           <div class="field"><label style="font-size:11px">Desde</label><input type="date" id="rep-tec-ini" value="${inicioMes}" max="${hoy}"></div>
           <div class="field"><label style="font-size:11px">Hasta</label><input type="date" id="rep-tec-fin" value="${hoy}" max="${hoy}"></div>
         </div>
@@ -128,7 +128,7 @@ async function montarReportes() {
         <div style="font-size:12px;color:var(--gris-mid);margin:6px 0 12px">
           Detalle completo de un técnico: etapas realizadas, tiempo neto trabajado, pausas por repuestos, ingresos generados y novedades.
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;align-items:end">
+        <div class="grid-3-resp" style="margin-bottom:12px">
           <div class="field">
             <label style="font-size:11px">Técnico</label>
             <select id="rep-mec-sel" style="width:100%">

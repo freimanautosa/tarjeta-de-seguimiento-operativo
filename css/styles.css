@@ -1426,7 +1426,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   .hamburger { display: flex !important; align-items: center; justify-content: center; }
 
   /* Main ocupa toda la pantalla — sidebar no empuja */
-  .main { margin-left: 0 !important; padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px)); overflow-x: hidden; }
+  .main { margin-left: 0 !important; overflow-x: hidden; padding-bottom: env(safe-area-inset-bottom, 16px); }
 
   /* Content con padding correcto */
   .content { padding: 16px 14px 14px 14px; max-width: 100%; overflow-x: hidden; }
@@ -1453,15 +1453,6 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 
   /* Modales */
   .modal { width: 96% !important; max-height: 90vh !important; }
-
-  /* Bottom nav visible y más grande */
-  .bottom-nav { display: flex; }
-  #toast { bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 12px); }
-
-  /* Bottom nav ítems cómodos */
-  .bnav-item { padding: 6px 4px 5px; flex: 1; min-width: 0; gap: 4px; }
-  .bnav-item svg { width: 26px; height: 26px; flex-shrink: 0; }
-  .bnav-item span { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; font-weight: 500; }
 
   /* Cards */
   .orden-card { padding: 14px 16px; }
@@ -1558,6 +1549,24 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   .dash-row-2 { grid-template-columns: 1fr; }
 }
 
+/* Grids responsivos para layouts generados en JS (Flotillas, Reportes…) */
+.grid-2-resp {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.grid-3-resp {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  align-items: end;
+}
+@media (max-width: 768px) {
+  .grid-2-resp { grid-template-columns: 1fr; gap: 12px; }
+  .grid-3-resp { grid-template-columns: 1fr; gap: 10px; }
+}
+
 .dash-panel {
   background: var(--blanco);
   border: 1.5px solid var(--gris-borde);
@@ -1618,10 +1627,12 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .dash-bars {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
+  gap: 4px;
   height: 88px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
-.dash-bar-col { display: flex; flex-direction: column; align-items: center; flex: 1; gap: 4px; }
+.dash-bar-col { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; min-width: 20px; gap: 4px; }
 .dash-bar-group {
   display: flex;
   align-items: flex-end;

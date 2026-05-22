@@ -26,7 +26,7 @@ async function montarFlotillas() {
       <div style="font-size:13px;color:var(--gris-mid)">¿Es un cliente particular o pertenece a una flotilla / empresa?</div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:30px">
+    <div class="grid-2-resp" style="margin-bottom:30px">
 
       <!-- CARD: VEHÍCULO PARTICULAR -->
       <div class="dash-panel" style="border:1.5px solid var(--gris-borde);transition:border-color .15s"
