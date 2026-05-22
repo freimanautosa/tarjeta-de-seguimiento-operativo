@@ -350,6 +350,10 @@ async function abrirModalPrecioVenta(solicitudId) {
   const fmt = n => n != null ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n) : '—';
   const opLbl = { 1: 'Opción 1 — Precio alto', 2: 'Opción 2 — Precio medio', 3: 'Opción 3 — Precio bajo' };
 
+  // Guardar globalmente para que devolverRepuestoATecnico las use
+  window._pvCots = cots;
+  window._pvSol  = sol;
+
   // Pre-seleccionar la que ya tenga precio_venta_jefe, o la primera
   const presel = cots.find(c => c.precio_venta_jefe) || cots[0];
   window._pvSeleccionada = presel?.id || null;
@@ -472,7 +476,25 @@ async function guardarPrecioVentaSeleccionado(solicitudId) {
 }
 
 async function devolverRepuestoATecnico(solicitudId) {
-  const nota = document.getElementById('pv-nota-devolucion')?.value.trim() || 'Sin opciones viables — repuesto devuelto al técnico.';
+  const motivoExtra = document.getElementById('pv-nota-devolucion')?.value.trim();
+  const cots = window._pvCots || [];
+  const fmt  = n => n != null ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n) : '—';
+  const opLbl = { 1: 'Opción 1', 2: 'Opción 2', 3: 'Opción 3' };
+
+  // Construir resumen de opciones con precios sugeridos
+  let resumenOpciones = '';
+  if (cots.length) {
+    resumenOpciones = cots.map(c => {
+      const sug = c.precio_costo ? Math.round(c.precio_costo * 1.4) : null;
+      return `${opLbl[c.opcion] || 'Opción ' + c.opcion}: costo ${fmt(c.precio_costo)}${sug ? ' → sugerido ' + fmt(sug) : ''}`;
+    }).join(' | ');
+  }
+
+  const nota = [
+    motivoExtra || 'Repuesto devuelto para revisión.',
+    resumenOpciones ? `Opciones cotizadas: ${resumenOpciones}` : ''
+  ].filter(Boolean).join(' — ');
+
   try {
     await api(`/solicitudes_repuesto?id=eq.${solicitudId}`, 'PATCH', {
       estado: 'rechazado',
