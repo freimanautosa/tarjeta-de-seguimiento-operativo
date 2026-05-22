@@ -440,7 +440,15 @@ async function cargarRepuestosMecanico() {
           </div>
           <div style="font-weight:700;margin-bottom:4px">${escapeHtml(s.repuesto) || 'Repuesto sin nombre'}</div>
           <div style="font-size:12px;color:var(--gris-mid)">Cantidad: ${s.unidades || 1}${s.observaciones ? ' · ' + escapeHtml(s.observaciones) : ''}</div>
-          ${s.nota_jefe ? `<div style="font-size:12px;color:var(--texto);background:var(--gris-bg);padding:8px;border-radius:6px;margin-top:10px">${escapeHtml(s.nota_jefe)}</div>` : ''}
+          ${s.nota_jefe ? `
+            <div style="
+              font-size:12px;padding:10px 12px;border-radius:8px;margin-top:10px;line-height:1.6;
+              ${estado === 'cotizado'
+                ? 'background:#E6F5EF;border:1px solid #A7F3D0;color:#065F46;'
+                : estado === 'rechazado'
+                ? 'background:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B;'
+                : 'background:var(--gris-bg);border:1px solid var(--gris-borde);color:var(--texto);'}
+            ">${escapeHtml(s.nota_jefe)}</div>` : ''}
           <div class="btn-row" style="margin-top:10px">
             <button class="btn btn-ghost btn-sm" onclick="abrirOrdenMecanico(${s.orden_id})">Ver orden</button>
           </div>

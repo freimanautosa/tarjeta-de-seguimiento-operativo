@@ -466,10 +466,28 @@ async function guardarPrecioVentaSeleccionado(solicitudId) {
   if (!cotId) { toast('Selecciona una opción primero', 'err'); return; }
   const val = parseFloat(document.getElementById(`pv-${cotId}`)?.value) || 0;
   if (!val) { toast('Ingresa el precio de venta', 'err'); document.getElementById(`pv-${cotId}`)?.focus(); return; }
+
+  const cots   = window._pvCots || [];
+  const cot    = cots.find(c => c.id === cotId);
+  const opLbl  = { 1: 'Opción 1 — Precio alto', 2: 'Opción 2 — Precio medio', 3: 'Opción 3 — Precio bajo' };
+  const fmt    = n => n != null ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n) : '—';
+  const sol    = window._pvSol;
+
+  // Nota visible para el técnico
+  const notaTecnico = [
+    `✓ Repuesto aprobado: ${sol?.repuesto || ''}`,
+    cot ? `Opción elegida: ${opLbl[cot.opcion] || 'Opción ' + cot.opcion}` : '',
+    cot?.proveedores?.nombre ? `Proveedor: ${cot.proveedores.nombre}` : '',
+    `Precio de venta al cliente: ${fmt(val)}`
+  ].filter(Boolean).join(' — ');
+
   try {
     await api(`/cotizaciones_repuesto?id=eq.${cotId}`, 'PATCH', { precio_venta_jefe: val });
-    await api(`/solicitudes_repuesto?id=eq.${solicitudId}`, 'PATCH', { estado: 'cotizado' });
-    toast('Precio guardado ✓');
+    await api(`/solicitudes_repuesto?id=eq.${solicitudId}`, 'PATCH', {
+      estado: 'cotizado',
+      nota_jefe: notaTecnico
+    });
+    toast('Precio guardado y técnico notificado ✓');
     document.getElementById('modal-precio-venta')?.remove();
     cargarRepuestosJefe();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
