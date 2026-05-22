@@ -175,6 +175,7 @@ async function mecIniciarEtapa(eid, nombre, oid) {
   try {
     await api(`/etapas?id=eq.${eid}`, 'PATCH', { inicio: new Date().toISOString() });
     toast(`${nombre} iniciada ✓`);
+    await new Promise(r => setTimeout(r, 250));
     cargarEtapasMecanico();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }

@@ -2518,37 +2518,48 @@ async function abrirOrdenMecanico(id) {
     // Render solo mis etapas
     const etapasHtml = misEtapas.map(e => {
       const k = kid(e.id);
-      const badge = !e.inicio ? 'Pendiente' : e.fin ? 'Completada' : 'En proceso';
-      const bCls  = !e.inicio ? 'pendiente' : e.fin ? 'completada' : 'iniciada';
+      const esPausado  = e.pausado && !e.fin;
+      const etapaSols  = solicitudes.filter(s => s.etapa_id === e.id);
+      const hayRepPend = etapaSols.some(s => ['pendiente_jefe','enviado_repuestos','cotizado','pedido','recibido_taller'].includes(s.estado));
+      const badge = !e.inicio ? 'Pendiente' : e.fin ? 'Completada' : esPausado ? (hayRepPend ? '⏸ Esperando repuesto' : 'Pausado ⏸') : 'En proceso';
+      const bCls  = !e.inicio ? 'pendiente' : e.fin ? 'completada' : esPausado ? 'pendiente' : 'iniciada';
       const eFotos = fotosEt.filter(f => f.etapa_id === e.id);
       let acc = '';
-      if (!e.inicio) acc = `<button class="btn btn-success btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa||'')}" data-oid="${id}" onclick="mecIniciarEtapa(+this.dataset.eid,this.dataset.etapa,+this.dataset.oid)">▶ Iniciar</button>`;
+      if (!e.inicio) acc = `<button class="btn btn-success btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa||'')}" data-oid="${id}" onclick="mecIniciarEtapaDetalle(+this.dataset.eid,this.dataset.etapa,+this.dataset.oid)">▶ Iniciar</button>`;
+      else if (esPausado && hayRepPend) acc = `<span style="font-size:12px;color:#D97706;font-weight:600;display:flex;align-items:center;gap:4px"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>Esperando repuesto</span>`;
       else if (!e.fin) acc = `<button class="btn btn-danger btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa||'')}" data-srv="${escapeHtml(e.servicio||'')}" data-oid="${id}" onclick="mecFinalizarEtapaDetalle(+this.dataset.eid,this.dataset.etapa,this.dataset.srv,+this.dataset.oid)">■ Finalizar</button>`;
 
       const fotosHtml = eFotos.map(f=>`<div class="foto-thumb" data-url="${escapeHtml(f.url)}" onclick="abrirLightbox(this.dataset.url)"><img src="${escapeHtml(f.url)}" alt="" loading="lazy"></div>`).join('');
 
       // Solicitudes de repuesto para esta etapa
-      const etapaSols = solicitudes.filter(s => s.etapa_id === e.id);
       const solsRepHtml = etapaSols.length
         ? etapaSols.map(s => {
             const est = s.estado || 'pendiente_jefe';
             const c = _estC[est] || '#6B7280';
             const bg = _estBg[est] || '#F3F4F6';
             const lbl = _estL[est] || est;
-            return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--gris-borde)">
-              <div style="min-width:0">
-                <div style="font-size:13px;font-weight:600">${escapeHtml(s.repuesto||'Repuesto')}</div>
-                <div style="font-size:11px;color:var(--gris-mid)">x${s.unidades||1}${s.observaciones?' · '+escapeHtml(s.observaciones):''}</div>
-                ${est==='recibido_taller'?'<div style="font-size:11px;color:#059669;font-weight:600;margin-top:2px">📦 El repuesto llegó. El jefe te lo entregará pronto.</div>':''}
-                ${s.nota_jefe && est!=='recibido_taller'?`<div style="font-size:11px;color:var(--gris-mid);margin-top:2px;font-style:italic">${escapeHtml(s.nota_jefe)}</div>`:''}
+            const esperandoMin = (est === 'pedido' || est === 'enviado_repuestos') && s.creado_en
+              ? Math.round((Date.now() - new Date(s.creado_en).getTime()) / 60000) : null;
+            const esperandoStr = esperandoMin !== null
+              ? `⏱ Esperando hace ${esperandoMin >= 60 ? Math.floor(esperandoMin/60)+'h '+esperandoMin%60+'m' : esperandoMin+'m'}`
+              : null;
+            return `<div style="padding:8px 0;border-bottom:1px solid var(--gris-borde)">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+                <div style="min-width:0">
+                  <div style="font-size:13px;font-weight:600">${escapeHtml(s.repuesto||'Repuesto')}</div>
+                  <div style="font-size:11px;color:var(--gris-mid)">x${s.unidades||1}${s.observaciones?' · '+escapeHtml(s.observaciones):''}</div>
+                  ${esperandoStr ? `<div style="font-size:11px;color:#D97706;font-weight:600;margin-top:3px">${esperandoStr}</div>` : ''}
+                  ${est==='recibido_taller' ? '<div style="font-size:12px;color:#059669;font-weight:600;margin-top:4px">📦 El repuesto llegó al taller. El jefe te lo entregará pronto.</div>' : ''}
+                  ${s.nota_jefe && est!=='recibido_taller' ? `<div style="font-size:12px;color:#1E40AF;background:#EBF2FF;border-radius:6px;padding:5px 8px;margin-top:5px">${escapeHtml(s.nota_jefe)}</div>` : ''}
+                </div>
+                <span style="font-size:10px;font-weight:800;color:${c};background:${bg};padding:3px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0;margin-top:2px">${lbl}</span>
               </div>
-              <span style="font-size:10px;font-weight:800;color:${c};background:${bg};padding:3px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0">${lbl}</span>
             </div>`;
           }).join('')
         : '<div style="font-size:12px;color:var(--gris-mid)">Sin solicitudes.</div>';
 
-      return `<div class="etapa-card" style="margin-bottom:12px">
-        <div class="etapa-header" onclick="toggleEtapa('meb-${k}')">
+      return `<div class="etapa-card" style="margin-bottom:12px${esPausado ? ';border:1.5px solid #F59E0B' : ''}">
+        <div class="etapa-header" onclick="toggleEtapa('meb-${k}')" style="${esPausado ? 'background:rgba(254,243,199,.35)' : ''}">
           <div style="flex:1"><div class="etapa-nombre">${escapeHtml(e.etapa)||'—'}</div></div>
           <div style="display:flex;align-items:center;gap:6px">
             <span class="badge badge-${bCls}">${badge}</span>
@@ -2556,6 +2567,10 @@ async function abrirOrdenMecanico(id) {
           </div>
         </div>
         <div class="etapa-body" id="meb-${k}">
+          ${esPausado && hayRepPend ? `<div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+            <svg width="14" height="14" fill="none" stroke="#D97706" stroke-width="2.5" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            <span style="font-size:13px;color:#92400E;font-weight:600">Timer pausado — el jefe está gestionando tu repuesto</span>
+          </div>` : ''}
           <div class="timestamps" style="margin-bottom:12px">
             <div class="ts-chip">Inicio: <strong>${e.inicio?formatTS(e.inicio):'—'}</strong></div>
             <div class="ts-chip">Fin: <strong>${e.fin?formatTS(e.fin):'—'}</strong></div>
@@ -2636,6 +2651,14 @@ async function mecFinalizarEtapaDetalle(eid, nombre, servicio, oid) {
     }).catch(()=>{});
     abrirOrdenMecanico(oid);
   } catch(e) { toast('Error: '+e.message, 'err'); }
+}
+
+async function mecIniciarEtapaDetalle(eid, nombre, oid) {
+  try {
+    await api(`/etapas?id=eq.${eid}`, 'PATCH', { inicio: new Date().toISOString() });
+    toast(`${nombre} iniciada ✓`);
+    abrirOrdenMecanico(oid);
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
 
 async function mecGuardarNovedadDetalle(eid, oid) {
