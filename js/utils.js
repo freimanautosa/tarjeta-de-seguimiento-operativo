@@ -64,6 +64,10 @@ function durHumana(ms) {
   return `${Math.floor(h / 24)}d ${h % 24}h`;
 }
 
+const _fmtCOP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+function formatCOP(n) { return n != null ? _fmtCOP.format(n) : '—'; }
+function formatOT(id)  { return 'OT-' + String(id).padStart(4, '0'); }
+
 function openSidebar() {
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebar-overlay');

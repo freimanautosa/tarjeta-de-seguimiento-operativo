@@ -113,7 +113,7 @@ async function cargarOrdenes() {
           <div>
             <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
               <div class="orden-placa">${escapeHtml(o.placa)}</div>
-              <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--gris-mid,#94A3B8);letter-spacing:.5px">OT-${String(o.id).padStart(4,'0')}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--gris-mid,#94A3B8);letter-spacing:.5px">${formatOT(o.id)}</div>
             </div>
             <div class="orden-vehiculo">${[o.marca,o.linea,o.modelo].filter(Boolean).map(escapeHtml).join(' · ')} ${o.propietario ? '— '+escapeHtml(o.propietario) : ''}</div>
           </div>
@@ -167,7 +167,7 @@ async function cargarOrdenesPulmon() {
           <div>
             <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
               <div class="orden-placa">${escapeHtml(o.placa)}</div>
-              <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--gris-mid,#94A3B8);letter-spacing:.5px">OT-${String(o.id).padStart(4,'0')}</div>
+              <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--gris-mid,#94A3B8);letter-spacing:.5px">${formatOT(o.id)}</div>
             </div>
             <div class="orden-vehiculo">${[o.marca,o.linea,o.modelo].filter(Boolean).map(escapeHtml).join(' · ')} ${o.propietario ? '— '+escapeHtml(o.propietario) : ''}</div>
           </div>
@@ -369,7 +369,7 @@ async function abrirOrden(id) {
               <div>
                 <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
                   <div class="detalle-placa">${escapeHtml(orden.placa)}</div>
-                  <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--gris-mid,#94A3B8);letter-spacing:.5px">OT-${String(orden.id).padStart(4,'0')}</div>
+                  <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--gris-mid,#94A3B8);letter-spacing:.5px">${formatOT(orden.id)}</div>
                 </div>
                 <div class="detalle-vehiculo">${[orden.marca,orden.linea,orden.modelo,orden.color].filter(Boolean).map(escapeHtml).join(' · ')}</div>
               </div>
@@ -3065,7 +3065,7 @@ async function generarPreliquidacion(ordenId) {
     </div>
     <div style="text-align:right">
       <div style="font-size:18px;font-weight:700;color:#1E3A5F">PRELIQUIDACIÓN</div>
-      <div style="font-family:monospace;font-size:13px;font-weight:700;color:#64748B;letter-spacing:1.5px;margin-top:2px">OT-${String(orden.id).padStart(4,'0')}</div>
+      <div style="font-family:monospace;font-size:13px;font-weight:700;color:#64748B;letter-spacing:1.5px;margin-top:2px">${formatOT(orden.id)}</div>
       <div style="font-family:monospace;font-size:20px;font-weight:800;color:#1E3A5F;letter-spacing:3px;margin-top:4px">${escapeHtml(orden.placa)}</div>
       <div style="font-size:11px;color:#94A3B8;margin-top:4px">Generada: ${fmtHora(new Date().toISOString())}</div>
     </div>
