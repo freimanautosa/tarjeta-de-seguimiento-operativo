@@ -39,6 +39,16 @@ function _editarProveedorPorId(btn) {
   if (p) abrirModalProveedor(p);
 }
 
+// ── Shared helpers para modal-precio-venta ──────────────
+const _OP_LABELS = { 1: 'Opción 1 — Precio alto', 2: 'Opción 2 — Precio medio', 3: 'Opción 3 — Precio bajo' };
+function _pvCerrarModal() {
+  const m = document.getElementById('modal-precio-venta');
+  if (m) m.remove();
+  window._pvCots = null;
+  window._pvSol  = null;
+  window._pvSeleccionada = null;
+}
+
 // ─────────────────────────────────────────────────────────
 // SOLICITAR REPUESTO — formulario multi-ítem
 // ─────────────────────────────────────────────────────────
@@ -348,7 +358,7 @@ async function cargarRepuestosJefe() {
                 </div>
                 <div style="font-size:12px;color:var(--gris-mid)">${escapeHtml(s.solicitado_por)} · ${formatTS(s.creado_en)}</div>
                 ${o.placa ? `<div style="font-size:12px;color:var(--azul);margin-top:2px;font-family:'DM Mono',monospace">
-                  ${escapeHtml(o.placa)} · OT-${String(s.orden_id).padStart(4,'0')}
+                  ${escapeHtml(o.placa)} · ${formatOT(s.orden_id)}
                   ${o.vin ? `· <span style="color:var(--gris-mid)">VIN: ${escapeHtml(o.vin)}</span>` : ''}
                 </div>` : ''}
                 ${timerProv}
@@ -477,7 +487,7 @@ async function jefeConfirmarLlegada(solicitudId) {
             tecnico: mec.nombre || etapa?.tecnico || '',
             repuesto: sol.repuesto,
             placa: orden?.placa || '',
-            ot: `OT-${String(sol.orden_id).padStart(4,'0')}`
+            ot: formatOT(sol.orden_id)
           })
         }).catch(()=>{});
       }
@@ -510,10 +520,7 @@ async function abrirModalPrecioVenta(solicitudId) {
     api(`/cotizaciones_repuesto?solicitud_id=eq.${solicitudId}&order=opcion.asc&select=*,proveedores(nombre,whatsapp)`).catch(() => []) || [],
     api(`/solicitudes_repuesto?id=eq.${solicitudId}`).then(r => r?.[0]).catch(() => null)
   ]);
-  document.getElementById('modal-precio-venta')?.remove();
-
-  const fmt = n => n != null ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n) : '—';
-  const opLbl = { 1: 'Opción 1 — Precio alto', 2: 'Opción 2 — Precio medio', 3: 'Opción 3 — Precio bajo' };
+  _pvCerrarModal();
 
   // Guardar globalmente para que devolverRepuestoATecnico las use
   window._pvCots = cots;
@@ -530,7 +537,7 @@ async function abrirModalPrecioVenta(solicitudId) {
     <div class="modal" style="max-width:580px">
       <div class="modal-header">
         <div class="modal-titulo">Precio venta — ${escapeHtml(sol?.repuesto || '')}</div>
-        <button class="modal-close" onclick="document.getElementById('modal-precio-venta').remove()">✕</button>
+        <button class="modal-close" onclick="_pvCerrarModal()">✕</button>
       </div>
       <div class="modal-body">
         <p style="font-size:13px;color:var(--gris-mid);margin-bottom:16px">
@@ -556,13 +563,13 @@ async function abrirModalPrecioVenta(solicitudId) {
                 display:flex;align-items:center;justify-content:center;
               ">${seleccionado ? '<div style="width:7px;height:7px;border-radius:50%;background:#fff"></div>' : ''}</div>
               <div style="font-weight:700;font-size:13px;color:${seleccionado ? 'var(--azul)' : 'var(--texto)'}">
-                ${opLbl[c.opcion] || 'Opción ' + c.opcion}
+                ${_OP_LABELS[c.opcion] || 'Opción ' + c.opcion}
               </div>
             </div>
             <div style="font-size:12px;color:var(--gris-mid);margin-bottom:10px;padding-left:28px">
               Proveedor: <strong>${escapeHtml(c.proveedores?.nombre || '—')}</strong> &nbsp;·&nbsp;
-              Costo taller: <strong>${fmt(c.precio_costo)}</strong>
-              ${sug ? `&nbsp;·&nbsp;<span style="color:var(--verde);font-weight:600">Sugerido +40%: ${fmt(sug)}</span>` : ''}
+              Costo taller: <strong>${formatCOP(c.precio_costo)}</strong>
+              ${sug ? `&nbsp;·&nbsp;<span style="color:var(--verde);font-weight:600">Sugerido +40%: ${formatCOP(sug)}</span>` : ''}
             </div>
             <div style="padding-left:28px" onclick="event.stopPropagation()">
               <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gris-mid);display:block;margin-bottom:5px">
@@ -594,7 +601,7 @@ async function abrirModalPrecioVenta(solicitudId) {
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="document.getElementById('modal-precio-venta').remove()">Cancelar</button>
+        <button class="btn btn-ghost" onclick="_pvCerrarModal()">Cancelar</button>
         ${cots.length ? `<button class="btn btn-primary" onclick="guardarPrecioVentaSeleccionado(${solicitudId})">
           Confirmar precio de venta
         </button>` : ''}
@@ -629,18 +636,16 @@ async function guardarPrecioVentaSeleccionado(solicitudId) {
   const val = parseFloat(document.getElementById(`pv-${cotId}`)?.value) || 0;
   if (!val) { toast('Ingresa el precio de venta', 'err'); document.getElementById(`pv-${cotId}`)?.focus(); return; }
 
-  const cots   = window._pvCots || [];
-  const cot    = cots.find(c => c.id === cotId);
-  const opLbl  = { 1: 'Opción 1 — Precio alto', 2: 'Opción 2 — Precio medio', 3: 'Opción 3 — Precio bajo' };
-  const fmt    = n => n != null ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n) : '—';
-  const sol    = window._pvSol;
+  const cots = window._pvCots || [];
+  const cot  = cots.find(c => c.id === cotId);
+  const sol  = window._pvSol;
 
   // Nota visible para el técnico
   const notaTecnico = [
     `✓ Repuesto aprobado: ${sol?.repuesto || ''}`,
-    cot ? `Opción elegida: ${opLbl[cot.opcion] || 'Opción ' + cot.opcion}` : '',
+    cot ? `Opción elegida: ${_OP_LABELS[cot.opcion] || 'Opción ' + cot.opcion}` : '',
     cot?.proveedores?.nombre ? `Proveedor: ${cot.proveedores.nombre}` : '',
-    `Precio de venta al cliente: ${fmt(val)}`
+    `Precio de venta al cliente: ${formatCOP(val)}`
   ].filter(Boolean).join(' — ');
 
   try {
@@ -651,7 +656,7 @@ async function guardarPrecioVentaSeleccionado(solicitudId) {
       pedido_en: new Date().toISOString()
     });
     toast('Precio definido ✓ — ahora espera que llegue el repuesto');
-    document.getElementById('modal-precio-venta')?.remove();
+    _pvCerrarModal();
     cargarRepuestosJefe();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
@@ -659,15 +664,13 @@ async function guardarPrecioVentaSeleccionado(solicitudId) {
 async function devolverRepuestoATecnico(solicitudId) {
   const motivoExtra = document.getElementById('pv-nota-devolucion')?.value.trim();
   const cots = window._pvCots || [];
-  const fmt  = n => n != null ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n) : '—';
-  const opLbl = { 1: 'Opción 1', 2: 'Opción 2', 3: 'Opción 3' };
 
   // Construir resumen de opciones con precios sugeridos
   let resumenOpciones = '';
   if (cots.length) {
     resumenOpciones = cots.map(c => {
       const sug = c.precio_costo ? Math.round(c.precio_costo * 1.4) : null;
-      return `${opLbl[c.opcion] || 'Opción ' + c.opcion}: costo ${fmt(c.precio_costo)}${sug ? ' → sugerido ' + fmt(sug) : ''}`;
+      return `${_OP_LABELS[c.opcion] || 'Opción ' + c.opcion}: costo ${formatCOP(c.precio_costo)}${sug ? ' → sugerido ' + formatCOP(sug) : ''}`;
     }).join(' | ');
   }
 
@@ -682,7 +685,7 @@ async function devolverRepuestoATecnico(solicitudId) {
       nota_jefe: nota
     });
     toast('Solicitud devuelta al técnico ✓');
-    document.getElementById('modal-precio-venta')?.remove();
+    _pvCerrarModal();
     cargarRepuestosJefe();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
@@ -704,6 +707,20 @@ async function montarRepuestos() {
         Proveedores
       </button>`;
   }
+  const bottomNav = document.getElementById('bottom-nav-inner');
+  if (bottomNav) {
+    bottomNav.innerHTML = `
+      <button class="bnav-item active" id="bnav-rep-solicitudes" onclick="mostrarSeccionRep('solicitudes')">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+        <span>Solicitudes</span>
+      </button>
+      <button class="bnav-item" id="bnav-rep-proveedores" onclick="mostrarSeccionRep('proveedores')">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        <span>Proveedores</span>
+      </button>
+    `;
+  }
+
   const title = document.getElementById('topbar-title');
   if (title) title.textContent = 'Repuestos';
   mostrarPagina('pag-repuestos');
@@ -711,10 +728,14 @@ async function montarRepuestos() {
 }
 
 function mostrarSeccionRep(sec) {
-  const btnSol = document.getElementById('nav-rep-solicitudes');
-  const btnProv = document.getElementById('nav-rep-proveedores');
-  if (btnSol) btnSol.classList.toggle('active', sec === 'solicitudes');
-  if (btnProv) btnProv.classList.toggle('active', sec === 'proveedores');
+  const btnSol   = document.getElementById('nav-rep-solicitudes');
+  const btnProv  = document.getElementById('nav-rep-proveedores');
+  const bnavSol  = document.getElementById('bnav-rep-solicitudes');
+  const bnavProv = document.getElementById('bnav-rep-proveedores');
+  if (btnSol)   btnSol.classList.toggle('active',   sec === 'solicitudes');
+  if (btnProv)  btnProv.classList.toggle('active',  sec === 'proveedores');
+  if (bnavSol)  bnavSol.classList.toggle('active',  sec === 'solicitudes');
+  if (bnavProv) bnavProv.classList.toggle('active', sec === 'proveedores');
   if (sec === 'solicitudes') cargarSolicitudesRepuestos();
   else cargarProveedores();
 }
@@ -751,7 +772,6 @@ async function cargarSolicitudesRepuestos() {
       return;
     }
 
-    const fmt = n => n != null ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : '—';
     const estadoBadge = {
       enviado_repuestos: { cls:'badge-iniciada',   txt:'Por cotizar' },
       cotizado:          { cls:'badge-cotizada',   txt:'Cotizado' },
@@ -797,7 +817,7 @@ async function cargarSolicitudesRepuestos() {
               <div style="flex:1;min-width:0">
                 <div style="font-weight:700;font-size:14px;margin-bottom:2px">${items.length > 1 ? `${items.length} repuestos` : escapeHtml(s.repuesto)}</div>
                 <div style="font-size:12px;color:var(--azul);font-family:'DM Mono',monospace">
-                  ${escapeHtml(o.placa||'—')} · OT-${String(s.orden_id).padStart(4,'0')}
+                  ${escapeHtml(o.placa||'—')} · ${formatOT(s.orden_id)}
                 </div>
                 <div style="font-size:11px;color:var(--gris-mid);margin-top:2px">${escapeHtml(s.solicitado_por||'')} · ${formatTS(s.creado_en)}</div>
                 ${timerProv}
@@ -859,7 +879,7 @@ async function marcarRepuestoSolicitadoProveedor(solicitudId) {
           tecnico: mecNombre,
           repuesto: sol?.repuesto || '',
           placa: orden?.placa || '',
-          ot: `OT-${String(sol?.orden_id||0).padStart(4,'0')}`
+          ot: formatOT(sol?.orden_id||0)
         })
       }).catch(()=>{});
     }
@@ -1110,7 +1130,7 @@ async function cargarProveedores() {
         <div style="font-size:16px;font-weight:700">Proveedores</div>
         <button class="btn btn-primary btn-sm" onclick="abrirModalProveedor()">+ Nuevo proveedor</button>
       </div>
-      ${provs.length ? `<table style="width:100%;border-collapse:collapse;font-size:13px">
+      ${provs.length ? `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:500px">
         <thead><tr style="background:var(--gris-bg);border-bottom:1px solid var(--gris-borde)">
           <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1px;color:var(--gris-mid);text-transform:uppercase">Nombre</th>
           <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1px;color:var(--gris-mid);text-transform:uppercase">Tipo</th>
@@ -1133,7 +1153,7 @@ async function cargarProveedores() {
             </td>
           </tr>`).join('')}
         </tbody>
-      </table>` : '<div class="empty-state"><p>Sin proveedores registrados</p></div>'}
+      </table></div>` : '<div class="empty-state"><p>Sin proveedores registrados</p></div>'}
     </div>`;
   } catch(e) { cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`; }
 }
@@ -1242,7 +1262,6 @@ async function cargarRepuestosCliente(ordenId) {
   try {
     const sols = await api(`/solicitudes_repuesto?orden_id=eq.${ordenId}&estado=in.(cotizado,pedido,entregado)&select=*`).catch(()=>[]) || [];
     if (!sols.length) { cont.innerHTML=''; return; }
-    const fmt = n => n!=null ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : '—';
     const items = await Promise.all(sols.map(async s => {
       const cots = await api(`/cotizaciones_repuesto?solicitud_id=eq.${s.id}&order=opcion.asc&select=*,proveedores(nombre)`).catch(()=>[]) || [];
       const conPrecio = cots.filter(c=>c.precio_venta_jefe);
@@ -1251,7 +1270,7 @@ async function cargarRepuestosCliente(ordenId) {
         <div style="font-weight:700;margin-bottom:8px">${escapeHtml(s.repuesto)} · ${escapeHtml(String(s.unidades))} und</div>
         ${conPrecio.map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:white;border-radius:6px;border:1px solid var(--gris-borde);margin-bottom:5px">
           <div><div style="font-size:13px;font-weight:600">Opción ${c.opcion}</div><div style="font-size:11px;color:var(--gris-mid)">${escapeHtml(c.proveedores?.nombre||'—')}</div></div>
-          <div style="font-size:15px;font-weight:700;color:var(--verde);font-family:'DM Mono',monospace">${fmt(c.precio_venta_jefe)}</div>
+          <div style="font-size:15px;font-weight:700;color:var(--verde);font-family:'DM Mono',monospace">${formatCOP(c.precio_venta_jefe)}</div>
         </div>`).join('')}
         <div style="font-size:11px;color:var(--gris-mid);margin-top:6px">Consulta con el taller para confirmar tu opción.</div>
       </div>`;

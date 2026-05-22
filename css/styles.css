@@ -667,6 +667,35 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .modal-step { display: none; }
 .modal-step.active { display: block; }
 
+/* ── Modal title / close (JS-generated modals) ── */
+.modal-titulo {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--texto);
+  letter-spacing: -0.1px;
+  line-height: 1.3;
+  flex: 1;
+  min-width: 0;
+}
+.modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: none;
+  border: none;
+  color: var(--gris-mid);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+  padding: 0;
+}
+.modal-close:hover { background: var(--gris-bg); color: var(--texto); }
+
 /* LOADING / EMPTY */
 .loading-state, .empty-state {
   text-align: center;
@@ -1488,6 +1517,9 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
     .bnav-item span { font-size: 9px; }
     .orden-placa { font-size: 16px; }
     .dash-card-val { font-size: 20px; }
+    /* Dashboard timing grid: drop last column (sample count) on very narrow screens */
+    .dash-tiempo-row { grid-template-columns: 76px 1fr 52px; }
+    .dash-tiempo-n   { display: none; }
   }
 }
 
@@ -1730,8 +1762,13 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   box-shadow: var(--shadow-sm);
 }
 @media (max-width: 600px) {
-  .cal-cell { min-height: 56px; }
-  .cal-orden { font-size: 10px; }
+  .cal-cell { min-height: 44px; padding: 4px 3px; gap: 3px; }
+  .cal-head  { padding: 5px 2px; font-size: 9px; letter-spacing: 0; }
+  .cal-dia   { font-size: 10px; }
+  .cal-dia strong { min-width: 16px; height: 16px; font-size: 9px; }
+  .cal-orden { font-size: 9px; padding: 2px 4px; border-left-width: 2px; }
+  .cal-orden-meta { display: none; }
+  .cal-mas   { font-size: 9px; }
 }
 
 /* ═══════════════════════════════════════════════════════════
