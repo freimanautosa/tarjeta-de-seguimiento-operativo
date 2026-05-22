@@ -477,6 +477,7 @@ function _tvMostrarOverlay(orden, etapasOrden, badge, esVerde, aprobadas) {
         <div class="tv-overlay-badge${esVerde?' green-bg':''}">${badge}</div>
         <div class="tv-overlay-head">
           <div class="tv-overlay-placa">${orden.placa}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.7vw;font-weight:600;color:rgba(255,255,255,.35);letter-spacing:.08em;margin-top:.2vh">OT-${String(orden.id).padStart(4,'0')}</div>
           <div class="tv-overlay-veh">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
         </div>
         <div class="tv-overlay-body">${etapasHtml}</div>
@@ -632,6 +633,7 @@ async function cargarPantallaTaller() {
       return `<tr id="tv-row-${orden.id}" onclick="_tvVerDetalle(${orden.id})" style="cursor:pointer">
         <td>
           <div class="tv-placa">${orden.placa}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.6vw;font-weight:600;color:rgba(255,255,255,.35);letter-spacing:.05em;margin-top:.15vh">OT-${String(orden.id).padStart(4,'0')}</div>
           <div class="tv-vehiculo">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
         </td>
         <td><div class="etapas-chips">${chips}</div></td>
