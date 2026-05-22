@@ -15,9 +15,10 @@ function montarMecanico() {
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         Mi historial
       </button>
-      <button class="nav-item" id="nav-mec-solicitudes" onclick="navMec('solicitudes')">
+      <button class="nav-item" id="nav-mec-solicitudes" onclick="navMec('solicitudes')" style="position:relative">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83"/></svg>
         Solicitudes
+        <span id="badge-mec-repuestos" style="display:none;position:absolute;top:6px;right:8px;background:#059669;color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;line-height:16px;text-align:center">!</span>
       </button>
     `;
   }
@@ -33,13 +34,31 @@ function montarMecanico() {
         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <span>Historial</span>
       </button>
-      <button class="bnav-item" id="bnav-mec-solicitudes" onclick="navMec('solicitudes')">
+      <button class="bnav-item" id="bnav-mec-solicitudes" onclick="navMec('solicitudes')" style="position:relative">
         <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4"/></svg>
         <span>Solicitudes</span>
+        <span id="badge-bnav-mec-repuestos" style="display:none;position:absolute;top:4px;right:12px;background:#059669;color:white;border-radius:50%;width:14px;height:14px;font-size:8px;font-weight:700;line-height:14px;text-align:center">!</span>
       </button>
     `;
   }
   navMec('ordenes');
+  // Verificar repuestos llegados cada 30 segundos
+  actualizarBadgeMecRepuestos();
+  setInterval(actualizarBadgeMecRepuestos, 30000);
+}
+
+async function actualizarBadgeMecRepuestos() {
+  if (!sesion?.nombre) return;
+  try {
+    const llegados = await api(
+      `/solicitudes_repuesto?solicitado_por=eq.${encodeURIComponent(sesion.nombre)}&estado=eq.recibido_taller&select=id`
+    ).catch(() => []) || [];
+    const mostrar = llegados.length > 0;
+    const badge1 = document.getElementById('badge-mec-repuestos');
+    const badge2 = document.getElementById('badge-bnav-mec-repuestos');
+    if (badge1) badge1.style.display = mostrar ? 'inline-block' : 'none';
+    if (badge2) badge2.style.display = mostrar ? 'inline-block' : 'none';
+  } catch(e) {}
 }
 
 function navMec(pag) {
