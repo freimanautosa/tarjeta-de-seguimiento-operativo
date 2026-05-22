@@ -253,12 +253,14 @@ async function cargarRepuestosJefe() {
                 <button class="btn btn-danger btn-sm"  onclick="jefeProcesarSolicitud(${s.id},'rechazar',${s.etapa_id||'null'})">✕ Rechazar</button>
               </div>` : ''}
             ${s.estado==='cotizado' ? `
-              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-                <button class="btn btn-outline btn-sm" onclick="abrirModalPrecioVenta(${s.id})">Ver cotizaciones y definir precio venta</button>
-                ${s.etapa_id ? `<button class="btn btn-success btn-sm" onclick="jefeConfirmarEntrega(${s.id},${s.etapa_id})">
-                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
-                  Confirmar entrega → Reanudar mecánico
-                </button>` : ''}
+              <div style="background:#EBF2FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:13px;color:#1E40AF;font-weight:600">
+                💰 Hay cotizaciones listas. Define el precio de venta para ordenar el repuesto.
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-primary btn-sm" onclick="abrirModalPrecioVenta(${s.id})">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  Definir precio y ordenar
+                </button>
               </div>` : ''}
             ${s.estado==='pedido' ? `
               <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
@@ -510,10 +512,10 @@ async function guardarPrecioVentaSeleccionado(solicitudId) {
   try {
     await api(`/cotizaciones_repuesto?id=eq.${cotId}`, 'PATCH', { precio_venta_jefe: val });
     await api(`/solicitudes_repuesto?id=eq.${solicitudId}`, 'PATCH', {
-      estado: 'cotizado',
+      estado: 'pedido',
       nota_jefe: notaTecnico
     });
-    toast('Precio guardado y técnico notificado ✓');
+    toast('Precio definido ✓ — ahora espera que llegue el repuesto');
     document.getElementById('modal-precio-venta')?.remove();
     cargarRepuestosJefe();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
