@@ -258,6 +258,12 @@ async function abrirOrden(id) {
     const total = etapas.length;
     const comp = etapas.filter(e => e.fin).length;
     const pct = total ? Math.round((comp / total) * 100) : 0;
+
+    // Calidad: verificar si todas las etapas completadas tienen aprobación
+    const _ultAprobPorEtapa = {};
+    aprobaciones.forEach(a => { if (!_ultAprobPorEtapa[a.etapa_id]) _ultAprobPorEtapa[a.etapa_id] = a.estado; });
+    const todasCalidadAprobada = total > 0 && comp === total &&
+      etapas.every(e => _ultAprobPorEtapa[e.id] === 'aprobado');
     const circ = 2 * Math.PI * 22;
 
     // Inventario
@@ -420,7 +426,7 @@ async function abrirOrden(id) {
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <div class="seccion-titulo" style="margin-bottom:0">Servicios y Etapas</div>
-            ${esJefe() ? '<button class="btn btn-ghost btn-sm" onclick="abrirModalAgregar()">+ Agregar etapas</button>' : ''}
+            ${esJefe() && !todasCalidadAprobada ? '<button class="btn btn-ghost btn-sm" onclick="abrirModalAgregar()">+ Agregar etapas</button>' : ''}
           </div>
           ${serviciosHtml}
         </div>
@@ -486,7 +492,18 @@ async function abrirOrden(id) {
           <div class="sidebar-card">
             <div class="sidebar-card-header">Estado de la orden</div>
             <div class="sidebar-card-body">
-              ${(comp === total && total > 0 && orden.estado !== 'Entregada' && orden.estado !== 'Archivada')
+              ${orden.estado === 'Entregada' || orden.estado === 'Archivada'
+                ? `<div style="display:flex;flex-direction:column;gap:8px">
+                     <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:var(--azul-light);border-radius:20px">
+                       <span style="width:8px;height:8px;border-radius:50%;background:var(--azul-mid);display:inline-block"></span>
+                       <span style="font-size:13px;font-weight:700;color:var(--azul)">${orden.estado === 'Entregada' ? 'Finalizada' : 'Archivada'}</span>
+                     </div>
+                     <button class="btn btn-ghost btn-sm" style="width:100%" onclick="generarPreliquidacion(${orden.id})">
+                       <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                       Preliquidación
+                     </button>
+                   </div>`
+                : todasCalidadAprobada
                 ? `<button class="btn btn-success" style="width:100%" onclick="cambiarEstado('Entregada')">
                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
                      Marcar como Finalizada
@@ -495,11 +512,19 @@ async function abrirOrden(id) {
                      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                      Generar preliquidación
                    </button>
-                   <div style="font-size:11px;color:var(--gris-mid);margin-top:8px;text-align:center">Todas las etapas completadas</div>`
+                   <div style="font-size:11px;color:var(--gris-mid);margin-top:8px;text-align:center">✓ Calidad aprobada en todas las etapas</div>`
+                : comp === total && total > 0
+                ? `<div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:8px">
+                     ⚠️ Todas las etapas completadas. Aprueba la calidad de cada etapa para poder finalizar la orden.
+                   </div>
+                   <button class="btn btn-ghost btn-sm" style="width:100%" onclick="generarPreliquidacion(${orden.id})">
+                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                     Preliquidación
+                   </button>`
                 : `<div style="display:flex;flex-direction:column;gap:8px">
                      <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:var(--azul-light);border-radius:20px">
                        <span style="width:8px;height:8px;border-radius:50%;background:var(--azul-mid);display:inline-block"></span>
-                       <span style="font-size:13px;font-weight:700;color:var(--azul)">${orden.estado === 'Entregada' ? 'Finalizada' : orden.estado === 'Archivada' ? 'Archivada' : 'Activa'}</span>
+                       <span style="font-size:13px;font-weight:700;color:var(--azul)">Activa</span>
                      </div>
                      <button class="btn btn-ghost btn-sm" style="width:100%" onclick="generarPreliquidacion(${orden.id})">
                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
