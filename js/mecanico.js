@@ -91,13 +91,26 @@ async function cargarEtapasMecanico() {
     }
 
     const ids = [...new Set(etapas.map(e => e.orden_id))];
-    const ordenes = await api(`/ordenes?id=in.(${ids.join(',')})`).catch(() => []) || [];
+    const [ordenes, solicitudes] = await Promise.all([
+      api(`/ordenes?id=in.(${ids.join(',')})`).catch(() => []),
+      api(`/solicitudes_repuesto?orden_id=in.(${ids.join(',')})&order=creado_en.desc&select=*`).catch(() => [])
+    ]);
 
     const porOrden = {};
     etapas.forEach(e => {
       if (!porOrden[e.orden_id]) porOrden[e.orden_id] = [];
       porOrden[e.orden_id].push(e);
     });
+
+    const solsByOrden = {};
+    (solicitudes || []).forEach(s => {
+      if (!solsByOrden[s.orden_id]) solsByOrden[s.orden_id] = [];
+      solsByOrden[s.orden_id].push(s);
+    });
+
+    const _estC  = {pendiente_jefe:'#D97706',enviado_repuestos:'#7C3AED',cotizado:'#2563EB',pedido:'#0891B2',recibido_taller:'#059669',entregado:'#059669',rechazado:'#DC2626'};
+    const _estBg = {pendiente_jefe:'#FEF3C7',enviado_repuestos:'#EDE9FE',cotizado:'#EBF2FF',pedido:'#E0F2FE',recibido_taller:'#E6F5EF',entregado:'#E6F5EF',rechazado:'#FEE2E2'};
+    const _estL  = {pendiente_jefe:'Pendiente',enviado_repuestos:'En gestión',cotizado:'Cotizado',pedido:'Pedido',recibido_taller:'¡Llegó!',entregado:'Entregado ✓',rechazado:'Rechazado'};
 
     cont.innerHTML = Object.entries(porOrden).map(([oid, ets]) => {
       const orden = ordenes.find(o => o.id == oid) || {};
@@ -107,14 +120,20 @@ async function cargarEtapasMecanico() {
         const bCls  = !e.inicio ? 'pendiente'  : (e.fin ? 'completada' : esPausado ? 'pendiente' : 'iniciada');
         const hayActiva = ets.some(x => x.inicio && !x.fin);
         let acc = '';
+        const placa = escapeHtml(orden.placa || '');
         if (!e.inicio && !hayActiva)
           acc = `<button class="btn btn-success btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa || '')}" data-oid="${oid}" onclick="event.stopPropagation();mecIniciarEtapa(+this.dataset.eid,this.dataset.etapa,+this.dataset.oid)">▶ Iniciar</button>`;
-        else if (e.inicio && !e.fin && esPausado)
-          acc = `<span style="font-size:12px;color:#D97706;font-weight:600;display:flex;align-items:center;gap:4px">
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-            Esperando repuesto
-          </span>`;
-        else if (e.inicio && !e.fin)
+        else if (e.inicio && !e.fin && esPausado) {
+          // Pausa por repuesto → no puede hacer nada, solo esperar
+          // Pausa por otro motivo → puede reanudar
+          const hayRepuestoPendiente = solicitudes.some(s => s.orden_id == oid && s.etapa_id == e.id && ['pendiente_jefe','enviado_repuestos','cotizado','pedido','recibido_taller'].includes(s.estado));
+          acc = hayRepuestoPendiente
+            ? `<span style="font-size:12px;color:#D97706;font-weight:600;display:flex;align-items:center;gap:4px">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                Esperando repuesto
+              </span>`
+            : `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();mecReanudarEtapa(${e.id},${oid})">▶ Reanudar</button>`;
+        } else if (e.inicio && !e.fin)
           acc = `<button class="btn btn-danger btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa || '')}" data-srv="${escapeHtml(e.servicio || '')}" data-oid="${oid}" onclick="event.stopPropagation();mecFinalizarEtapa(+this.dataset.eid,this.dataset.etapa,this.dataset.srv,+this.dataset.oid)">■ Finalizar</button>`;
         else if (e.fin)
           acc = `<span class="badge badge-completada">Completada ✓</span>`;
@@ -145,15 +164,50 @@ async function cargarEtapasMecanico() {
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span class="badge badge-${bCls}">${badge}</span>
             ${acc}
-            ${!e.fin ? `<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirMecDetalle(${e.id},${oid})">Fotos / novedades</button>` : ''}
+            ${e.inicio && !e.fin && !esPausado ? `<button class="btn btn-ghost btn-xs" style="border:1.5px solid #D97706;color:#D97706" onclick="event.stopPropagation();abrirNovedadMenu(${e.id},${oid},'${placa}')">⚑ Novedad</button>` : ''}
+            <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirMecDetalle(${e.id},${oid})">🖼 Fotos</button>
           </div>
         </div>`;
       }).join('');
+
+      // ── Solicitudes de repuestos para esta orden ──────────────────────
+      const solsOrden = solsByOrden[oid] || [];
+      let solsHtml = '<div style="border-top:1px solid var(--gris-borde);margin-top:12px;padding-top:12px" onclick="event.stopPropagation()">';
+      solsHtml += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+      solsHtml += '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gris-mid)">Repuestos</span>';
+      solsHtml += `<button class="btn btn-ghost btn-xs" style="padding:2px 10px;font-size:11px" onclick="event.stopPropagation();abrirSolicitudRapida(${oid},'${escapeHtml(orden.placa||'').replace(/'/g,'&#39;')}')">+ Solicitar</button>`;
+      solsHtml += '</div>';
+      if (solsOrden.length) {
+        solsOrden.forEach((s, i) => {
+          const est = s.estado || 'pendiente_jefe';
+          const c   = _estC[est]  || '#6B7280';
+          const bg  = _estBg[est] || '#F3F4F6';
+          const lbl = _estL[est]  || est;
+          const notaStyle = ['cotizado','pedido','recibido_taller','entregado'].includes(est)
+            ? 'background:#E6F5EF;color:#065F46;border:1px solid #A7F3D0'
+            : est === 'rechazado'
+            ? 'background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5'
+            : 'background:var(--gris-bg);border:1px solid var(--gris-borde);color:var(--texto)';
+          const sep = i < solsOrden.length - 1 ? 'border-bottom:1px solid var(--gris-borde)' : '';
+          solsHtml += `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;${sep}">`;
+          solsHtml += '<div style="flex:1;min-width:0">';
+          solsHtml += `<div style="font-weight:600;font-size:13px">${escapeHtml(s.repuesto) || 'Repuesto'}</div>`;
+          solsHtml += `<div style="font-size:11px;color:var(--gris-mid)">x${s.unidades || 1}${s.observaciones ? ' · ' + escapeHtml(s.observaciones) : ''}</div>`;
+          if (s.nota_jefe) solsHtml += `<div style="font-size:11px;padding:5px 8px;border-radius:6px;margin-top:4px;line-height:1.5;${notaStyle}">${escapeHtml(s.nota_jefe)}</div>`;
+          if (est === 'recibido_taller') solsHtml += '<div style="background:#E6F5EF;border:1.5px solid #34D399;border-radius:6px;padding:8px 10px;margin-top:6px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">📦</span><div style="font-weight:700;color:#065F46;font-size:12px">¡Tu repuesto llegó! El jefe te lo entregará pronto.</div></div>';
+          solsHtml += `</div><span style="font-size:10px;font-weight:800;color:${c};background:${bg};padding:3px 8px;border-radius:99px;white-space:nowrap;text-transform:uppercase;flex-shrink:0;margin-top:2px">${lbl}</span>`;
+          solsHtml += '</div>';
+        });
+      } else {
+        solsHtml += '<div style="font-size:12px;color:var(--gris-mid);padding:2px 0">Sin solicitudes activas.</div>';
+      }
+      solsHtml += '</div>';
 
       return `<div class="mec-orden-card" onclick="abrirOrdenMecanico(${oid})" style="cursor:pointer">
         <div class="mec-orden-header">
           <div>
             <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:500;letter-spacing:2px">${escapeHtml(orden.placa) || '—'}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gris-mid);letter-spacing:.05em">OT-${String(oid).padStart(4,'0')}</div>
             <div style="font-size:13px;color:var(--gris-mid);margin-top:3px">${[orden.marca, orden.linea, orden.modelo].filter(Boolean).map(escapeHtml).join(' · ') || 'Sin datos'}</div>
           </div>
           <div style="text-align:right">
@@ -162,6 +216,7 @@ async function cargarEtapasMecanico() {
           </div>
         </div>
         ${etapsHtml}
+        ${solsHtml}
       </div>`;
     }).join('');
   } catch(e) {
@@ -331,6 +386,103 @@ async function mecGuardarNovedad(eid, oid) {
     abrirMecDetalle(eid, oid);
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
+// ═══════════════════════════════════════════════════════════
+// SOLICITUD RÁPIDA DE REPUESTO (desde tarjeta de orden)
+// ═══════════════════════════════════════════════════════════
+
+// Abre el formulario multi-ítem de repuestos (delegado a repuestos.js)
+function abrirSolicitudRapida(ordenId, placa) {
+  abrirModalSolicitudRepuesto(ordenId, null, placa);
+}
+
+// ── Menú de Novedad (detener / solicitar repuesto) ────────
+function abrirNovedadMenu(etapaId, ordenId, placa) {
+  const existing = document.getElementById('_novedadMenu');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = '_novedadMenu';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:14px;padding:24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.25)" onclick="event.stopPropagation()">
+      <div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700;margin-bottom:4px">${escapeHtml(placa)}</div>
+      <div style="font-size:12px;color:var(--gris-mid);margin-bottom:20px">¿Por qué se detiene la etapa?</div>
+
+      <button class="btn btn-primary" style="width:100%;margin-bottom:10px;display:flex;align-items:center;gap:10px;padding:14px 16px;justify-content:flex-start"
+        onclick="document.getElementById('_novedadMenu').remove();abrirModalSolicitudRepuesto(${ordenId},${etapaId||'null'},'${escapeHtml(placa).replace(/'/g,'\\x27')}')">
+        <span style="font-size:20px">📦</span>
+        <div style="text-align:left">
+          <div style="font-weight:700;font-size:14px">Solicitar repuesto</div>
+          <div style="font-size:11px;opacity:.8;margin-top:1px">Pedir pieza al jefe de taller — pausa el timer</div>
+        </div>
+      </button>
+
+      <button class="btn btn-ghost" style="width:100%;margin-bottom:10px;display:flex;align-items:center;gap:10px;padding:14px 16px;justify-content:flex-start;border:1.5px solid var(--gris-borde)"
+        onclick="_mostrarFormDetenerOtro(${etapaId||'null'},${ordenId})">
+        <span style="font-size:20px">⛔</span>
+        <div style="text-align:left">
+          <div style="font-weight:700;font-size:14px">Otro motivo de detención</div>
+          <div style="font-size:11px;color:var(--gris-mid);margin-top:1px">Daño, espera, cliente, etc.</div>
+        </div>
+      </button>
+
+      <div id="_detenerOtroForm" style="display:none;margin-top:4px">
+        <div class="field" style="margin-bottom:10px">
+          <label>Motivo *</label>
+          <textarea id="_detMotivo" placeholder="Describe el motivo de la detención..." style="min-height:60px"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('_novedadMenu').remove()">Cancelar</button>
+          <button class="btn btn-danger btn-sm" onclick="_confirmarDetencion(${etapaId||'null'},${ordenId})">Detener etapa</button>
+        </div>
+      </div>
+
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:4px" onclick="document.getElementById('_novedadMenu').remove()">Cancelar</button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function _mostrarFormDetenerOtro(etapaId, ordenId) {
+  const form = document.getElementById('_detenerOtroForm');
+  if (form) { form.style.display = 'block'; document.getElementById('_detMotivo')?.focus(); }
+}
+
+async function _confirmarDetencion(etapaId, ordenId) {
+  const motivo = document.getElementById('_detMotivo')?.value?.trim();
+  if (!motivo) { toast('Escribe el motivo', 'err'); return; }
+  try {
+    if (etapaId) {
+      await api(`/etapas?id=eq.${etapaId}`, 'PATCH', {
+        pausado: true, pausa_inicio: new Date().toISOString()
+      });
+      await api('/novedades', 'POST', {
+        orden_id: ordenId, etapa_id: etapaId,
+        tipo: 'Detenido', responsable: sesion.nombre,
+        motivo, desde: new Date().toISOString()
+      }, { Prefer: 'return=minimal' }).catch(() => {});
+    }
+    document.getElementById('_novedadMenu')?.remove();
+    toast('Etapa pausada — ⏸ ' + motivo.slice(0, 40));
+    cargarEtapasMecanico();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+async function mecReanudarEtapa(etapaId, ordenId) {
+  try {
+    const etapa = await api(`/etapas?id=eq.${etapaId}`).then(r=>r?.[0]);
+    if (!etapa) return;
+    const pausaMs  = etapa.pausa_inicio ? Date.now() - new Date(etapa.pausa_inicio).getTime() : 0;
+    const pausaMin = Math.max(0, Math.round(pausaMs / 60000));
+    await api(`/etapas?id=eq.${etapaId}`, 'PATCH', {
+      pausado: false, pausa_inicio: null,
+      tiempo_pausado_min: (etapa.tiempo_pausado_min || 0) + pausaMin
+    });
+    toast('▶ Etapa reanudada');
+    cargarEtapasMecanico();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
 // ═══════════════════════════════════════════════════════════
 // HISTORIAL DEL MECÁNICO
 // ═══════════════════════════════════════════════════════════

@@ -40,130 +40,208 @@ function _editarProveedorPorId(btn) {
 }
 
 // ─────────────────────────────────────────────────────────
-// SOLICITAR REPUESTO
+// SOLICITAR REPUESTO — formulario multi-ítem
 // ─────────────────────────────────────────────────────────
+let _solItems = [{ idx: 0, fotoUrl: null }];
+
+function _renderSolItem(item) {
+  const isFirst = _solItems[0].idx === item.idx;
+  return `<div id="si-row-${item.idx}" style="background:var(--gris-bg);border:1px solid var(--gris-borde);border-radius:10px;padding:14px;margin-bottom:10px;position:relative">
+    ${!isFirst ? `<button type="button" style="position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--gris-mid);font-size:16px;line-height:1;padding:2px 6px" onclick="_quitarSolItem(${item.idx})">✕</button>` : ''}
+    <div style="display:grid;grid-template-columns:1fr 80px;gap:10px;margin-bottom:10px">
+      <div class="field">
+        <label>Repuesto / pieza *</label>
+        <input id="si-rep-${item.idx}" type="text" placeholder="Ej: Disco de freno delantero izq.">
+      </div>
+      <div class="field">
+        <label>Cantidad</label>
+        <input id="si-cant-${item.idx}" type="number" min="1" value="1">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label>Observaciones <span style="color:var(--gris-mid);font-weight:400">(opcional)</span></label>
+      <input id="si-obs-${item.idx}" type="text" placeholder="Referencia, marca, urgencia...">
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gris-mid);margin-bottom:6px">Foto del repuesto a cambiar</div>
+      <div id="si-foto-wrap-${item.idx}">
+        ${item.fotoUrl
+          ? `<div style="position:relative;display:inline-block">
+               <img src="${escapeHtml(item.fotoUrl)}" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid var(--gris-borde)">
+               <button type="button" style="position:absolute;top:-6px;right:-6px;background:#DC2626;color:white;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" onclick="_quitarFotoSolItem(${item.idx})">✕</button>
+             </div>`
+          : `<label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px dashed var(--gris-borde);border-radius:8px;cursor:pointer;font-size:12px;color:var(--gris-mid)">
+               <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+               Subir foto
+               <input type="file" accept="image/*" style="display:none" onchange="_subirFotoSolItem(this,${item.idx})">
+             </label>`
+        }
+      </div>
+      <div id="si-foto-prog-${item.idx}" style="font-size:11px;color:var(--gris-mid);margin-top:4px"></div>
+    </div>
+  </div>`;
+}
+
+function _agregarSolItem() {
+  const idx = Date.now();
+  _solItems.push({ idx, fotoUrl: null });
+  const cont = document.getElementById('sol-items-cont');
+  if (cont) cont.innerHTML = _solItems.map(i => _renderSolItem(i)).join('');
+  setTimeout(() => document.getElementById(`si-rep-${idx}`)?.focus(), 60);
+}
+
+function _quitarSolItem(idx) {
+  _solItems = _solItems.filter(i => i.idx !== idx);
+  const cont = document.getElementById('sol-items-cont');
+  if (cont) cont.innerHTML = _solItems.map(i => _renderSolItem(i)).join('');
+}
+
+async function _subirFotoSolItem(input, idx) {
+  const file = input.files[0];
+  if (!file) return;
+  const prog = document.getElementById(`si-foto-prog-${idx}`);
+  if (prog) prog.textContent = 'Subiendo...';
+  try {
+    const ext = file.name.split('.').pop();
+    const path = `solicitudes/items/${Date.now()}_${idx}.${ext}`;
+    const url = await storageUpload(file, path);
+    const item = _solItems.find(i => i.idx === idx);
+    if (item) item.fotoUrl = url;
+    const cont = document.getElementById('sol-items-cont');
+    if (cont) cont.innerHTML = _solItems.map(i => _renderSolItem(i)).join('');
+  } catch(e) {
+    if (prog) prog.textContent = 'Error al subir';
+    toast('Error al subir foto', 'err');
+  }
+}
+
+function _quitarFotoSolItem(idx) {
+  const item = _solItems.find(i => i.idx === idx);
+  if (item) item.fotoUrl = null;
+  const cont = document.getElementById('sol-items-cont');
+  if (cont) cont.innerHTML = _solItems.map(i => _renderSolItem(i)).join('');
+}
+
+// Punto de entrada unificado (compatible con llamadas antiguas)
 async function abrirModalSolicitudRepuesto(ordenId, etapaId, placa) {
-  const existing = document.getElementById('modal-solicitud-repuesto');
+  _solItems = [{ idx: 0, fotoUrl: null }];
+  const existing = document.getElementById('modal-sol-multi');
   if (existing) existing.remove();
 
-  const historial = await api('/solicitudes_repuesto?select=repuesto&order=creado_en.desc&limit=100').catch(()=>[]) || [];
-  const frecuencia = {};
-  historial.forEach(h => { frecuencia[h.repuesto] = (frecuencia[h.repuesto]||0)+1; });
-  const sugeridos = Object.entries(frecuencia).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([r])=>r);
-
   const div = document.createElement('div');
-  div.id = 'modal-solicitud-repuesto';
+  div.id = 'modal-sol-multi';
   div.className = 'modal-overlay show';
   div.innerHTML = `
-    <div class="modal" style="max-width:460px">
+    <div class="modal" style="max-width:500px;max-height:90vh;overflow-y:auto">
       <div class="modal-header">
         <div class="modal-titulo">Solicitar repuesto — ${escapeHtml(placa)}</div>
-        <button class="modal-close" onclick="document.getElementById('modal-solicitud-repuesto').remove()">✕</button>
+        <button class="modal-close" onclick="document.getElementById('modal-sol-multi').remove()">✕</button>
       </div>
       <div class="modal-body">
-        <div class="field" style="position:relative">
-          <label>Repuesto solicitado *</label>
-          <input id="sr-repuesto" placeholder="Escribe el nombre del repuesto..."
-            oninput="filtrarSugerenciasRepuesto(this.value)"
-            onblur="setTimeout(()=>{ const s=document.getElementById('sr-sugerencias'); if(s) s.style.display='none'; },200)">
-          <div id="sr-sugerencias" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid var(--gris-borde);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;overflow:hidden">
-            ${sugeridos.map(s=>`<div style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--gris-borde)" data-val="${escapeHtml(s)}" onmousedown="document.getElementById('sr-repuesto').value=this.dataset.val;document.getElementById('sr-sugerencias').style.display='none'">${escapeHtml(s)}</div>`).join('')}
-          </div>
+        <div style="font-size:12px;color:#92400E;margin-bottom:14px;padding:8px 12px;background:#FEF3C7;border-radius:6px;border:1px solid #FDE68A">
+          ⏸ La etapa se pausará hasta que el jefe entregue los repuestos.
         </div>
-        ${sugeridos.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-          <span style="font-size:11px;color:var(--gris-mid);align-self:center">Recientes:</span>
-          ${sugeridos.slice(0,5).map(s=>`<button type="button" class="btn btn-ghost btn-xs" data-val="${escapeHtml(s)}" onclick="document.getElementById('sr-repuesto').value=this.dataset.val" style="font-size:11px">${escapeHtml(s)}</button>`).join('')}
-        </div>` : ''}
-        <div class="field">
-          <label>Unidades *</label>
-          <input id="sr-unidades" type="number" min="1" value="1">
-        </div>
-        <div class="field">
-          <label>Observaciones</label>
-          <textarea id="sr-obs" placeholder="Referencia, marca preferida, urgencia..."></textarea>
-        </div>
+        <div id="sol-items-cont">${_solItems.map(i => _renderSolItem(i)).join('')}</div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="_agregarSolItem()" style="width:100%;margin-top:2px;margin-bottom:4px">
+          + Agregar otro repuesto
+        </button>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="document.getElementById('modal-solicitud-repuesto').remove()">Cancelar</button>
-        <button class="btn btn-primary" data-oid="${ordenId}" data-eid="${etapaId||''}" data-placa="${escapeHtml(placa)}" onclick="enviarSolicitudRepuesto(+this.dataset.oid,this.dataset.eid?+this.dataset.eid:null,this.dataset.placa)">Enviar solicitud</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-sol-multi').remove()">Cancelar</button>
+        <button class="btn btn-primary" id="sol-multi-submit"
+          data-oid="${ordenId}" data-eid="${etapaId||''}"
+          onclick="enviarSolicitudRepuesto(+this.dataset.oid,this.dataset.eid?+this.dataset.eid:null)">
+          Enviar solicitud
+        </button>
       </div>
     </div>`;
   document.body.appendChild(div);
-  // Auto-focus el campo repuesto al abrir para que el usuario empiece por ahí
-  setTimeout(() => document.getElementById('sr-repuesto')?.focus(), 80);
+  setTimeout(() => document.getElementById('si-rep-0')?.focus(), 80);
 }
 
-function filtrarSugerenciasRepuesto(val) {
-  const cont = document.getElementById('sr-sugerencias');
-  if (!cont) return;
-  if (!val || val.length < 2) { cont.style.display='none'; return; }
-  const items = cont.querySelectorAll('div');
-  let vis = 0;
-  items.forEach(item => {
-    const match = item.textContent.toLowerCase().includes(val.toLowerCase());
-    item.style.display = match ? '' : 'none';
-    if (match) vis++;
-  });
-  cont.style.display = vis ? 'block' : 'none';
-}
+async function enviarSolicitudRepuesto(ordenId, etapaId) {
+  const items = _solItems.map(item => ({
+    repuesto:      (document.getElementById(`si-rep-${item.idx}`)?.value || '').trim(),
+    unidades:      parseFloat(document.getElementById(`si-cant-${item.idx}`)?.value) || 1,
+    observaciones: (document.getElementById(`si-obs-${item.idx}`)?.value || '').trim() || null,
+    foto_url:      item.fotoUrl || null
+  }));
 
-async function enviarSolicitudRepuesto(ordenId, etapaId, placa) {
-  const repuesto = document.getElementById('sr-repuesto')?.value.trim();
-  const unidades = parseFloat(document.getElementById('sr-unidades')?.value)||1;
-  const obs      = document.getElementById('sr-obs')?.value.trim()||null;
-
-  if (!repuesto) {
-    // Scroll al campo repuesto, resaltarlo y enfocar
-    const input = document.getElementById('sr-repuesto');
-    const modal = document.getElementById('modal-solicitud-repuesto')?.querySelector('.modal');
-    if (modal) modal.scrollTo({ top: 0, behavior: 'smooth' });
-    if (input) {
-      input.style.borderColor = 'var(--rojo, #DC2626)';
-      input.style.boxShadow   = '0 0 0 3px rgba(220,38,38,0.15)';
-      setTimeout(() => input.focus(), 200);
-      input.addEventListener('input', () => {
-        input.style.borderColor = '';
-        input.style.boxShadow   = '';
-      }, { once: true });
-    }
-    toast('Indica el repuesto antes de enviar', 'err');
+  if (items.some(i => !i.repuesto)) {
+    toast('Completa el nombre de cada repuesto', 'err');
     return;
   }
 
+  const btn = document.getElementById('sol-multi-submit');
+  if (btn) btn.disabled = true;
+
   try {
     const orden = await api(`/ordenes?id=eq.${ordenId}&select=placa,marca,linea,modelo,vin`).then(r=>r?.[0]).catch(()=>null);
-    await api('/solicitudes_repuesto','POST',{
-      orden_id: ordenId, etapa_id: etapaId||null,
-      solicitado_por: sesion.nombre, perfil_solicitante: sesion.perfil,
-      repuesto, unidades, observaciones: obs, estado: 'pendiente_jefe'
-    },{ Prefer:'return=minimal' });
 
-    // ── Pausar la etapa mientras se gestiona el repuesto ──
+    // Crear cabecera de la solicitud (primer ítem en campos legacy para compatibilidad)
+    const solicitudRes = await api('/solicitudes_repuesto', 'POST', {
+      orden_id:           ordenId,
+      etapa_id:           etapaId || null,
+      solicitado_por:     sesion.nombre,
+      perfil_solicitante: sesion.perfil,
+      repuesto:           items[0].repuesto,
+      unidades:           items[0].unidades,
+      observaciones:      items[0].observaciones,
+      estado:             'pendiente_jefe'
+    }, { Prefer: 'return=representation' });
+
+    const solicitudId = solicitudRes?.[0]?.id;
+
+    // Crear los ítems en solicitud_items (todos)
+    if (solicitudId) {
+      for (const item of items) {
+        await api('/solicitud_items', 'POST', {
+          solicitud_id:  solicitudId,
+          repuesto:      item.repuesto,
+          unidades:      item.unidades,
+          observaciones: item.observaciones,
+          foto_url:      item.foto_url
+        }, { Prefer: 'return=minimal' }).catch(() => {});
+      }
+    }
+
+    // Pausar etapa activa
     if (etapaId) {
       await api(`/etapas?id=eq.${etapaId}`, 'PATCH', {
-        pausado: true,
-        pausa_inicio: new Date().toISOString()
+        pausado: true, pausa_inicio: new Date().toISOString()
       }).catch(() => {});
-    }
-
-    fetch(N8N_REPUESTO,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        evento:'repuesto_solicitado', solicitado_por: sesion.nombre,
-        repuesto, unidades, placa: orden?.placa||placa,
-        marca: orden?.marca||'', modelo: orden?.linea||'',
-        vin: orden?.vin||'', orden_id: ordenId
-      })
-    }).catch(()=>{});
-
-    document.getElementById('modal-solicitud-repuesto')?.remove();
-    if (etapaId) {
-      toast('Solicitud enviada ✓ — ⏸ Etapa pausada hasta recibir el repuesto');
     } else {
-      toast('Solicitud enviada al jefe de taller ✓');
+      // Sin etapa específica: buscar etapas activas de este mecánico en esta orden y pausarlas
+      const activas = await api(`/etapas?orden_id=eq.${ordenId}&fin=is.null&pausado=eq.false&inicio=not.is.null&select=id`).catch(()=>[]) || [];
+      for (const e of activas) {
+        await api(`/etapas?id=eq.${e.id}`, 'PATCH', {
+          pausado: true, pausa_inicio: new Date().toISOString()
+        }).catch(() => {});
+      }
     }
-    if (esJefe()) actualizarBadgeRepuestos();
-  } catch(e) { toast('Error: '+e.message,'err'); }
+
+    // Notificación N8N
+    const resumen = items.map(i => `${i.repuesto} (x${i.unidades})`).join(', ');
+    fetch(N8N_REPUESTO, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        evento: 'repuesto_solicitado', solicitado_por: sesion.nombre,
+        repuesto: resumen, placa: orden?.placa || '',
+        marca: orden?.marca || '', modelo: orden?.linea || '',
+        vin: orden?.vin || '', orden_id: ordenId
+      })
+    }).catch(() => {});
+
+    document.getElementById('modal-sol-multi')?.remove();
+    toast(`${items.length > 1 ? items.length + ' repuestos solicitados' : 'Solicitud enviada'} ✓ — ⏸ Etapa pausada`);
+
+    if (typeof actualizarBadgeRepuestos === 'function') actualizarBadgeRepuestos();
+    if (typeof cargarEtapasMecanico === 'function') cargarEtapasMecanico();
+    if (typeof cargarRepuestosJefe === 'function' && typeof esJefe === 'function' && esJefe()) cargarRepuestosJefe();
+  } catch(e) {
+    toast('Error: ' + e.message, 'err');
+    if (btn) btn.disabled = false;
+  }
 }
 
 // ─────────────────────────────────────────────────────────
@@ -220,6 +298,12 @@ async function cargarRepuestosJefe() {
       </select>
     </div>`;
 
+    // Cargar ítems de todas las solicitudes en un solo query
+    const solIds = solicitudes.map(s => s.id);
+    const todosItems = solIds.length
+      ? await api(`/solicitud_items?solicitud_id=in.(${solIds.join(',')})&order=creado_en.asc`).catch(()=>[]) || []
+      : [];
+
     if (!solicitudes.length) {
       cont.innerHTML = `<div style="padding:20px">${barraHtml}<div class="empty-state"><p>Sin solicitudes</p></div></div>`;
       return;
@@ -230,19 +314,48 @@ async function cargarRepuestosJefe() {
         ${solicitudes.map(s => {
           const o   = om[s.orden_id]||{};
           const est = estMap[s.estado]||{txt:s.estado,cls:''};
+          const items = todosItems.filter(i => i.solicitud_id === s.id);
+
+          // Timer del proveedor
+          let timerProv = '';
+          if (s.pedido_en && (s.estado === 'pedido' || s.estado === 'recibido_taller' || s.estado === 'entregado')) {
+            const finTs = s.recibido_en ? new Date(s.recibido_en) : new Date();
+            const mins  = Math.round((finTs - new Date(s.pedido_en)) / 60000);
+            const h = Math.floor(mins/60), m = mins%60;
+            const label = s.recibido_en ? 'Proveedor tardó' : 'Esperando proveedor';
+            timerProv = `<div style="font-size:11px;color:${s.recibido_en?'#059669':'#D97706'};margin-top:3px;font-weight:600">⏱ ${label}: ${h>0?h+'h ':''}${m}m</div>`;
+          }
+
+          // Lista de ítems con fotos
+          const itemsHtml = items.length > 0
+            ? `<div style="margin:8px 0 10px;display:flex;flex-direction:column;gap:5px">
+                ${items.map(i => `<div style="display:flex;align-items:center;gap:8px">
+                  ${i.foto_url ? `<img src="${escapeHtml(i.foto_url)}" style="width:32px;height:32px;object-fit:cover;border-radius:4px;flex-shrink:0;cursor:pointer" onclick="abrirLightbox('${escapeHtml(i.foto_url)}')">` : ''}
+                  <div>
+                    <span style="font-weight:600;font-size:13px">${escapeHtml(i.repuesto)}</span>
+                    <span style="font-size:12px;color:var(--gris-mid);margin-left:6px">x${i.unidades||1}</span>
+                    ${i.observaciones ? `<div style="font-size:11px;color:var(--gris-mid);font-style:italic">${escapeHtml(i.observaciones)}</div>` : ''}
+                  </div>
+                </div>`).join('')}
+              </div>`
+            : `<div style="font-size:13px;color:var(--gris-mid);margin-bottom:8px">${escapeHtml(s.repuesto)} · x${s.unidades||1}${s.observaciones?` · ${escapeHtml(s.observaciones)}`:''}</div>`;
+
           return `<div class="card" style="padding:16px">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px">
               <div>
-                <div style="font-weight:700;font-size:15px;margin-bottom:3px">${escapeHtml(s.repuesto)}</div>
-                <div style="font-size:12px;color:var(--gris-mid)">${escapeHtml(String(s.unidades))} und · ${escapeHtml(s.solicitado_por)} · ${formatTS(s.creado_en)}</div>
-                ${o.placa ? `<div style="font-size:12px;color:var(--azul);margin-top:3px;font-family:'DM Mono',monospace">
-                  ${escapeHtml(o.placa)} · ${[o.marca,o.linea,o.modelo].filter(Boolean).map(escapeHtml).join(' ')} · OT#${s.orden_id}
+                <div style="font-weight:700;font-size:15px;margin-bottom:2px">
+                  ${items.length > 1 ? `${items.length} repuestos solicitados` : escapeHtml(s.repuesto)}
+                </div>
+                <div style="font-size:12px;color:var(--gris-mid)">${escapeHtml(s.solicitado_por)} · ${formatTS(s.creado_en)}</div>
+                ${o.placa ? `<div style="font-size:12px;color:var(--azul);margin-top:2px;font-family:'DM Mono',monospace">
+                  ${escapeHtml(o.placa)} · OT-${String(s.orden_id).padStart(4,'0')}
                   ${o.vin ? `· <span style="color:var(--gris-mid)">VIN: ${escapeHtml(o.vin)}</span>` : ''}
                 </div>` : ''}
-                ${s.observaciones ? `<div style="font-size:12px;color:var(--gris-mid);font-style:italic;margin-top:3px">${escapeHtml(s.observaciones)}</div>` : ''}
+                ${timerProv}
               </div>
               <span class="badge ${est.cls}">${est.txt}</span>
             </div>
+            ${itemsHtml}
             ${s.estado==='pendiente_jefe' ? `
               <div style="background:var(--gris-bg);border-radius:8px;padding:10px 12px;margin-bottom:10px">
                 <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Nota para repuestos (opcional)</div>
@@ -342,11 +455,35 @@ async function jefeProcesarSolicitud(id, accion, etapaId) {
 // Jefe confirma que el repuesto llegó al taller (paso 1 de 2)
 async function jefeConfirmarLlegada(solicitudId) {
   try {
+    const ahora = new Date().toISOString();
     await api(`/solicitudes_repuesto?id=eq.${solicitudId}`, 'PATCH', {
       estado: 'recibido_taller',
+      recibido_en: ahora,
       nota_jefe: 'El repuesto llegó al taller. Pendiente de entrega al técnico.'
     });
-    toast('✓ Repuesto recibido en taller — entrega al técnico para reanudar');
+
+    // Notificar al técnico por Telegram
+    const sol = await api(`/solicitudes_repuesto?id=eq.${solicitudId}&select=*`).then(r=>r?.[0]).catch(()=>null);
+    if (sol?.etapa_id) {
+      const etapa = await api(`/etapas?id=eq.${sol.etapa_id}&select=mecanico_id,tecnico`).then(r=>r?.[0]).catch(()=>null);
+      const mec   = etapa?.mecanico_id ? await api(`/mecanicos?id=eq.${etapa.mecanico_id}&select=nombre,telegram_chat_id`).then(r=>r?.[0]).catch(()=>null) : null;
+      const orden = sol.orden_id ? await api(`/ordenes?id=eq.${sol.orden_id}&select=placa`).then(r=>r?.[0]).catch(()=>null) : null;
+      if (mec?.telegram_chat_id) {
+        fetch(N8N_REPUESTO, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            evento: 'repuesto_llegado_taller',
+            telegram_chat_id: mec.telegram_chat_id,
+            tecnico: mec.nombre || etapa?.tecnico || '',
+            repuesto: sol.repuesto,
+            placa: orden?.placa || '',
+            ot: `OT-${String(sol.orden_id).padStart(4,'0')}`
+          })
+        }).catch(()=>{});
+      }
+    }
+
+    toast('✓ Repuesto en taller — entrega al técnico para reanudar su timer');
     cargarRepuestosJefe();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
@@ -513,7 +650,8 @@ async function guardarPrecioVentaSeleccionado(solicitudId) {
     await api(`/cotizaciones_repuesto?id=eq.${cotId}`, 'PATCH', { precio_venta_jefe: val });
     await api(`/solicitudes_repuesto?id=eq.${solicitudId}`, 'PATCH', {
       estado: 'pedido',
-      nota_jefe: notaTecnico
+      nota_jefe: notaTecnico,
+      pedido_en: new Date().toISOString()
     });
     toast('Precio definido ✓ — ahora espera que llegue el repuesto');
     document.getElementById('modal-precio-venta')?.remove();
@@ -590,15 +728,20 @@ async function cargarSolicitudesRepuestos() {
   cont.innerHTML = '<div class="loading-state">Cargando...</div>';
 
   try {
-    const sols = await api('/solicitudes_repuesto?estado=in.(enviado_repuestos,cotizado,pedido,entregado)&order=creado_en.desc&select=*').catch(()=>[]) || [];
+    const sols = await api('/solicitudes_repuesto?estado=in.(enviado_repuestos,cotizado,pedido,recibido_taller,entregado)&order=creado_en.desc&select=*').catch(()=>[]) || [];
     const oids = [...new Set(sols.map(s=>s.orden_id).filter(Boolean))];
     const ords = oids.length ? await api(`/ordenes?id=in.(${oids.join(',')})&select=id,placa,marca,linea,modelo,vin`).catch(()=>[]) || [] : [];
     const om = {}; ords.forEach(o=>{ om[o.id]=o; });
 
-    // Poblar registry para evitar pasar strings de DB en onclick
+    // Cargar ítems de solicitud_items para todas las solicitudes
+    const solIds = sols.map(s => s.id);
+    const todosItems = solIds.length
+      ? await api(`/solicitud_items?solicitud_id=in.(${solIds.join(',')})&order=creado_en.asc`).catch(()=>[]) || []
+      : [];
+
     _solRegistry = {};
     sols.forEach(s => {
-      const o = om[s.orden_id]||{};
+      const o = om[s.orden_id] || {};
       _solRegistry[s.id] = {
         solicitudId: s.id, repuesto: s.repuesto||'', unidades: s.unidades||1,
         placa: o.placa||'', marca: o.marca||'', modelo: o.linea||'',
@@ -611,115 +754,242 @@ async function cargarSolicitudesRepuestos() {
       return;
     }
 
+    const fmt = n => n != null ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : '—';
+    const estadoBadge = {
+      enviado_repuestos: { cls:'badge-iniciada',   txt:'Por cotizar' },
+      cotizado:          { cls:'badge-cotizada',   txt:'Cotizado' },
+      pedido:            { cls:'badge-iniciada',   txt:'Pedido al proveedor' },
+      recibido_taller:   { cls:'badge-completada', txt:'Llegó al taller' },
+      entregado:         { cls:'badge-completada', txt:'Entregado' }
+    };
+
     cont.innerHTML = `<div style="padding:20px">
       <div style="font-size:16px;font-weight:700;margin-bottom:16px">Solicitudes de repuestos</div>
       <div style="display:flex;flex-direction:column;gap:12px">
         ${sols.map(s => {
-          const o = om[s.orden_id]||{};
+          const o = om[s.orden_id] || {};
+          const items = todosItems.filter(i => i.solicitud_id === s.id);
+          const eb = estadoBadge[s.estado] || { cls:'', txt: s.estado };
+
+          // Timer del proveedor (desde pedido_en hasta ahora o recibido_en)
+          let timerProv = '';
+          if (s.pedido_en) {
+            const finTs = s.recibido_en ? new Date(s.recibido_en) : new Date();
+            const mins  = Math.round((finTs - new Date(s.pedido_en)) / 60000);
+            const h = Math.floor(mins/60), m = mins%60;
+            const label = s.recibido_en ? 'Tardó' : 'Esperando';
+            timerProv = `<div style="font-size:11px;color:${s.recibido_en?'#059669':'#D97706'};margin-top:4px;font-weight:600">
+              ⏱ ${label}: ${h > 0 ? h+'h ' : ''}${m}m
+            </div>`;
+          }
+
+          // Lista de ítems
+          const itemsHtml = items.length > 0
+            ? `<div style="margin:8px 0;display:flex;flex-direction:column;gap:4px">
+                ${items.map(i => `<div style="display:flex;align-items:center;gap:8px;font-size:12px">
+                  ${i.foto_url ? `<img src="${escapeHtml(i.foto_url)}" style="width:28px;height:28px;object-fit:cover;border-radius:3px;flex-shrink:0">` : ''}
+                  <span style="font-weight:600">${escapeHtml(i.repuesto)}</span>
+                  <span style="color:var(--gris-mid)">x${i.unidades||1}</span>
+                  ${i.observaciones ? `<span style="color:var(--gris-mid);font-style:italic">${escapeHtml(i.observaciones)}</span>` : ''}
+                </div>`).join('')}
+              </div>`
+            : `<div style="font-size:13px;color:var(--gris-mid);margin-bottom:4px">${escapeHtml(s.repuesto)} · x${s.unidades||1}</div>`;
+
           return `<div class="card" style="padding:16px">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
-              <div>
-                <div style="font-weight:700;font-size:15px;margin-bottom:2px">${escapeHtml(s.repuesto)}</div>
-                <div style="font-size:12px;color:var(--gris-mid)">${escapeHtml(String(s.unidades))} und · ${formatTS(s.creado_en)}</div>
-                ${o.placa ? `<div style="font-size:12px;color:var(--azul);font-family:'DM Mono',monospace;margin-top:3px">
-                  ${escapeHtml(o.placa)} · ${[o.marca,o.linea,o.modelo].filter(Boolean).map(escapeHtml).join(' ')} · OT#${s.orden_id}
-                  ${o.vin ? `<br><span style="color:var(--gris-mid)">VIN: ${escapeHtml(o.vin)}</span>` : ''}
-                </div>` : ''}
-                ${s.nota_jefe ? `<div style="font-size:12px;background:var(--gris-bg);padding:6px 10px;border-radius:6px;border-left:3px solid var(--azul);margin-top:6px;display:flex;align-items:flex-start;gap:5px">${ico('edit',13)} <span>${escapeHtml(s.nota_jefe)}</span></div>` : ''}
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px">
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:14px;margin-bottom:2px">${items.length > 1 ? `${items.length} repuestos` : escapeHtml(s.repuesto)}</div>
+                <div style="font-size:12px;color:var(--azul);font-family:'DM Mono',monospace">
+                  ${escapeHtml(o.placa||'—')} · OT-${String(s.orden_id).padStart(4,'0')}
+                </div>
+                <div style="font-size:11px;color:var(--gris-mid);margin-top:2px">${escapeHtml(s.solicitado_por||'')} · ${formatTS(s.creado_en)}</div>
+                ${timerProv}
               </div>
-              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-                <span class="badge ${s.estado==='entregado'?'badge-completada':s.estado==='pedido'?'badge-iniciada':'badge-cotizada'}">${
-                  s.estado==='enviado_repuestos'?'Por cotizar':s.estado==='cotizado'?'Cotizado':s.estado==='pedido'?'Pedido':'Entregado'
-                }</span>
-                <button class="btn btn-primary btn-sm" data-sol-id="${s.id}" onclick="_abrirCotizarPorId(this)">
-                  ${s.estado==='enviado_repuestos'?'+ Cotizar':'Ver / editar'}
-                </button>
-              </div>
+              <span class="badge ${eb.cls}">${eb.txt}</span>
+            </div>
+            ${itemsHtml}
+            ${s.nota_jefe ? `<div style="font-size:12px;background:var(--gris-bg);padding:6px 10px;border-radius:6px;border-left:3px solid var(--azul);margin-top:6px">${escapeHtml(s.nota_jefe)}</div>` : ''}
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+              ${s.estado === 'enviado_repuestos' || s.estado === 'cotizado'
+                ? `<button class="btn btn-primary btn-sm" data-sol-id="${s.id}" onclick="_abrirCotizarPorId(this)">
+                    ${s.estado==='enviado_repuestos' ? '+ Cotizar' : 'Ver / editar cotizaciones'}
+                  </button>`
+                : ''}
+              ${s.estado === 'pedido'
+                ? `<button class="btn btn-success btn-sm" onclick="marcarRepuestoSolicitadoProveedor(${s.id})"
+                    style="display:flex;align-items:center;gap:5px">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+                    Confirmar pedido al proveedor
+                  </button>`
+                : ''}
             </div>
           </div>`;
         }).join('')}
       </div>
     </div>`;
 
-    iniciarPollingRepuestos(()=>{
+    iniciarPollingRepuestos(() => {
       if (document.getElementById('rep-contenido')) cargarSolicitudesRepuestos();
       else detenerPollingRepuestos();
     });
   } catch(e) { cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`; }
 }
 
+// Repuestos confirma que ya se hizo el pedido al proveedor elegido
+async function marcarRepuestoSolicitadoProveedor(solicitudId) {
+  try {
+    // Obtener datos para Telegram
+    const sol   = await api(`/solicitudes_repuesto?id=eq.${solicitudId}&select=*`).then(r=>r?.[0]).catch(()=>null);
+    const orden = sol?.orden_id ? await api(`/ordenes?id=eq.${sol.orden_id}&select=placa`).then(r=>r?.[0]).catch(()=>null) : null;
+    let mecTelegram = null, mecNombre = '';
+    if (sol?.etapa_id) {
+      const etapa = await api(`/etapas?id=eq.${sol.etapa_id}&select=mecanico_id,tecnico`).then(r=>r?.[0]).catch(()=>null);
+      if (etapa?.mecanico_id) {
+        const mec = await api(`/mecanicos?id=eq.${etapa.mecanico_id}&select=nombre,telegram_chat_id`).then(r=>r?.[0]).catch(()=>null);
+        mecTelegram = mec?.telegram_chat_id || null;
+        mecNombre   = mec?.nombre || etapa?.tecnico || '';
+      }
+    }
+
+    if (mecTelegram) {
+      fetch(N8N_REPUESTO, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          evento: 'repuesto_pedido_proveedor',
+          telegram_chat_id: mecTelegram,
+          tecnico: mecNombre,
+          repuesto: sol?.repuesto || '',
+          placa: orden?.placa || '',
+          ot: `OT-${String(sol?.orden_id||0).padStart(4,'0')}`
+        })
+      }).catch(()=>{});
+    }
+
+    toast('✓ Pedido confirmado — técnico notificado');
+    cargarSolicitudesRepuestos();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
 async function abrirModalCotizar(solicitudId, repuesto, unidades, placa, marca, modelo, anio, vin) {
-  const [proveedores, cots] = await Promise.all([
+  const [proveedores, cots, solItems] = await Promise.all([
     api('/proveedores?activo=eq.true&order=nombre.asc').catch(()=>[]) || [],
-    api(`/cotizaciones_repuesto?solicitud_id=eq.${solicitudId}&order=opcion.asc`).catch(()=>[]) || []
+    api(`/cotizaciones_repuesto?solicitud_id=eq.${solicitudId}&order=opcion.asc`).catch(()=>[]) || [],
+    api(`/solicitud_items?solicitud_id=eq.${solicitudId}&order=creado_en.asc`).catch(()=>[]) || []
   ]);
   const existing = document.getElementById('modal-cotizar');
   if (existing) existing.remove();
 
-  const provOpts = '<option value="">— Seleccionar proveedor —</option>'+
-    proveedores.map(p=>`<option value="${p.id}" data-wa="${escapeHtml(p.whatsapp||'')}">${escapeHtml(p.nombre)}</option>`).join('');
-  const opLbl = {1:'Opción 1 — Precio alto',2:'Opción 2 — Precio medio',3:'Opción 3 — Precio bajo'};
-  const msgBase = `Buenos días. Solicito su colaboración para la búsqueda del siguiente repuesto: *${repuesto}* (${unidades} und) para el vehículo *${marca} ${modelo}*${anio?' año '+anio:''}, VIN: *${vin||'No disponible'}*. Quedo atento, gracias.`;
+  // Usar ítems de solicitud_items si existen; si no, usar los campos legacy
+  const itemsList = solItems.length ? solItems : [{ repuesto, unidades, observaciones: null, foto_url: null }];
+
+  const provOpts = '<option value="">— Seleccionar proveedor —</option>' +
+    proveedores.map(p => `<option value="${p.id}" data-wa="${escapeHtml(p.whatsapp||p.telefono||'')}">${escapeHtml(p.nombre)}</option>`).join('');
+  const opLbl = { 1:'Opción 1', 2:'Opción 2', 3:'Opción 3' };
+
+  // Mensaje base con lista de todos los ítems
+  const listaItems = itemsList.map(i => `- ${i.repuesto} (x${i.unidades||1})`).join('\n');
+  const msgBase = `Buenos días. Solicito cotización para los siguientes repuestos:\n${listaItems}\nVehículo: *${[marca,modelo,anio].filter(Boolean).join(' ')}*${vin ? ', VIN: *' + vin + '*' : ''}. Quedo atento, gracias.`;
 
   function renderOp(num) {
-    const c = cots.find(x=>x.opcion===num)||{};
-    return `<div style="background:var(--gris-bg);border-radius:8px;padding:12px 14px;margin-bottom:12px;border:1px solid var(--gris-borde)">
-      <div style="font-weight:700;font-size:13px;margin-bottom:10px;color:var(--azul)">${opLbl[num]}</div>
-      <div class="grid-2">
-        <div class="field">
+    const c = cots.find(x => x.opcion === num) || {};
+    return `<div style="background:var(--gris-bg);border-radius:10px;padding:14px;margin-bottom:12px;border:1px solid var(--gris-borde)">
+      <div style="font-weight:700;font-size:13px;margin-bottom:12px;color:var(--azul)">${opLbl[num]}</div>
+
+      <!-- Proveedor + nuevo -->
+      <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:10px">
+        <div class="field" style="flex:1;margin:0">
           <label>Proveedor</label>
-          <select id="cot-prov-${num}-${solicitudId}" style="width:100%" onchange="actualizarWaLink(${num},${solicitudId})">${provOpts}</select>
+          <select id="cot-prov-${num}-${solicitudId}" style="width:100%">${provOpts}</select>
         </div>
-        <div class="field">
-          <label>Precio costo x unidad (COP)</label>
-          <input type="number" id="cot-precio-${num}-${solicitudId}" value="${c.precio_costo||''}" placeholder="0" min="0" style="font-family:'DM Mono',monospace">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="_toggleNuevoProv(${num},${solicitudId})"
+          style="padding:7px 10px;flex-shrink:0;margin-bottom:1px" title="Registrar nuevo proveedor">
+          + Nuevo
+        </button>
+      </div>
+
+      <!-- Formulario nuevo proveedor (oculto) -->
+      <div id="np-form-${num}-${solicitudId}" style="display:none;background:white;border:1.5px solid var(--azul);border-radius:8px;padding:12px;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--azul);margin-bottom:10px">Nuevo proveedor</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div class="field"><label>Nombre *</label><input id="np-nom-${num}-${solicitudId}" type="text" placeholder="Nombre del proveedor"></div>
+          <div class="field"><label>Teléfono / WhatsApp</label><input id="np-tel-${num}-${solicitudId}" type="tel" placeholder="3001234567"></div>
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Especialidad <span style="font-weight:400;color:var(--gris-mid)">(frenos, luces, motor, eléctrico...)</span></label>
+          <input id="np-esp-${num}-${solicitudId}" type="text" placeholder="¿En qué se especializa?">
+        </div>
+        <div style="display:flex;gap:6px;justify-content:flex-end">
+          <button type="button" class="btn btn-ghost btn-xs" onclick="_cancelarNuevoProv(${num},${solicitudId})">Cancelar</button>
+          <button type="button" class="btn btn-primary btn-xs" onclick="_guardarNuevoProvInline(${num},${solicitudId})">Guardar proveedor</button>
         </div>
       </div>
-      <div class="field">
-        <label>Estado</label>
-        <select id="cot-estado-${num}-${solicitudId}" style="width:180px">
-          <option value="cotizado"  ${(c.estado_opcion||'cotizado')==='cotizado' ?'selected':''}>Cotizado</option>
-          <option value="pedido"    ${c.estado_opcion==='pedido'   ?'selected':''}>Pedido</option>
-          <option value="entregado" ${c.estado_opcion==='entregado'?'selected':''}>Entregado</option>
-        </select>
+
+      <!-- Precio + Original/Genérico -->
+      <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;margin-bottom:12px">
+        <div class="field" style="margin:0">
+          <label>Precio costo total (COP)</label>
+          <input type="number" id="cot-precio-${num}-${solicitudId}" value="${c.precio_costo||''}" placeholder="0" min="0"
+            style="font-family:'DM Mono',monospace">
+        </div>
+        <div style="padding-bottom:6px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap">
+            <input type="checkbox" id="cot-orig-${num}-${solicitudId}" ${c.es_original!==false?'checked':''}>
+            Original
+          </label>
+          <div style="font-size:11px;color:var(--gris-mid);margin-top:2px;padding-left:20px">/ Genérico</div>
+        </div>
       </div>
-      <div style="margin-top:10px;background:white;border-radius:6px;padding:10px 12px;border:1px solid var(--gris-borde)">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gris-mid);margin-bottom:6px">Mensaje WhatsApp</div>
-        <textarea id="wa-msg-${num}-${solicitudId}" rows="3"
-          oninput="actualizarWaLink(${num},${solicitudId})"
-          style="width:100%;font-size:12px;border:none;background:transparent;resize:none;outline:none">${escapeHtml(msgBase)}</textarea>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:8px;flex-wrap:wrap">
-          <div id="wa-num-wrap-${num}-${solicitudId}" style="display:none;flex:1;min-width:160px">
-            <input id="wa-num-${num}-${solicitudId}" type="tel" placeholder="Número WhatsApp del proveedor"
-              oninput="actualizarWaLink(${num},${solicitudId})"
-              style="width:100%;padding:6px 10px;border:1px solid var(--gris-borde);border-radius:6px;font-size:12px;font-family:'DM Mono',monospace">
-          </div>
-          <div id="wa-sin-num-${num}-${solicitudId}" style="font-size:11px;color:var(--gris-mid);display:none">
-            El proveedor no tiene número guardado
-          </div>
-          <a id="wa-link-${num}-${solicitudId}" href="#" target="_blank"
-            class="btn btn-success btn-sm" style="display:flex;align-items:center;gap:5px;text-decoration:none;flex-shrink:0;opacity:.4;pointer-events:none">
-            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            Enviar por WhatsApp
-          </a>
+
+      <!-- Mensaje para copiar -->
+      <div style="background:white;border-radius:6px;padding:10px 12px;border:1px solid var(--gris-borde)">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gris-mid);margin-bottom:6px">Mensaje para el proveedor</div>
+        <textarea id="wa-msg-${num}-${solicitudId}" rows="4"
+          style="width:100%;font-size:12px;border:none;background:transparent;resize:vertical;outline:none;line-height:1.5">${escapeHtml(msgBase)}</textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:6px">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="_copiarMensajeProv(${num},${solicitudId})"
+            style="display:flex;align-items:center;gap:5px">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+            </svg>
+            Copiar mensaje
+          </button>
         </div>
       </div>
     </div>`;
   }
 
+  // Lista de repuestos solicitados
+  const itemsHtml = `<div style="background:var(--gris-bg);border-radius:8px;padding:12px 14px;margin-bottom:16px">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gris-mid);margin-bottom:8px">Repuestos solicitados</div>
+    ${itemsList.map((item, i) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 0;${i < itemsList.length-1 ? 'border-bottom:1px solid var(--gris-borde)' : ''}">
+        ${item.foto_url
+          ? `<img src="${escapeHtml(item.foto_url)}" style="width:42px;height:42px;object-fit:cover;border-radius:5px;flex-shrink:0">`
+          : `<div style="width:42px;height:42px;background:#E5E7EB;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px">📦</div>`}
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px">${escapeHtml(item.repuesto)}</div>
+          <div style="font-size:11px;color:var(--gris-mid)">x${item.unidades||1}${item.observaciones ? ' · ' + escapeHtml(item.observaciones) : ''}</div>
+        </div>
+      </div>`).join('')}
+  </div>`;
+
   const div = document.createElement('div');
   div.id = 'modal-cotizar';
   div.className = 'modal-overlay show';
   div.innerHTML = `
-    <div class="modal" style="max-width:600px;max-height:90vh;overflow-y:auto">
+    <div class="modal" style="max-width:580px;max-height:90vh;overflow-y:auto">
       <div class="modal-header">
         <div class="modal-titulo">Cotizar — ${escapeHtml(repuesto)}</div>
         <button class="modal-close" onclick="document.getElementById('modal-cotizar').remove()">✕</button>
       </div>
       <div class="modal-body">
         ${placa ? `<div style="font-size:12px;color:var(--azul);font-family:'DM Mono',monospace;margin-bottom:14px;background:var(--gris-bg);padding:8px 12px;border-radius:6px">
-          ${escapeHtml(placa)} · ${[marca,modelo,anio].filter(Boolean).map(escapeHtml).join(' ')}${vin?`<br>VIN: ${escapeHtml(vin)}`:''}
+          ${escapeHtml(placa)} · ${[marca,modelo,anio].filter(Boolean).map(escapeHtml).join(' ')}${vin ? `<br>VIN: ${escapeHtml(vin)}` : ''}
         </div>` : ''}
+        ${itemsHtml}
+        <div style="font-size:12px;color:var(--gris-mid);margin-bottom:12px">
+          Ingresa hasta 3 opciones de proveedores. Deja en blanco las que no uses.
+        </div>
         ${renderOp(1)}${renderOp(2)}${renderOp(3)}
       </div>
       <div class="modal-footer">
@@ -729,72 +999,91 @@ async function abrirModalCotizar(solicitudId, repuesto, unidades, placa, marca, 
     </div>`;
   document.body.appendChild(div);
 
+  // Pre-seleccionar proveedores de cotizaciones existentes
   cots.forEach(c => {
     const sel = document.getElementById(`cot-prov-${c.opcion}-${solicitudId}`);
-    if (sel) { sel.value = c.proveedor_id||''; actualizarWaLink(c.opcion, solicitudId); }
+    if (sel) sel.value = c.proveedor_id || '';
   });
 }
 
-function actualizarWaLink(num, solicitudId) {
-  const sel      = document.getElementById(`cot-prov-${num}-${solicitudId}`);
-  const link     = document.getElementById(`wa-link-${num}-${solicitudId}`);
-  const msgEl    = document.getElementById(`wa-msg-${num}-${solicitudId}`);
-  const numWrap  = document.getElementById(`wa-num-wrap-${num}-${solicitudId}`);
-  const sinNum   = document.getElementById(`wa-sin-num-${num}-${solicitudId}`);
-  const numInput = document.getElementById(`wa-num-${num}-${solicitudId}`);
-  if (!link || !sel) return;
-
-  const msg = msgEl?.value || '';
-  // Número del proveedor seleccionado en BD
-  const waNumBD = sel.options[sel.selectedIndex]?.dataset?.wa || '';
-  // Número ingresado manualmente (si no tiene en BD)
-  const waNumManual = numInput?.value || '';
-  const waNum = waNumBD || waNumManual;
-
-  // Mostrar campo manual si el proveedor seleccionado no tiene número
-  const provSeleccionado = sel.value !== '';
-  if (provSeleccionado && !waNumBD) {
-    if (numWrap) numWrap.style.display = 'block';
-    if (sinNum)  sinNum.style.display  = 'none';
-  } else if (!provSeleccionado) {
-    if (numWrap) numWrap.style.display = 'none';
-    if (sinNum)  sinNum.style.display  = 'none';
-  } else {
-    if (numWrap) numWrap.style.display = 'none';
-    if (sinNum)  sinNum.style.display  = 'none';
-  }
-
-  const cleaned = waNum.replace(/\D/g, '');
-  if (cleaned) {
-    link.href = `https://wa.me/${cleaned}?text=${encodeURIComponent(msg)}`;
-    link.style.opacity = '1';
-    link.style.pointerEvents = 'auto';
-  } else {
-    link.href = '#';
-    link.style.opacity = '.4';
-    link.style.pointerEvents = 'none';
-  }
+// ── Helpers para nuevo proveedor inline ──────────────────
+function _toggleNuevoProv(num, solicitudId) {
+  const form = document.getElementById(`np-form-${num}-${solicitudId}`);
+  if (!form) return;
+  const visible = form.style.display !== 'none';
+  form.style.display = visible ? 'none' : 'block';
+  if (!visible) setTimeout(() => document.getElementById(`np-nom-${num}-${solicitudId}`)?.focus(), 60);
 }
+
+function _cancelarNuevoProv(num, solicitudId) {
+  const form = document.getElementById(`np-form-${num}-${solicitudId}`);
+  if (form) form.style.display = 'none';
+}
+
+async function _guardarNuevoProvInline(num, solicitudId) {
+  const nombre = document.getElementById(`np-nom-${num}-${solicitudId}`)?.value?.trim();
+  if (!nombre) { toast('El nombre es obligatorio', 'err'); return; }
+  const telefono      = document.getElementById(`np-tel-${num}-${solicitudId}`)?.value?.trim() || null;
+  const especialidades = document.getElementById(`np-esp-${num}-${solicitudId}`)?.value?.trim() || '';
+  try {
+    const res = await api('/proveedores', 'POST', {
+      nombre, telefono, whatsapp: telefono, especialidades, activo: true, marcas: [], multimarca: false
+    }, { Prefer: 'return=representation' });
+    const newProv = res?.[0];
+    if (!newProv) { toast('Error al guardar proveedor', 'err'); return; }
+    // Agregar al select y seleccionar
+    const sel = document.getElementById(`cot-prov-${num}-${solicitudId}`);
+    if (sel) {
+      const opt = document.createElement('option');
+      opt.value = newProv.id;
+      opt.dataset.wa = telefono || '';
+      opt.textContent = nombre;
+      sel.appendChild(opt);
+      sel.value = newProv.id;
+    }
+    _cancelarNuevoProv(num, solicitudId);
+    toast(`Proveedor "${nombre}" guardado ✓`);
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+function _copiarMensajeProv(num, solicitudId) {
+  const txt = document.getElementById(`wa-msg-${num}-${solicitudId}`)?.value || '';
+  if (!txt) return;
+  navigator.clipboard?.writeText(txt).then(() => {
+    toast('Mensaje copiado ✓');
+  }).catch(() => {
+    // Fallback: select textarea
+    const ta = document.getElementById(`wa-msg-${num}-${solicitudId}`);
+    if (ta) { ta.select(); document.execCommand('copy'); toast('Mensaje copiado ✓'); }
+  });
+}
+
+// Mantener compatibilidad con actualizarWaLink (ya no hace nada visualmente pero puede ser llamada)
+function actualizarWaLink() {}
 
 async function guardarCotizaciones(solicitudId) {
   try {
-    for (let op=1; op<=3; op++) {
-      const provId = document.getElementById(`cot-prov-${op}-${solicitudId}`)?.value||null;
-      const precio = parseFloat(document.getElementById(`cot-precio-${op}-${solicitudId}`)?.value)||0;
-      const estado = document.getElementById(`cot-estado-${op}-${solicitudId}`)?.value||'cotizado';
+    let guardadas = 0;
+    for (let op = 1; op <= 3; op++) {
+      const provId    = document.getElementById(`cot-prov-${op}-${solicitudId}`)?.value || null;
+      const precio    = parseFloat(document.getElementById(`cot-precio-${op}-${solicitudId}`)?.value) || 0;
+      const esOrig    = document.getElementById(`cot-orig-${op}-${solicitudId}`)?.checked ?? true;
       if (!provId && !precio) continue;
+      guardadas++;
+      const body = { proveedor_id: provId || null, precio_costo: precio, es_original: esOrig, estado_opcion: 'cotizado' };
       const ex = await api(`/cotizaciones_repuesto?solicitud_id=eq.${solicitudId}&opcion=eq.${op}`).catch(()=>[]) || [];
       if (ex.length) {
-        await api(`/cotizaciones_repuesto?id=eq.${ex[0].id}`,'PATCH',{proveedor_id:provId||null,precio_costo:precio,estado_opcion:estado});
+        await api(`/cotizaciones_repuesto?id=eq.${ex[0].id}`, 'PATCH', body);
       } else {
-        await api('/cotizaciones_repuesto','POST',{solicitud_id:solicitudId,opcion:op,proveedor_id:provId||null,precio_costo:precio,estado_opcion:estado},{Prefer:'return=minimal'});
+        await api('/cotizaciones_repuesto', 'POST', { solicitud_id: solicitudId, opcion: op, ...body }, { Prefer: 'return=minimal' });
       }
     }
-    await api(`/solicitudes_repuesto?id=eq.${solicitudId}`,'PATCH',{estado:'cotizado'});
+    if (!guardadas) { toast('Ingresa al menos una cotización', 'err'); return; }
+    await api(`/solicitudes_repuesto?id=eq.${solicitudId}`, 'PATCH', { estado: 'cotizado' });
     toast('Cotizaciones guardadas ✓');
     document.getElementById('modal-cotizar')?.remove();
     cargarSolicitudesRepuestos();
-  } catch(e) { toast('Error: '+e.message,'err'); }
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
 
 // ─────────────────────────────────────────────────────────
