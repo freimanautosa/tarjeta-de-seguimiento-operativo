@@ -14,6 +14,9 @@ const MARCAS_VEHICULOS = [
   'Bajaj','Hero','Yamaha','Honda Moto','Kawasaki','Suzuki Moto','KTM'
 ];
 
+// ── Sección activa ──────────────────────────────────────
+let _repSeccionActual = 'solicitudes';
+
 // ── Polling global ──────────────────────────────────────
 let _repuestosPollingInterval = null;
 function iniciarPollingRepuestos(fn, seg = 15) {
@@ -728,6 +731,7 @@ async function montarRepuestos() {
 }
 
 function mostrarSeccionRep(sec) {
+  _repSeccionActual = sec;
   const btnSol   = document.getElementById('nav-rep-solicitudes');
   const btnProv  = document.getElementById('nav-rep-proveedores');
   const bnavSol  = document.getElementById('bnav-rep-solicitudes');
@@ -848,8 +852,8 @@ async function cargarSolicitudesRepuestos() {
     </div>`;
 
     iniciarPollingRepuestos(() => {
-      if (document.getElementById('rep-contenido')) cargarSolicitudesRepuestos();
-      else detenerPollingRepuestos();
+      if (!document.getElementById('rep-contenido')) { detenerPollingRepuestos(); return; }
+      if (_repSeccionActual === 'solicitudes') cargarSolicitudesRepuestos();
     });
   } catch(e) { cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`; }
 }
