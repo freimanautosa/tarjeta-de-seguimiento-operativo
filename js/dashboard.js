@@ -102,7 +102,7 @@ async function cargarDashboardMes() {
     });
     const maxDia = Math.max(...Object.values(porDia).map(x=>Math.max(x.ingresos,x.entregas)), 1);
     const barrasHtml = Object.entries(porDia).map(([dia, data]) => `
-      <div class="dash-bar-col">
+      <div class="dash-bar-col" style="min-width:18px;flex:0 0 auto">
         <div class="dash-bar-group">
           <div class="dash-bar" style="height:${Math.max(2, Math.round((data.ingresos/maxDia)*72))}px;background:var(--azul-mid)" title="Ingresos: ${data.ingresos}"></div>
           <div class="dash-bar" style="height:${Math.max(2, Math.round((data.entregas/maxDia)*72))}px;background:var(--verde)" title="Entregas: ${data.entregas}"></div>
@@ -560,7 +560,7 @@ async function cargarGraficoPeriodo() {
     cont.innerHTML = arr.map(b => {
       const hI = Math.round((b.iniciadas/maxV)*72);
       const hF = Math.round((b.finalizadas/maxV)*72);
-      return `<div class="dash-bar-col">
+      return `<div class="dash-bar-col" style="min-width:18px;flex:0 0 auto">
         <div class="dash-bar-group">
           <div class="dash-bar" style="height:${hI}px;background:var(--azul-mid)" title="Iniciadas: ${b.iniciadas}"></div>
           <div class="dash-bar" style="height:${hF}px;background:var(--verde)" title="Finalizadas: ${b.finalizadas}"></div>
