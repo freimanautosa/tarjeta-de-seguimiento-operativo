@@ -91,15 +91,6 @@ async function cargarEtapasMecanico() {
       porOrden[e.orden_id].push(e);
     });
 
-    const solsByOrden = {};
-    (solicitudes || []).forEach(s => {
-      if (!solsByOrden[s.orden_id]) solsByOrden[s.orden_id] = [];
-      solsByOrden[s.orden_id].push(s);
-    });
-
-    const _estC  = {pendiente_jefe:'#D97706',enviado_repuestos:'#7C3AED',cotizado:'#2563EB',pedido:'#0891B2',recibido_taller:'#059669',entregado:'#059669',rechazado:'#DC2626'};
-    const _estBg = {pendiente_jefe:'#FEF3C7',enviado_repuestos:'#EDE9FE',cotizado:'#EBF2FF',pedido:'#E0F2FE',recibido_taller:'#E6F5EF',entregado:'#E6F5EF',rechazado:'#FEE2E2'};
-    const _estL  = {pendiente_jefe:'Pendiente',enviado_repuestos:'En gestión',cotizado:'Cotizado',pedido:'Pedido',recibido_taller:'¡Llegó!',entregado:'Entregado ✓',rechazado:'Rechazado'};
 
     cont.innerHTML = Object.entries(porOrden).map(([oid, ets]) => {
       const orden = ordenes.find(o => o.id == oid) || {};
@@ -159,42 +150,6 @@ async function cargarEtapasMecanico() {
         </div>`;
       }).join('');
 
-      // ── Solicitudes de repuestos para esta orden ──────────────────────
-      const solsOrden = solsByOrden[oid] || [];
-      const todasEtapasFin = ets.every(e => !!e.fin);
-      // Solo mostrar sección de repuestos si hay solicitudes O si no terminaron todas las etapas
-      let solsHtml = '';
-      if (solsOrden.length > 0 || !todasEtapasFin) {
-      solsHtml = '<div style="border-top:1px solid var(--gris-borde);margin-top:12px;padding-top:12px" onclick="event.stopPropagation()">';
-      solsHtml += '<div style="margin-bottom:8px">';
-      solsHtml += '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gris-mid)">Repuestos</span>';
-      solsHtml += '</div>';
-      if (solsOrden.length) {
-        solsOrden.forEach((s, i) => {
-          const est = s.estado || 'pendiente_jefe';
-          const c   = _estC[est]  || '#6B7280';
-          const bg  = _estBg[est] || '#F3F4F6';
-          const lbl = _estL[est]  || est;
-          const notaStyle = ['cotizado','pedido','recibido_taller','entregado'].includes(est)
-            ? 'background:#E6F5EF;color:#065F46;border:1px solid #A7F3D0'
-            : est === 'rechazado'
-            ? 'background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5'
-            : 'background:var(--gris-bg);border:1px solid var(--gris-borde);color:var(--texto)';
-          const sep = i < solsOrden.length - 1 ? 'border-bottom:1px solid var(--gris-borde)' : '';
-          solsHtml += `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;${sep}">`;
-          solsHtml += '<div style="flex:1;min-width:0">';
-          solsHtml += `<div style="font-weight:600;font-size:13px">${escapeHtml(s.repuesto) || 'Repuesto'}</div>`;
-          solsHtml += `<div style="font-size:11px;color:var(--gris-mid)">x${s.unidades || 1}${s.observaciones ? ' · ' + escapeHtml(s.observaciones) : ''}</div>`;
-          if (s.nota_jefe && est !== 'recibido_taller') solsHtml += `<div style="font-size:11px;padding:5px 8px;border-radius:6px;margin-top:4px;line-height:1.5;${notaStyle}">${escapeHtml(s.nota_jefe)}</div>`;
-          if (est === 'recibido_taller') solsHtml += '<div style="background:#E6F5EF;border:1.5px solid #34D399;border-radius:6px;padding:8px 10px;margin-top:6px;display:flex;align-items:center;gap:8px"><span style="font-size:16px">📦</span><div style="font-weight:700;color:#065F46;font-size:12px">El repuesto llegó al taller. El jefe te lo entregará pronto.</div></div>';
-          solsHtml += `</div><span style="font-size:10px;font-weight:800;color:${c};background:${bg};padding:3px 8px;border-radius:99px;white-space:nowrap;text-transform:uppercase;flex-shrink:0;margin-top:2px">${lbl}</span>`;
-          solsHtml += '</div>';
-        });
-      } else {
-        solsHtml += '<div style="font-size:12px;color:var(--gris-mid);padding:2px 0">Sin solicitudes activas.</div>';
-      }
-      solsHtml += '</div>';
-      } // end if(solsOrden.length > 0 || !todasEtapasFin)
 
       return `<div class="mec-orden-card" onclick="abrirOrdenMecanico(${oid})" style="cursor:pointer">
         <div class="mec-orden-header">
@@ -209,7 +164,6 @@ async function cargarEtapasMecanico() {
           </div>
         </div>
         ${etapsHtml}
-        ${solsHtml}
       </div>`;
     }).join('');
   } catch(e) {
