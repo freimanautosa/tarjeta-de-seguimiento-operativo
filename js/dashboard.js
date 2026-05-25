@@ -71,13 +71,15 @@ async function cargarDashboardMes() {
     const finMes       = finMesDate.toISOString();
     const hoy          = new Date(); hoy.setHours(0,0,0,0);
 
-    const [ordenesMes, ordenesActivas, todasEtapas, solicitudesPend, aprobaciones] = await Promise.all([
+    const [ordenesMes, ordenesActivas, todasEtapas, solicitudesPend, aprobaciones, metasMes] = await Promise.all([
       api(`/ordenes?creado_en=gte.${inicioMes}&creado_en=lt.${finMes}&select=id,placa,marca,linea,modelo,propietario,estado,pulmon,pulmon_tipo,creado_en,fecha_entrega_1,fecha_entrega_2,entregada_en&order=creado_en.desc`).catch(()=>[]) || [],
       api(`/ordenes?estado=eq.Activa&select=id,placa,marca,linea,modelo,propietario,estado,pulmon,pulmon_tipo,creado_en,fecha_entrega_1,fecha_entrega_2`).catch(()=>[]) || [],
       api(`/etapas?select=id,orden_id,servicio,etapa,inicio,fin,valor,tecnico,mecanico_id,tiempo_pausado_min`).catch(()=>[]) || [],
       api(`/solicitudes_repuesto?estado=in.(pendiente_jefe,enviado_repuestos,cotizado,pedido,recibido_taller)&select=id,orden_id,estado,repuesto`).catch(()=>[]) || [],
-      api(`/aprobaciones_etapa?select=id,etapa_id,estado&order=creado_en.desc`).catch(()=>[]) || []
+      api(`/aprobaciones_etapa?select=id,etapa_id,estado&order=creado_en.desc`).catch(()=>[]) || [],
+      api(`/metas_taller?ano=eq.${ahora.getFullYear()}&mes_num=eq.${ahora.getMonth()+1}&limit=1`).catch(()=>[]) || []
     ]);
+    const metaMes = Array.isArray(metasMes) ? metasMes[0] : null;
 
     // ── Helpers ──────────────────────────────────────────────
     const fmt     = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n||0);
@@ -161,7 +163,19 @@ async function cargarDashboardMes() {
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;opacity:.65">Facturación del mes</div>
           <div>
             <div style="font-size:26px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.15">${fmt(valorMes)}</div>
-            <div style="font-size:11px;opacity:.55;margin-top:4px">${etapasMesFin.length} etapas cerradas</div>
+            ${metaMes?.meta_ingresos ? (() => {
+              const pct = Math.min(Math.round((valorMes / metaMes.meta_ingresos) * 100), 100);
+              const barColor = pct >= 100 ? '#34D399' : pct >= 70 ? '#FCD34D' : '#F87171';
+              return `<div style="margin-top:8px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+                  <span style="font-size:10px;opacity:.6">Meta: ${fmt(metaMes.meta_ingresos)}</span>
+                  <span style="font-size:11px;font-weight:700;color:${barColor}">${pct}%</span>
+                </div>
+                <div style="height:4px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden">
+                  <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;transition:width .6s"></div>
+                </div>
+              </div>`;
+            })() : `<div style="font-size:11px;opacity:.55;margin-top:4px">${etapasMesFin.length} etapas cerradas</div>`}
           </div>
         </div>
         <div style="background:white;border:1px solid var(--gris-borde);border-radius:14px;padding:16px 14px;display:flex;flex-direction:column;gap:10px">
@@ -175,8 +189,18 @@ async function cargarDashboardMes() {
           <div style="width:34px;height:34px;background:#F5F3FF;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <svg width="17" height="17" fill="none" stroke="#7C3AED" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
           </div>
-          <div style="font-size:30px;font-weight:800;color:#7C3AED;line-height:1">${ordenesMes.length}</div>
+          <div style="display:flex;align-items:baseline;gap:5px">
+            <div style="font-size:30px;font-weight:800;color:#7C3AED;line-height:1">${ordenesMes.length}</div>
+            ${metaMes?.meta_ordenes ? `<div style="font-size:13px;font-weight:600;color:var(--gris-mid)">/ ${metaMes.meta_ordenes}</div>` : ''}
+          </div>
           <div><div style="font-size:12px;font-weight:600;color:var(--texto)">Creadas</div><div style="font-size:11px;color:var(--gris-mid)">Este mes</div></div>
+          ${metaMes?.meta_ordenes ? (() => {
+            const pct = Math.min(Math.round((ordenesMes.length / metaMes.meta_ordenes) * 100), 100);
+            const barColor = pct >= 100 ? '#059669' : pct >= 70 ? '#D97706' : '#DC2626';
+            return `<div style="height:3px;background:var(--gris-borde);border-radius:99px;overflow:hidden;margin-top:6px">
+              <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;transition:width .6s"></div>
+            </div>`;
+          })() : ''}
         </div>
         <div style="background:white;border:1px solid var(--gris-borde);border-radius:14px;padding:16px 14px;display:flex;flex-direction:column;gap:10px">
           <div style="width:34px;height:34px;background:#E6F5EF;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
