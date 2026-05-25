@@ -912,16 +912,18 @@ async function cargarDashboardFinanciero() {
       api(`/repuestos_solicitud?select=id,orden_id,estado`).catch(()=>[]) || []
     ]);
 
-    const fmt = n => n!=null ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : '—';
-    const srvColor = { latoneria:'#DC2626', pintura:'#D97706', mecanica:'#2563EB', adicionales:'#059669' };
+    const fmt       = n => n!=null ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : '—';
+    const srvColor  = { latoneria:'#DC2626', pintura:'#D97706', mecanica:'#2563EB', adicionales:'#059669' };
+    const srvNombre = { latoneria:'Latonería', pintura:'Pintura', mecanica:'Mecánica', adicionales:'Adicionales' };
+    const srvBg     = { latoneria:'#FEE2E2', pintura:'#FEF3C7', mecanica:'#EBF2FF', adicionales:'#E6F5EF' };
 
-    // Valores por orden (mano de obra)
+    // ── Valores mano de obra por orden ───────────────────
     const valorMOPorOrden = {};
     etapas.forEach(e => {
       if (e.valor) valorMOPorOrden[e.orden_id] = (valorMOPorOrden[e.orden_id]||0) + e.valor;
     });
 
-    // Valor repuestos por orden
+    // ── Valores repuestos por orden ──────────────────────
     const repPorSolicitud = {};
     repItems.forEach(i => {
       repPorSolicitud[i.solicitud_id] = (repPorSolicitud[i.solicitud_id]||0) + ((i.precio_lista||0)*(i.cantidad||1));
@@ -931,18 +933,18 @@ async function cargarDashboardFinanciero() {
       valorRepPorOrden[s.orden_id] = (valorRepPorOrden[s.orden_id]||0) + (repPorSolicitud[s.id]||0);
     });
 
-    // WIP — órdenes activas
-    const ordenesActivas = ordenes.filter(o=>o.estado==='Activa'&&!o.pulmon);
-    const wipMO  = ordenesActivas.reduce((s,o)=>(valorMOPorOrden[o.id]||0)+s, 0);
-    const wipRep = ordenesActivas.reduce((s,o)=>(valorRepPorOrden[o.id]||0)+s, 0);
-    const wipTotal = wipMO + wipRep;
+    // ── WIP — órdenes activas ────────────────────────────
+    const ordenesActivas   = ordenes.filter(o=>o.estado==='Activa'&&!o.pulmon);
+    const wipMO            = ordenesActivas.reduce((s,o)=>(valorMOPorOrden[o.id]||0)+s, 0);
+    const wipRep           = ordenesActivas.reduce((s,o)=>(valorRepPorOrden[o.id]||0)+s, 0);
+    const wipTotal         = wipMO + wipRep;
 
-    // Entregadas — facturación
+    // ── Entregadas ───────────────────────────────────────
     const ordenesEntregadas = ordenes.filter(o=>o.estado==='Entregada');
-    const totalFacturado = ordenesEntregadas.reduce((s,o)=>(valorMOPorOrden[o.id]||0)+(valorRepPorOrden[o.id]||0)+s, 0);
-    const ticketProm = ordenesEntregadas.length ? Math.round(totalFacturado/ordenesEntregadas.length) : 0;
+    const totalFacturado    = ordenesEntregadas.reduce((s,o)=>(valorMOPorOrden[o.id]||0)+(valorRepPorOrden[o.id]||0)+s, 0);
+    const ticketProm        = ordenesEntregadas.length ? Math.round(totalFacturado/ordenesEntregadas.length) : 0;
 
-    // Tiempo real vs estimado por servicio
+    // ── Tiempo real vs estimado por servicio ─────────────
     const tiempoSrv = {};
     etapas.filter(e=>e.inicio&&e.fin&&e.servicio).forEach(e => {
       if (!tiempoSrv[e.servicio]) tiempoSrv[e.servicio] = { realMins:[], estHoras:[] };
@@ -951,28 +953,24 @@ async function cargarDashboardFinanciero() {
       if (e.horas_estimadas) tiempoSrv[e.servicio].estHoras.push(e.horas_estimadas*60);
     });
 
-    const tiempoSrvHtml = Object.entries(tiempoSrv).map(([srv, data]) => {
-      const promReal = Math.round(data.realMins.reduce((a,b)=>a+b,0)/data.realMins.length);
-      const promEst  = data.estHoras.length ? Math.round(data.estHoras.reduce((a,b)=>a+b,0)/data.estHoras.length) : null;
-      const hR = Math.floor(promReal/60), mR = promReal%60;
-      const color = srvColor[srv]||'#6B7280';
-      const diff = promEst ? Math.round(((promReal-promEst)/promEst)*100) : null;
-      const diffBadge = diff!=null ? `<span style="font-size:11px;font-weight:700;color:${diff>20?'var(--rojo)':diff>0?'#D97706':'var(--verde)'}">
-        ${diff>0?'+':''}${diff}% vs estimado</span>` : '';
-      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gris-borde)">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="width:3px;height:28px;background:${color};border-radius:99px"></div>
-          <div><div style="font-size:13px;font-weight:600;color:${color}">${CATALOGO[srv]?.nombre||srv}</div>
-            <div style="font-size:11px;color:var(--gris-mid)">${data.realMins.length} etapas completadas</div></div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:14px;font-weight:700">${hR>0?hR+'h ':''} ${mR}m prom.</div>
-          ${diffBadge}
-        </div>
-      </div>`;
-    }).join('') || '<div style="font-size:13px;color:var(--gris-mid)">Sin datos aún.</div>';
+    // ── Órdenes demoradas ────────────────────────────────
+    const promedioSrv = {};
+    Object.entries(tiempoSrv).forEach(([srv, data]) => {
+      promedioSrv[srv] = Math.round(data.realMins.reduce((a,b)=>a+b,0)/data.realMins.length);
+    });
+    const demoradas = [];
+    ordenes.filter(o=>o.estado==='Activa'&&!o.pulmon).forEach(o => {
+      etapas.filter(e=>e.orden_id===o.id&&e.inicio&&!e.fin).forEach(e => {
+        const minsTrans = Math.round((new Date()-new Date(e.inicio))/60000);
+        const prom = promedioSrv[e.servicio];
+        if (prom && minsTrans > prom*1.3) {
+          demoradas.push({ o, e, minsTrans, prom, pctDem: Math.round(((minsTrans-prom)/prom)*100) });
+        }
+      });
+    });
+    demoradas.sort((a,b)=>b.pctDem-a.pctDem);
 
-    // Productividad por técnico
+    // ── Productividad técnicos ───────────────────────────
     const porTecnico = {};
     etapas.filter(e=>e.tecnico&&e.fin).forEach(e => {
       if (!porTecnico[e.tecnico]) porTecnico[e.tecnico] = { etapas:0, mins:0, valor:0 };
@@ -980,97 +978,156 @@ async function cargarDashboardFinanciero() {
       if (e.inicio&&e.fin) porTecnico[e.tecnico].mins += Math.round((new Date(e.fin)-new Date(e.inicio))/60000);
       if (e.valor) porTecnico[e.tecnico].valor += e.valor;
     });
-    const tecnicoHtml = Object.entries(porTecnico).sort((a,b)=>b[1].valor-a[1].valor).map(([tec, data]) => {
-      const h = Math.floor(data.mins/60), m = data.mins%60;
-      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gris-borde)">
-        <div style="width:32px;height:32px;border-radius:50%;background:var(--azul-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--azul);flex-shrink:0">${tec.charAt(0).toUpperCase()}</div>
-        <div style="flex:1">
-          <div style="font-weight:600;font-size:13px">${tec}</div>
-          <div style="font-size:11px;color:var(--gris-mid)">${data.etapas} etapas · ${h>0?h+'h ':''}${m}m trabajadas</div>
-        </div>
-        <div style="text-align:right;font-size:13px;font-weight:700;color:var(--verde)">${fmt(data.valor)}</div>
-      </div>`;
-    }).join('') || '<div style="font-size:13px;color:var(--gris-mid)">Sin datos aún.</div>';
 
-    // Órdenes demoradas (>30% sobre promedio histórico del servicio)
-    const promedioSrv = {};
-    Object.entries(tiempoSrv).forEach(([srv, data]) => {
-      promedioSrv[srv] = Math.round(data.realMins.reduce((a,b)=>a+b,0)/data.realMins.length);
-    });
-    const demoradas = [];
-    ordenes.filter(o=>o.estado==='Activa'&&!o.pulmon).forEach(o => {
-      const etsO = etapas.filter(e=>e.orden_id===o.id&&e.inicio&&!e.fin);
-      etsO.forEach(e => {
-        const minsTrans = Math.round((new Date()-new Date(e.inicio))/60000);
-        const prom = promedioSrv[e.servicio];
-        if (prom && minsTrans > prom * 1.3) {
-          const pctDem = Math.round(((minsTrans-prom)/prom)*100);
-          demoradas.push({ o, e, minsTrans, prom, pctDem });
-        }
-      });
-    });
-    demoradas.sort((a,b)=>b.pctDem-a.pctDem);
-    const demoradasHtml = demoradas.length ? demoradas.slice(0,8).map(({o,e,minsTrans,prom,pctDem}) => {
-      const hT = Math.floor(minsTrans/60), mT = minsTrans%60;
-      const hP = Math.floor(prom/60), mP = prom%60;
-      const color = pctDem>60?'var(--rojo)':pctDem>30?'#D97706':'#F59E0B';
-      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gris-borde)">
-        <div style="flex:1">
-          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px">${o.placa}</div>
-          <div style="font-size:11px;color:var(--gris-mid)">${e.etapa} · ${CATALOGO[e.servicio]?.nombre||e.servicio}</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:12px"><span style="color:var(--gris-mid)">Actual:</span> ${hT>0?hT+'h ':''} ${mT}m</div>
-          <div style="font-size:12px"><span style="color:var(--gris-mid)">Prom:</span> ${hP>0?hP+'h ':''} ${mP}m</div>
-          <span style="font-size:11px;font-weight:700;color:${color}">+${pctDem}% demorada</span>
-        </div>
-      </div>`;
-    }).join('') : '<div style="font-size:13px;color:var(--verde);padding:8px 0">✓ Sin órdenes demoradas.</div>';
+    // ════════════════════════════════════════════════════
+    // HTML BLOCKS
+    // ════════════════════════════════════════════════════
 
+    // — Tiempo real vs estimado —
+    const tiempoSrvHtml = Object.entries(tiempoSrv).length
+      ? Object.entries(tiempoSrv).map(([srv, data]) => {
+          const promReal = Math.round(data.realMins.reduce((a,b)=>a+b,0)/data.realMins.length);
+          const promEst  = data.estHoras.length ? Math.round(data.estHoras.reduce((a,b)=>a+b,0)/data.estHoras.length) : null;
+          const hR = Math.floor(promReal/60), mR = promReal%60;
+          const color = srvColor[srv]||'#6B7280';
+          const bg    = srvBg[srv]||'#F3F4F6';
+          const diff  = promEst ? Math.round(((promReal-promEst)/promEst)*100) : null;
+          const maxR  = Math.max(...Object.entries(tiempoSrv).map(([,d])=>Math.round(d.realMins.reduce((a,b)=>a+b,0)/d.realMins.length)),1);
+          const barW  = Math.round((promReal/maxR)*100);
+          return `<div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <div style="width:8px;height:8px;border-radius:2px;background:${color}"></div>
+                <span style="font-size:12px;font-weight:600;color:${color}">${srvNombre[srv]||srv}</span>
+                <span style="font-size:10px;color:var(--gris-mid)">${data.realMins.length} etapas</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:${color}">${hR>0?hR+'h ':''} ${mR}m</span>
+                ${diff!=null ? `<span style="font-size:10px;font-weight:700;color:${diff>20?'#DC2626':diff>0?'#D97706':'#059669'};background:${diff>20?'#FEE2E2':diff>0?'#FEF3C7':'#E6F5EF'};padding:1px 6px;border-radius:99px">${diff>0?'+':''}${diff}%</span>` : ''}
+              </div>
+            </div>
+            <div style="height:4px;background:var(--gris-borde);border-radius:99px;overflow:hidden">
+              <div style="height:100%;width:${barW}%;background:${color};border-radius:99px"></div>
+            </div>
+          </div>`;
+        }).join('')
+      : '<div style="font-size:11px;color:var(--gris-mid);padding:8px 0">Sin datos aún.</div>';
+
+    // — Órdenes demoradas —
+    const demoradasHtml = demoradas.length
+      ? demoradas.slice(0,8).map(({o,e,minsTrans,prom,pctDem}) => {
+          const hT=Math.floor(minsTrans/60), mT=minsTrans%60;
+          const hP=Math.floor(prom/60),      mP=prom%60;
+          const color = pctDem>60?'#DC2626':pctDem>30?'#D97706':'#F59E0B';
+          const bg    = pctDem>60?'#FEE2E2':pctDem>30?'#FEF3C7':'#FEF9C3';
+          const srv   = e.servicio;
+          const sC    = srvColor[srv]||'#6B7280';
+          const sB    = srvBg[srv]||'#F3F4F6';
+          return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id})">
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:12px;letter-spacing:.5px">${escapeHtml(o.placa)}</div>
+              <div style="display:flex;align-items:center;gap:4px;margin-top:2px">
+                <span style="font-size:10px;font-weight:600;color:${sC};background:${sB};padding:1px 6px;border-radius:4px">${srvNombre[srv]||srv}</span>
+                <span style="font-size:10px;color:var(--gris-mid)">${escapeHtml(e.etapa||'')}</span>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:10px;color:var(--gris-mid)">Actual: <strong>${hT>0?hT+'h ':''} ${mT}m</strong></div>
+              <div style="font-size:10px;color:var(--gris-mid)">Prom: ${hP>0?hP+'h ':''} ${mP}m</div>
+              <span style="font-size:10px;font-weight:700;color:${color};background:${bg};padding:1px 6px;border-radius:99px">+${pctDem}%</span>
+            </div>
+          </div>`;
+        }).join('')
+      : '<div style="font-size:11px;color:#059669;padding:8px 0;display:flex;align-items:center;gap:6px"><svg width="12" height="12" fill="none" stroke="#059669" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Sin órdenes demoradas.</div>';
+
+    // — Técnicos —
+    const tecnicoHtml = Object.entries(porTecnico).length
+      ? Object.entries(porTecnico).sort((a,b)=>b[1].valor-a[1].valor).map(([tec, data]) => {
+          const h=Math.floor(data.mins/60), m=data.mins%60;
+          const maxVal = Math.max(...Object.values(porTecnico).map(d=>d.valor),1);
+          const barW   = Math.round((data.valor/maxVal)*100);
+          return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--gris-borde)">
+            <div style="width:28px;height:28px;border-radius:50%;background:#EBF2FF;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#2563EB;flex-shrink:0">${tec.charAt(0).toUpperCase()}</div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+                <span style="font-size:12px;font-weight:600;color:var(--texto)">${escapeHtml(tec)}</span>
+                <span style="font-size:12px;font-weight:700;color:#059669;font-family:'DM Mono',monospace">${fmt(data.valor)}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="flex:1;height:3px;background:var(--gris-borde);border-radius:99px;overflow:hidden">
+                  <div style="height:100%;width:${barW}%;background:#059669;border-radius:99px"></div>
+                </div>
+                <span style="font-size:10px;color:var(--gris-mid);white-space:nowrap">${data.etapas} etapas · ${h>0?h+'h ':''} ${m}m</span>
+              </div>
+            </div>
+          </div>`;
+        }).join('')
+      : '<div style="font-size:11px;color:var(--gris-mid)">Sin datos aún.</div>';
+
+    // ════════════════════════════════════════════════════
+    // RENDER
+    // ════════════════════════════════════════════════════
     cont.innerHTML = `
-      <!-- KPIs financieros -->
-      <div class="dash-grid" style="margin-bottom:16px">
-        <div class="dash-card">
-          <div class="dash-card-icon" style="background:#E6F5EF;color:#059669">${ico('money', 22)}</div>
-          <div class="dash-card-val" style="color:var(--verde);font-size:20px">${fmt(wipTotal)}</div>
-          <div class="dash-card-label">WIP — trabajo en proceso</div>
-          <div class="dash-card-sub">MO: ${fmt(wipMO)} · Rep: ${fmt(wipRep)}</div>
+      <!-- Header -->
+      <div style="margin-bottom:10px;display:flex;align-items:baseline;gap:10px">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gris-mid)">Análisis Financiero</div>
+      </div>
+
+      <!-- KPI row -->
+      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="background:#1E3A5F;border-radius:12px;padding:14px 16px;color:white">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;opacity:.55;margin-bottom:6px">WIP — Trabajo en proceso</div>
+          <div style="font-size:20px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1">${fmt(wipTotal)}</div>
+          <div style="font-size:10px;opacity:.5;margin-top:4px">MO: ${fmt(wipMO)} · Rep: ${fmt(wipRep)}</div>
+          <div style="font-size:10px;opacity:.4;margin-top:2px">${ordenesActivas.length} órdenes activas</div>
         </div>
-        <div class="dash-card">
-          <div class="dash-card-icon" style="background:#EBF2FF;color:#2563EB">${ico('chart', 22)}</div>
-          <div class="dash-card-val" style="color:var(--azul);font-size:20px">${fmt(totalFacturado)}</div>
-          <div class="dash-card-label">Total facturado (entregadas)</div>
-          <div class="dash-card-sub">${ordenesEntregadas.length} órdenes entregadas</div>
+        <div style="background:white;border:1px solid var(--gris-borde);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:5px">
+          <div style="width:28px;height:28px;background:#E6F5EF;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="14" height="14" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div style="font-size:18px;font-weight:800;color:#059669;line-height:1;font-family:'DM Mono',monospace">${fmt(totalFacturado)}</div>
+          <div style="font-size:11px;font-weight:600;color:var(--texto)">Total facturado</div>
+          <div style="font-size:10px;color:var(--gris-mid)">${ordenesEntregadas.length} órdenes entregadas</div>
         </div>
-        <div class="dash-card">
-          <div class="dash-card-icon" style="background:#FEF3C7;color:#D97706">${ico('ticket', 22)}</div>
-          <div class="dash-card-val" style="color:#D97706;font-size:20px">${fmt(ticketProm)}</div>
-          <div class="dash-card-label">Ticket promedio por orden</div>
-          <div class="dash-card-sub">Mano de obra + repuestos</div>
+        <div style="background:white;border:1px solid var(--gris-borde);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:5px">
+          <div style="width:28px;height:28px;background:#FEF3C7;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="14" height="14" fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/></svg>
+          </div>
+          <div style="font-size:18px;font-weight:800;color:#D97706;line-height:1;font-family:'DM Mono',monospace">${fmt(ticketProm)}</div>
+          <div style="font-size:11px;font-weight:600;color:var(--texto)">Ticket promedio</div>
+          <div style="font-size:10px;color:var(--gris-mid)">Por orden entregada</div>
         </div>
-        <div class="dash-card">
-          <div class="dash-card-icon" style="background:#FEE2E2;color:#DC2626">${ico('warning', 22)}</div>
-          <div class="dash-card-val" style="color:var(--rojo)">${demoradas.length}</div>
-          <div class="dash-card-label">Órdenes demoradas</div>
-          <div class="dash-card-sub">>30% sobre promedio histórico</div>
+        <div style="background:white;border:1px solid var(--gris-borde);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:5px">
+          <div style="width:28px;height:28px;background:#FEE2E2;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="14" height="14" fill="none" stroke="#DC2626" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div style="font-size:26px;font-weight:800;color:#DC2626;line-height:1">${demoradas.length}</div>
+          <div style="font-size:11px;font-weight:600;color:var(--texto)">Demoradas</div>
+          <div style="font-size:10px;color:var(--gris-mid)">>30% sobre promedio</div>
         </div>
       </div>
 
-      <div class="dash-row-2" style="margin-bottom:16px">
-        <div class="dash-panel">
-          <div class="dash-panel-titulo">${ico('clock', 15)} Tiempo real vs estimado por servicio</div>
+      <!-- Tiempo vs estimado | Demoradas -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;align-items:start">
+        <div class="card" style="padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Tiempo real vs estimado</div>
+          <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Promedio por tipo de servicio</div>
           ${tiempoSrvHtml}
         </div>
-        <div class="dash-panel">
-          <div class="dash-panel-titulo">${ico('warning', 15)} Órdenes demoradas</div>
+        <div class="card" style="padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Órdenes demoradas</div>
+          <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Activas que superan el promedio histórico</div>
           ${demoradasHtml}
         </div>
       </div>
 
-      <div class="dash-panel">
-        <div class="dash-panel-titulo">${ico('user', 15)} Productividad por técnico</div>
+      <!-- Productividad técnicos -->
+      <div class="card" style="padding:12px 14px">
+        <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Productividad por técnico</div>
+        <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Etapas completadas e ingresos generados</div>
         ${tecnicoHtml}
-      </div>`;
+      </div>
+    `;
   } catch(e) {
     cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
   }
