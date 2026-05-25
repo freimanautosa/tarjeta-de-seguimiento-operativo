@@ -152,8 +152,8 @@ function montarTaller() {
       .tv-tbody td {
         padding:.45vh 1.4vw;vertical-align:middle;
       }
-      .tv-col-placa   { width:12%; }
-      .tv-col-etapas  { width:42%; }
+      .tv-col-placa   { width:18%; }
+      .tv-col-etapas  { width:36%; }
       .tv-col-tec     { width:14%; }
       .tv-col-timer   { width:10%; }
       .tv-col-entrega { width:8%; }
@@ -163,8 +163,8 @@ function montarTaller() {
         font-family:'DM Mono',monospace;font-size:1.35vw;font-weight:700;
         color:#FFFFFF;letter-spacing:.04em;line-height:1;
       }
-      .tv-vehiculo { font-size:.52vw;color:rgba(255,255,255,.5);margin-top:.1vh; }
-      .tv-propietario { font-size:.6vw;font-weight:600;color:rgba(255,255,255,.85);margin-top:.2vh;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:11vw; }
+      .tv-vehiculo { font-size:.55vw;color:rgba(255,255,255,.6);margin-top:.1vh; }
+      .tv-propietario { font-size:.62vw;font-weight:600;color:#FFFFFF;margin-top:.2vh;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:16vw; }
 
       /* ── CHIPS DE ETAPA ── */
       .etapas-chips { display:flex;flex-wrap:wrap;gap:.3vw;align-items:center; }
@@ -678,9 +678,9 @@ async function cargarPantallaTaller() {
 
       return `<tr id="tv-row-${orden.id}" onclick="_tvVerDetalle(${orden.id})" style="cursor:pointer">
         <td>
-          <div style="display:flex;align-items:baseline;gap:.5vw">
+          <div style="display:flex;align-items:baseline;gap:.5vw;white-space:nowrap">
             <div class="tv-placa">${orden.placa}</div>
-            <div style="font-family:'DM Mono',monospace;font-size:.75vw;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:.04em">${formatOT(orden.id)}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:.8vw;font-weight:700;color:rgba(255,255,255,.8);letter-spacing:.04em;white-space:nowrap">${formatOT(orden.id)}</div>
           </div>
           ${orden.propietario ? `<div class="tv-propietario">${orden.propietario}</div>` : ''}
           <div class="tv-vehiculo">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
