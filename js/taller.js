@@ -678,8 +678,10 @@ async function cargarPantallaTaller() {
 
       return `<tr id="tv-row-${orden.id}" onclick="_tvVerDetalle(${orden.id})" style="cursor:pointer">
         <td>
-          <div class="tv-placa">${orden.placa}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:.48vw;font-weight:600;color:rgba(255,255,255,.55);letter-spacing:.05em;margin-top:.15vh">${formatOT(orden.id)}</div>
+          <div style="display:flex;align-items:baseline;gap:.5vw">
+            <div class="tv-placa">${orden.placa}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:.75vw;font-weight:700;color:rgba(255,255,255,.65);letter-spacing:.04em">${formatOT(orden.id)}</div>
+          </div>
           ${orden.propietario ? `<div class="tv-propietario">${orden.propietario}</div>` : ''}
           <div class="tv-vehiculo">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
         </td>
