@@ -730,31 +730,31 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   align-items: center;
 }
 .filtro-btn {
-  padding: 6px 16px;
+  padding: 5px 16px;
   border-radius: 20px;
-  border: 1px solid var(--gris-borde);
+  border: 1.5px solid #CBD5E1;
   background: white;
   font-size: 12px;
-  font-weight: 600;
-  color: var(--gris-texto);
+  font-weight: 700;
+  color: var(--texto);
   cursor: pointer;
   transition: background 0.14s, border-color 0.14s, color 0.14s, box-shadow 0.14s;
   font-family: 'DM Sans', sans-serif;
   letter-spacing: 0.1px;
 }
-.filtro-btn:hover { border-color: #9AA3B0; color: var(--texto); }
+.filtro-btn:hover { border-color: var(--azul); color: var(--azul); }
 .filtro-btn.active {
   background: var(--azul);
   border-color: var(--azul);
   color: white;
   box-shadow: 0 2px 8px rgba(30,58,95,0.2);
 }
-.ordenes-grid { display: flex; flex-direction: column; gap: 10px; }
+.ordenes-grid { display: flex; flex-direction: column; gap: 7px; }
 .orden-card {
   background: white;
   border: 1px solid var(--gris-borde);
   border-radius: 10px;
-  padding: 18px 20px;
+  padding: 12px 14px;
   cursor: pointer;
   transition: border-color 0.16s var(--ease-out), box-shadow 0.16s var(--ease-out), transform 0.16s var(--ease-out);
   box-shadow: var(--shadow-sm);
@@ -772,13 +772,13 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.3px;
-  padding: 5px 10px;
+  padding: 4px 8px;
   border-radius: 6px;
-  margin: -18px -20px 14px -20px;
-  padding-left: 20px;
+  margin: -12px -14px 10px -14px;
+  padding-left: 14px;
 }
 .orden-alerta-roja   { background: #FEE2E2; color: #B91C1C; border-bottom: 1px solid #FECACA; }
 .orden-alerta-naranja{ background: #FFEDD5; color: #C2410C; border-bottom: 1px solid #FED7AA; }
@@ -787,34 +787,34 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin-bottom: 7px;
 }
 .orden-placa {
   font-family: 'DM Mono', monospace;
-  font-size: 21px;
-  font-weight: 600;
-  letter-spacing: 2.5px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
   color: var(--texto);
   line-height: 1;
 }
 .orden-vehiculo {
-  font-size: 13px;
+  font-size: 11px;
   color: var(--gris-mid);
-  margin-top: 4px;
+  margin-top: 2px;
 }
-.orden-badges { display: flex; gap: 6px; flex-wrap: wrap; }
-.progreso-bar-wrap { margin: 12px 0 10px; }
+.orden-badges { display: flex; gap: 5px; flex-wrap: wrap; }
+.progreso-bar-wrap { margin: 7px 0 5px; }
 .progreso-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: 9px;
   font-family: 'DM Mono', monospace;
   color: var(--gris-mid);
-  margin-bottom: 5px;
+  margin-bottom: 3px;
 }
 .progreso-track {
-  height: 5px;
+  height: 3px;
   background: var(--gris-bg);
   border-radius: 99px;
   overflow: hidden;
@@ -830,7 +830,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 .srv-chips { display: flex; gap: 5px; flex-wrap: wrap; }
 .orden-fecha {
@@ -1455,17 +1455,17 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   .modal { width: 96% !important; max-height: 90vh !important; }
 
   /* Cards */
-  .orden-card { padding: 14px 16px; }
+  .orden-card { padding: 10px 12px; }
   .orden-card:active { background: #F5F7FA; transform: scale(0.99); }
   .orden-card-vencida:active { background: #FEF0F0; }
   .orden-card-urgente:active { background: #FFF4EC; }
 
   /* Alerta de vencimiento: corrige márgenes al padding móvil */
-  .orden-alerta { margin: -14px -16px 12px -16px; padding-left: 16px; }
+  .orden-alerta { margin: -10px -12px 8px -12px; padding-left: 12px; }
 
   /* Placa más pequeña */
-  .orden-placa { font-size: 18px; letter-spacing: 2px; }
-  .orden-vehiculo { font-size: 12px; }
+  .orden-placa { font-size: 15px; letter-spacing: 1px; }
+  .orden-vehiculo { font-size: 10px; }
 
   /* Dashboard cards más compactas */
   .dash-card { padding: 14px; }
