@@ -160,10 +160,11 @@ function montarTaller() {
       .tv-col-estado  { width:14%; }
 
       .tv-placa {
-        font-family:'DM Mono',monospace;font-size:2vw;font-weight:700;
+        font-family:'DM Mono',monospace;font-size:1.35vw;font-weight:700;
         color:#FFFFFF;letter-spacing:.04em;line-height:1;
       }
       .tv-vehiculo { font-size:.52vw;color:rgba(255,255,255,.28);margin-top:.1vh; }
+      .tv-propietario { font-size:.58vw;color:rgba(255,255,255,.5);margin-top:.2vh;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:11vw; }
 
       /* ── CHIPS DE ETAPA ── */
       .etapas-chips { display:flex;flex-wrap:wrap;gap:.3vw;align-items:center; }
@@ -373,8 +374,9 @@ function montarTaller() {
         /* Tamaños de texto tabla */
         .tv-thead th { font-size:2.5vw !important; padding:.5vh 1.5vw !important; }
         .tv-tbody td  { padding:1vh 1.5vw !important; }
-        .tv-placa  { font-size:5vw !important; letter-spacing:.02em !important; }
-        .tv-vehiculo { font-size:2.5vw !important; }
+        .tv-placa  { font-size:3.8vw !important; letter-spacing:.02em !important; }
+        .tv-propietario { font-size:2.2vw !important; max-width:20vw !important; }
+        .tv-vehiculo { font-size:2.2vw !important; }
         .chip { font-size:2.5vw !important; padding:.3vh 1vw !important; border-radius:.5vw !important; gap:.4vw !important; }
         .chip-dot { width:1.5vw !important; height:1.5vw !important; }
         .tv-entrega-chip { font-size:2.8vw !important; }
@@ -677,7 +679,8 @@ async function cargarPantallaTaller() {
       return `<tr id="tv-row-${orden.id}" onclick="_tvVerDetalle(${orden.id})" style="cursor:pointer">
         <td>
           <div class="tv-placa">${orden.placa}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:.48vw;font-weight:500;color:rgba(255,255,255,.28);letter-spacing:.05em;margin-top:.1vh">${formatOT(orden.id)}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.46vw;font-weight:500;color:rgba(255,255,255,.25);letter-spacing:.05em;margin-top:.15vh">${formatOT(orden.id)}</div>
+          ${orden.propietario ? `<div class="tv-propietario">${orden.propietario}</div>` : ''}
           <div class="tv-vehiculo">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
         </td>
         <td><div class="etapas-chips">${chips}</div></td>
