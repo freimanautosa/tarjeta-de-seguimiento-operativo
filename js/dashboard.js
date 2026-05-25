@@ -410,17 +410,396 @@ async function cargarDashboardMes() {
   }
 }
 
-// ── Dashboard principal ───────────────────────────────────
+// ── Dashboard principal (General) ────────────────────────
 async function cargarDashboard() {
   const cont = document.getElementById('dash-contenido');
   if (!cont) return;
   cont.innerHTML = '<div class="loading-state">Cargando...</div>';
 
   try {
-    const [ordenes, todasEtapas] = await Promise.all([
-      api(`/ordenes?select=id,placa,marca,linea,modelo,propietario,estado,pulmon,creado_en,fecha_entrega_1,fecha_entrega_2`).catch(() => []) || [],
-      api(`/etapas?select=id,orden_id,servicio,etapa,etapa_key,inicio,fin,mecanico_id,tecnico`).catch(() => []) || []
+    const ahora  = new Date();
+    const hoy    = new Date(); hoy.setHours(0,0,0,0);
+    const manana = new Date(hoy); manana.setDate(hoy.getDate()+1);
+    const hace60 = new Date(hoy); hace60.setDate(hoy.getDate()-60);
+    const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+
+    const [ordenes, todasEtapas, etapasActArr, aprobaciones, solicitudesPend] = await Promise.all([
+      api(`/ordenes?select=id,placa,marca,linea,modelo,propietario,estado,pulmon,pulmon_tipo,creado_en,fecha_entrega_1,entregada_en`).catch(()=>[]) || [],
+      api(`/etapas?select=id,orden_id,servicio,etapa,inicio,fin,tecnico,valor,tiempo_pausado_min&order=creado_en.asc`).catch(()=>[]) || [],
+      api(`/etapas?fin=is.null&inicio=not.is.null&select=id,orden_id,servicio,etapa,tecnico,inicio`).catch(()=>[]) || [],
+      api(`/aprobaciones_etapa?estado=eq.aprobado&select=etapa_id`).catch(()=>[]) || [],
+      api(`/solicitudes_repuesto?estado=in.(pendiente_jefe,enviado_repuestos,cotizado,pedido,recibido_taller)&select=id,orden_id`).catch(()=>[]) || []
     ]);
+
+    // ── Helpers ──────────────────────────────────────────
+    const fmt       = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n||0);
+    const srvColor  = { latoneria:'#DC2626', pintura:'#D97706', mecanica:'#2563EB', adicionales:'#059669' };
+    const srvNombre = { latoneria:'Latonería', pintura:'Pintura', mecanica:'Mecánica', adicionales:'Adicionales' };
+    const srvBg     = { latoneria:'#FEE2E2', pintura:'#FEF3C7', mecanica:'#EBF2FF', adicionales:'#E6F5EF' };
+
+    // ── KPIs ─────────────────────────────────────────────
+    const activasArr     = ordenes.filter(o => o.estado === 'Activa' && !o.pulmon);
+    const pulmonInt      = ordenes.filter(o => o.pulmon && o.pulmon_tipo === 'interno').length;
+    const pulmonExt      = ordenes.filter(o => o.pulmon && o.pulmon_tipo === 'externo').length;
+    const pulmonTotal    = pulmonInt + pulmonExt;
+    const entregadasArr  = ordenes.filter(o => o.estado === 'Entregada');
+    const entregadasHoy  = entregadasArr.filter(o => o.entregada_en && new Date(o.entregada_en) >= hoy && new Date(o.entregada_en) < manana);
+    const totalOrdenes   = ordenes.length;
+    const pctActivas     = totalOrdenes > 0 ? Math.round((activasArr.length / totalOrdenes) * 100) : 0;
+
+    actualizarCapacidad(activasArr.length, pulmonInt, pulmonExt);
+
+    // Facturación del mes
+    const valorMes = todasEtapas.filter(e => e.fin && new Date(e.fin) >= inicioMes).reduce((s,e)=>s+(e.valor||0),0);
+
+    // ── Etapas indexadas ─────────────────────────────────
+    const etapasPorOrden = {};
+    todasEtapas.forEach(e => { if (!etapasPorOrden[e.orden_id]) etapasPorOrden[e.orden_id] = []; etapasPorOrden[e.orden_id].push(e); });
+    const aprobSet = new Set(aprobaciones.map(a => a.etapa_id));
+
+    // ── Retrasos ─────────────────────────────────────────
+    const retrasos = activasArr.filter(o => o.fecha_entrega_1 && new Date(o.fecha_entrega_1) < hoy);
+
+    // ── Pipeline ─────────────────────────────────────────
+    const enLat  = activasArr.filter(o => (etapasPorOrden[o.id]||[]).some(e=>e.servicio==='latoneria'&&e.inicio&&!e.fin)).length;
+    const enPin  = activasArr.filter(o => (etapasPorOrden[o.id]||[]).some(e=>e.servicio==='pintura'&&e.inicio&&!e.fin)).length;
+    const enMec  = activasArr.filter(o => (etapasPorOrden[o.id]||[]).some(e=>e.servicio==='mecanica'&&e.inicio&&!e.fin)).length;
+    const enAdd  = activasArr.filter(o => (etapasPorOrden[o.id]||[]).some(e=>e.servicio==='adicionales'&&e.inicio&&!e.fin)).length;
+    const listaEnt = activasArr.filter(o => { const ets=etapasPorOrden[o.id]||[]; return ets.length>0&&ets.every(e=>!!e.fin&&aprobSet.has(e.id)); }).length;
+    const asignadas = activasArr.filter(o => (etapasPorOrden[o.id]||[]).some(e=>e.tecnico)).length;
+
+    // ── Próximas entregas ─────────────────────────────────
+    const proximas = activasArr
+      .filter(o => o.fecha_entrega_1)
+      .map(o => {
+        const f = new Date(o.fecha_entrega_1); const fD = new Date(f); fD.setHours(0,0,0,0);
+        const dias = Math.round((fD - hoy) / 86400000);
+        const th = f.getHours()!==0||f.getMinutes()!==0;
+        return { ...o, dias, horaStr: th ? f.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',hour12:false}) : null };
+      })
+      .filter(o => o.dias >= -1).sort((a,b)=>a.dias-b.dias).slice(0,5);
+
+    // ── Carga por área (etapas activas) ──────────────────
+    const srvActivos = {};
+    etapasActArr.forEach(e => { const s=e.servicio||'adicionales'; srvActivos[s]=(srvActivos[s]||0)+1; });
+    const totalActivos = Math.max(Object.values(srvActivos).reduce((a,b)=>a+b,0),1);
+
+    // ── Tiempo promedio por servicio ──────────────────────
+    const tiemposPorSrv = {};
+    todasEtapas.filter(e=>e.inicio&&e.fin).forEach(e => {
+      const srv = e.servicio||'adicionales';
+      const mins = Math.max(0,Math.round((new Date(e.fin)-new Date(e.inicio))/60000)-(e.tiempo_pausado_min||0));
+      if (mins>0) { if (!tiemposPorSrv[srv]) tiemposPorSrv[srv]=[]; tiemposPorSrv[srv].push(mins); }
+    });
+
+    // ── Eficiencia (entregas a tiempo, últimos 60 días) ───
+    const entRec   = entregadasArr.filter(o=>o.entregada_en&&o.fecha_entrega_1&&new Date(o.entregada_en)>=hace60);
+    const aTiempo  = entRec.filter(o=>new Date(o.entregada_en)<=new Date(o.fecha_entrega_1));
+    const eficiencia = entRec.length>0 ? Math.round((aTiempo.length/entRec.length)*100) : null;
+    const efColor = eficiencia===null?'#6B7280':eficiencia>=80?'#059669':eficiencia>=60?'#D97706':'#DC2626';
+
+    // ── Servicios más demandados ──────────────────────────
+    const conteoSrv = {};
+    todasEtapas.forEach(e => { const s=e.servicio||'adicionales'; conteoSrv[s]=(conteoSrv[s]||0)+1; });
+    const totalSrv  = Math.max(Object.values(conteoSrv).reduce((a,b)=>a+b,0),1);
+
+    // ── Técnicos activos ──────────────────────────────────
+    const tecActivos = new Set(etapasActArr.map(e=>e.tecnico).filter(Boolean));
+
+    // ── Procesos activos en taller (tabla top 6) ──────────
+    const procesosTabla = activasArr
+      .filter(o => etapasActArr.some(e=>e.orden_id===o.id))
+      .slice(0,6)
+      .map(o => {
+        const ea = etapasActArr.find(e=>e.orden_id===o.id);
+        const diasTaller = Math.round((ahora-new Date(o.creado_en))/86400000);
+        const vencida = o.fecha_entrega_1 && new Date(o.fecha_entrega_1)<ahora;
+        return { o, ea, diasTaller, vencida };
+      });
+
+    // ════════════════════════════════════════════════════
+    // HTML BLOCKS
+    // ════════════════════════════════════════════════════
+
+    // — Donut SVG helper —
+    const buildDonut = (slices, sz=90, sw=16) => {
+      const r=(sz-sw)/2, cx=sz/2, cy=sz/2, circ=2*Math.PI*r;
+      let cum=0;
+      const hasData = slices.some(s=>s.pct>0);
+      if (!hasData) return `<svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}"><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--gris-borde)" stroke-width="${sw}"/></svg>`;
+      const paths = slices.filter(s=>s.pct>0).map(s => {
+        const len=(s.pct/100)*circ;
+        const p=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="${len.toFixed(2)} ${(circ-len).toFixed(2)}" stroke-dashoffset="${(-cum).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})" stroke-linecap="butt"/>`;
+        cum+=len; return p;
+      });
+      return `<svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}">${paths.join('')}</svg>`;
+    };
+
+    // — Donut data —
+    const donutSlices = Object.entries(srvActivos).map(([srv,n]) => ({
+      srv, n, color: srvColor[srv]||'#6B7280', pct: Math.round((n/totalActivos)*100)
+    }));
+
+    // — Carga por área HTML —
+    const donutLeyenda = Object.entries(srvActivos).length
+      ? Object.entries(srvActivos).sort((a,b)=>b[1]-a[1]).map(([srv,n]) => {
+          const pct = Math.round((n/totalActivos)*100);
+          const color = srvColor[srv]||'#6B7280';
+          return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="switchTab('ordenes')">
+            <div style="width:10px;height:10px;border-radius:3px;background:${color};flex-shrink:0"></div>
+            <span style="font-size:12px;font-weight:600;color:${color};flex:1">${srvNombre[srv]||srv}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${color}">${pct}%</span>
+            <span style="font-size:10px;color:var(--gris-mid)">${n}</span>
+          </div>`;
+        }).join('')
+      : '<div style="font-size:11px;color:var(--gris-mid);padding:8px 0">Sin procesos activos</div>';
+
+    // — Procesos activos tabla HTML —
+    const procesosTablaHtml = procesosTabla.length ? `
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="background:var(--gris-bg)">
+          ${['OT','Vehículo','Etapa actual','Días','Estado'].map(h=>`<th style="padding:5px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--gris-mid);border-bottom:1px solid var(--gris-borde)">${h}</th>`).join('')}
+        </tr></thead>
+        <tbody>
+          ${procesosTabla.map(({o,ea,diasTaller,vencida})=>{
+            const srv = ea?.servicio||null;
+            const etLabel = ea?.etapa || (srv ? srvNombre[srv]||srv : 'En proceso');
+            const sC = srv ? srvColor[srv]||'#6B7280' : '#9CA3AF';
+            const sB = srv ? srvBg[srv]||'#F3F4F6' : '#F3F4F6';
+            return `<tr style="border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id})" onmouseenter="this.style.background='var(--gris-bg)'" onmouseleave="this.style.background=''">
+              <td style="padding:6px 8px;font-family:'DM Mono',monospace;font-size:10px;color:var(--gris-mid)">${formatOT(o.id)}</td>
+              <td style="padding:6px 8px">
+                <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:12px">${escapeHtml(o.placa)}</div>
+                <div style="font-size:10px;color:var(--gris-mid)">${escapeHtml([o.marca,o.linea].filter(Boolean).join(' ')||'—')}</div>
+              </td>
+              <td style="padding:6px 8px"><span style="font-size:10px;font-weight:600;color:${sC};background:${sB};padding:2px 7px;border-radius:5px">${etLabel}</span></td>
+              <td style="padding:6px 8px;text-align:center;font-weight:700;font-size:12px;color:${diasTaller>10?'#DC2626':diasTaller>5?'#D97706':'var(--texto)'}">${diasTaller}d</td>
+              <td style="padding:6px 8px"><span style="font-size:10px;font-weight:700;color:${vencida?'#DC2626':'#059669'};background:${vencida?'#FEE2E2':'#E6F5EF'};padding:2px 6px;border-radius:99px">${vencida?'Retrasada':'En tiempo'}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      <div style="text-align:center;margin-top:10px">
+        <button onclick="switchTab('ordenes')" style="background:none;border:1px solid var(--gris-borde);border-radius:7px;padding:5px 14px;font-size:11px;font-weight:600;color:var(--gris-mid);cursor:pointer">Ver todas las órdenes</button>
+      </div>`
+      : '<div class="empty-state"><p>Sin procesos activos.</p></div>';
+
+    // — Servicios más demandados HTML —
+    const demandadosHtml = Object.entries(conteoSrv).length
+      ? Object.entries(conteoSrv).sort((a,b)=>b[1]-a[1]).map(([srv,n]) => {
+          const pct   = Math.round((n/totalSrv)*100);
+          const color = srvColor[srv]||'#6B7280';
+          return `<div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <div style="width:8px;height:8px;border-radius:2px;background:${color}"></div>
+                <span style="font-size:12px;font-weight:600;color:var(--texto)">${srvNombre[srv]||srv}</span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span style="font-size:10px;color:var(--gris-mid)">${n} etapas</span>
+                <span style="font-size:11px;font-weight:700;color:${color}">${pct}%</span>
+              </div>
+            </div>
+            <div style="height:5px;background:var(--gris-borde);border-radius:99px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${color};border-radius:99px"></div>
+            </div>
+          </div>`;
+        }).join('')
+      : '<div style="font-size:11px;color:var(--gris-mid)">Sin datos aún.</div>';
+
+    // — Tiempo promedio HTML —
+    const tiempoHtml = Object.entries(tiemposPorSrv).length
+      ? Object.entries(tiemposPorSrv).sort((a,b)=>(b[1].reduce((x,y)=>x+y,0)/b[1].length)-(a[1].reduce((x,y)=>x+y,0)/a[1].length)).map(([srv,arr])=>{
+          const avg=Math.round(arr.reduce((a,b)=>a+b,0)/arr.length);
+          const h=Math.floor(avg/60),m=avg%60,dias=Math.floor(h/8);
+          const label=dias>0?`${dias}d ${h%8}h`:h>0?`${h}h ${m}m`:`${m}m`;
+          const color=srvColor[srv]||'#6B7280';
+          const maxAvg=Math.max(...Object.entries(tiemposPorSrv).map(([,a])=>Math.round(a.reduce((x,y)=>x+y,0)/a.length)),1);
+          const barW=Math.round((avg/maxAvg)*100);
+          return `<div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:12px;font-weight:600;color:${color}">${srvNombre[srv]||srv}</span>
+              <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:${color}">${label}</span>
+            </div>
+            <div style="height:5px;background:var(--gris-borde);border-radius:99px;overflow:hidden">
+              <div style="height:100%;width:${barW}%;background:${color};border-radius:99px"></div>
+            </div>
+            <div style="font-size:10px;color:var(--gris-mid);margin-top:2px">${arr.length} etapas completadas</div>
+          </div>`;
+        }).join('')
+      : '<div style="font-size:11px;color:var(--gris-mid)">Sin datos históricos.</div>';
+
+    // — Próximas entregas HTML —
+    const proximasHtml = proximas.length
+      ? proximas.map(o => {
+          const c=o.dias<0?'#DC2626':o.dias===0?'#D97706':o.dias<=2?'#D97706':'#059669';
+          const bg=o.dias<0?'#FEE2E2':o.dias===0?'#FEF3C7':o.dias<=2?'#FEF3C7':'#E6F5EF';
+          const lbl=o.dias<0?`${Math.abs(o.dias)}d vencida`:o.dias===0?'Hoy':o.dias===1?'Mañana':`${o.dias}d`;
+          return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id})">
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:12px">${escapeHtml(o.placa)}</div>
+              <div style="font-size:10px;color:var(--gris-mid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(o.propietario||'—')}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <span style="font-size:10px;font-weight:700;color:${c};background:${bg};padding:2px 7px;border-radius:99px;display:block">${lbl}</span>
+              ${o.horaStr?`<span style="font-family:'DM Mono',monospace;font-size:9px;color:${c};opacity:.75;display:block;margin-top:1px">${o.horaStr}</span>`:''}
+            </div>
+          </div>`;
+        }).join('')
+      : '<div style="font-size:11px;color:var(--gris-mid)">Sin entregas próximas.</div>';
+
+    // — Retrasos banner —
+    const retrasosHtml = retrasos.length ? `
+      <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <svg width="14" height="14" fill="none" stroke="#DC2626" stroke-width="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span style="font-size:12px;font-weight:700;color:#DC2626">${retrasos.length} ${retrasos.length===1?'vehículo':'vehículos'} con retraso en el proceso</span>
+        ${retrasos.map(o=>`<span onclick="abrirOrden(${o.id})" style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:#DC2626;background:white;border:1px solid #FECACA;border-radius:6px;padding:2px 8px;cursor:pointer">${escapeHtml(o.placa)}</span>`).join('')}
+      </div>` : '';
+
+    // ════════════════════════════════════════════════════
+    // RENDER
+    // ════════════════════════════════════════════════════
+    cont.innerHTML = `
+      <!-- KPI row -->
+      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1.4fr;gap:8px;margin-bottom:10px">
+        <!-- Órdenes activas -->
+        <div style="background:#1E3A5F;border-radius:12px;padding:14px 16px;color:white">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;opacity:.55;margin-bottom:6px">Órdenes activas</div>
+          <div style="font-size:32px;font-weight:800;font-family:'DM Mono',monospace;line-height:1">${activasArr.length}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+            <div style="flex:1;height:3px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden">
+              <div style="height:100%;width:${pctActivas}%;background:#93C5FD;border-radius:99px"></div>
+            </div>
+            <span style="font-size:11px;font-weight:700;color:#93C5FD">${pctActivas}%</span>
+          </div>
+          <div style="font-size:10px;opacity:.5;margin-top:3px">del total de órdenes</div>
+        </div>
+        <!-- Total entregadas -->
+        <div class="card" style="padding:14px 16px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gris-mid);margin-bottom:6px">Total entregadas</div>
+          <div style="font-size:30px;font-weight:800;color:#059669;line-height:1">${entregadasArr.length}</div>
+          <div style="font-size:10px;color:var(--gris-mid);margin-top:3px">Historial completo</div>
+          <button onclick="filtrarOrdenes('Entregada')" style="margin-top:8px;background:none;border:1px solid #D1FAE5;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:600;color:#059669;cursor:pointer;width:100%">Ver cerradas →</button>
+        </div>
+        <!-- Entregadas hoy -->
+        <div class="card" style="padding:14px 16px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gris-mid);margin-bottom:6px">Entregadas hoy</div>
+          <div style="font-size:30px;font-weight:800;color:#2563EB;line-height:1">${entregadasHoy.length}</div>
+          <div style="font-size:10px;color:var(--gris-mid);margin-top:3px">Vehículos programados</div>
+        </div>
+        <!-- En pulmón -->
+        <div class="card" style="padding:14px 16px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gris-mid);margin-bottom:6px">En pulmón</div>
+          <div style="font-size:30px;font-weight:800;color:#D97706;line-height:1">${pulmonTotal}</div>
+          <div style="font-size:10px;color:var(--gris-mid);margin-top:3px">${pulmonInt} int · ${pulmonExt} ext</div>
+        </div>
+        <!-- Facturación mes -->
+        <div style="background:var(--azul);border-radius:12px;padding:14px 16px;color:white">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;opacity:.55;margin-bottom:6px">Facturación del mes</div>
+          <div style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1">${fmt(valorMes)}</div>
+          <div style="font-size:10px;opacity:.5;margin-top:5px">Total órdenes: ${totalOrdenes}</div>
+          <button onclick="switchDashTab('financiero')" style="margin-top:6px;background:rgba(255,255,255,.12);border:none;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:600;color:white;cursor:pointer;width:100%">Ver histórico →</button>
+        </div>
+      </div>
+
+      ${retrasosHtml}
+
+      <!-- Pipeline + Próximas entregas -->
+      <div style="display:grid;grid-template-columns:1fr 210px;gap:10px;margin-bottom:10px">
+        <div class="card" style="padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Flujo operativo del taller</div>
+          <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Estado actual de vehículos en cada etapa</div>
+          <div style="display:flex;align-items:stretch;gap:3px">
+            ${[
+              {label:'Activas',  val:activasArr.length, color:'#2563EB', bg:'#EBF2FF'},
+              {label:'Asignadas',val:asignadas,          color:'#7C3AED', bg:'#F5F3FF'},
+              {label:'Latonería',val:enLat,              color:'#DC2626', bg:'#FEE2E2'},
+              {label:'Pintura',  val:enPin,              color:'#D97706', bg:'#FEF3C7'},
+              {label:'Mecánica', val:enMec,              color:'#0891B2', bg:'#E0F2FE'},
+              {label:'Adicionales',val:enAdd,            color:'#059669', bg:'#E6F5EF'},
+              {label:'Listas',   val:listaEnt,           color:'#16A34A', bg:'#DCFCE7'},
+            ].map((p,i,arr)=>`
+              <div style="flex:1;min-width:0;display:flex;align-items:center;gap:3px">
+                <div style="flex:1;background:${p.bg};border-radius:8px;padding:8px 4px;text-align:center">
+                  <div style="font-size:20px;font-weight:800;color:${p.color};line-height:1">${p.val}</div>
+                  <div style="font-size:9px;font-weight:600;color:${p.color};margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
+                </div>
+                ${i<arr.length-1?`<svg width="8" height="8" fill="none" stroke="var(--gris-mid)" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>`:''}
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="card" style="padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:8px">Próximas entregas</div>
+          ${proximasHtml}
+        </div>
+      </div>
+
+      <!-- Fila 3: Carga por área | Procesos activos | Servicios más demandados -->
+      <div style="display:grid;grid-template-columns:200px 1fr 200px;gap:10px;margin-bottom:10px;align-items:start">
+        <!-- Donut carga por área -->
+        <div class="card" style="padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Carga por área</div>
+          <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Ocupación actual</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+            <div style="position:relative">
+              ${buildDonut(donutSlices)}
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column">
+                <span style="font-size:16px;font-weight:800;color:var(--texto);line-height:1">${Object.values(srvActivos).reduce((a,b)=>a+b,0)}</span>
+                <span style="font-size:9px;color:var(--gris-mid)">activas</span>
+              </div>
+            </div>
+            ${donutLeyenda}
+          </div>
+        </div>
+
+        <!-- Procesos activos tabla -->
+        <div class="card" style="padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Procesos activos en el taller</div>
+          <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Órdenes en proceso</div>
+          ${procesosTablaHtml}
+        </div>
+
+        <!-- Servicios más demandados -->
+        <div class="card" style="padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Servicios más demandados</div>
+          <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Histórico de etapas</div>
+          ${demandadosHtml}
+        </div>
+      </div>
+
+      <!-- Fila 4: Tiempo promedio | Eficiencia | Técnicos | Repuestos -->
+      <div style="display:grid;grid-template-columns:1fr 160px 140px 140px;gap:10px;align-items:start">
+        <div class="card" style="padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Tiempo promedio por servicio</div>
+          <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Histórico general</div>
+          ${tiempoHtml}
+        </div>
+        <!-- Eficiencia -->
+        <div class="card" style="padding:12px 14px;text-align:center">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gris-mid);margin-bottom:8px">Eficiencia</div>
+          <div style="font-size:36px;font-weight:800;color:${efColor};line-height:1">${eficiencia!==null?eficiencia+'%':'—'}</div>
+          <div style="font-size:10px;color:var(--gris-mid);margin-top:4px">Entregas a tiempo</div>
+          <div style="font-size:9px;color:var(--gris-mid);margin-top:2px">Últimos 60 días</div>
+          ${eficiencia!==null?`<div style="height:4px;background:var(--gris-borde);border-radius:99px;overflow:hidden;margin-top:8px"><div style="height:100%;width:${eficiencia}%;background:${efColor};border-radius:99px"></div></div>`:''}
+        </div>
+        <!-- Técnicos activos -->
+        <div class="card" style="padding:12px 14px;text-align:center">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gris-mid);margin-bottom:8px">Técnicos</div>
+          <div style="font-size:36px;font-weight:800;color:#2563EB;line-height:1">${tecActivos.size}</div>
+          <div style="font-size:10px;color:var(--gris-mid);margin-top:4px">Activos ahora</div>
+          <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:3px;margin-top:8px">
+            ${[...tecActivos].slice(0,4).map(t=>`<span style="font-size:9px;background:#EBF2FF;color:#2563EB;border-radius:99px;padding:1px 6px;font-weight:600">${t.split(' ')[0]}</span>`).join('')}
+          </div>
+        </div>
+        <!-- Repuestos pendientes -->
+        <div class="card" style="padding:12px 14px;text-align:center">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gris-mid);margin-bottom:8px">Repuestos</div>
+          <div style="font-size:36px;font-weight:800;color:${solicitudesPend.length>0?'#DC2626':'#059669'};line-height:1">${solicitudesPend.length}</div>
+          <div style="font-size:10px;color:var(--gris-mid);margin-top:4px">Pendientes</div>
+          <div style="font-size:10px;font-weight:600;color:${solicitudesPend.length>0?'#DC2626':'#059669'};margin-top:2px">${solicitudesPend.length>0?'Atención requerida':'Al día'}</div>
+        </div>
+      </div>
+    `;
 
     // ── Métricas base ─────────────────────────────────────
     const activas        = ordenes.filter(o => o.estado === 'Activa' && !o.pulmon).length;
