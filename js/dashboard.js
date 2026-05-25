@@ -88,28 +88,6 @@ async function cargarDashboardMes() {
     const valorMes = etapasFinalizadas.reduce((s,e)=>s+(e.valor||0),0);
     const fmt = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n || 0);
 
-    const porDia = {};
-    for (let d = 1; d <= new Date(ahora.getFullYear(), ahora.getMonth()+1, 0).getDate(); d++) {
-      porDia[d] = { ingresos: 0, entregas: 0 };
-    }
-    ordenesMes.forEach(o => {
-      const d = new Date(o.creado_en).getDate();
-      if (porDia[d]) porDia[d].ingresos++;
-      if (o.entregada_en) {
-        const eDate = new Date(o.entregada_en);
-        if (eDate >= inicioMesDate && eDate < finMesDate && porDia[eDate.getDate()]) porDia[eDate.getDate()].entregas++;
-      }
-    });
-    const maxDia = Math.max(...Object.values(porDia).map(x=>Math.max(x.ingresos,x.entregas)), 1);
-    const barrasHtml = Object.entries(porDia).map(([dia, data]) => `
-      <div class="dash-bar-col" style="min-width:18px;flex:0 0 auto">
-        <div class="dash-bar-group">
-          <div class="dash-bar" style="height:${Math.max(2, Math.round((data.ingresos/maxDia)*72))}px;background:var(--azul-mid)" title="Ingresos: ${data.ingresos}"></div>
-          <div class="dash-bar" style="height:${Math.max(2, Math.round((data.entregas/maxDia)*72))}px;background:var(--verde)" title="Entregas: ${data.entregas}"></div>
-        </div>
-        <div class="dash-bar-label">${dia}</div>
-      </div>`).join('');
-
     const proximas = ordenesActivas
       .filter(o => o.fecha_entrega_1 || o.fecha_entrega_2)
       .map(o => {
@@ -170,12 +148,7 @@ async function cargarDashboardMes() {
         <div class="dash-card"><div class="dash-card-val" style="color:var(--azul);font-size:20px">${fmt(valorMes)}</div><div class="dash-card-label">Valor finalizado</div><div class="dash-card-sub">${etapasFinalizadas.length} etapas cerradas</div></div>
       </div>
       <div class="dash-row-2">
-        <div class="dash-panel">
-          <div class="dash-panel-titulo">Ingresos y entregas por día</div>
-          <div class="dash-legend"><span class="dash-legend-dot" style="background:var(--azul-mid)"></span><span>Ingresos</span><span class="dash-legend-dot" style="background:var(--verde);margin-left:12px"></span><span>Entregas</span></div>
-          <div class="dash-bars" style="height:104px;overflow-x:auto;padding-bottom:6px">${barrasHtml}</div>
-        </div>
-        <div class="dash-panel">
+        <div class="dash-panel" style="grid-column:1/-1">
           <div class="dash-panel-titulo">Próximas entregas</div>
           <div class="dash-entregas">${proximasHtml}</div>
         </div>
