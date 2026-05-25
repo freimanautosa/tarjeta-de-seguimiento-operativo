@@ -158,77 +158,77 @@ async function cargarDashboardMes() {
 
     // — KPI cards —
     const kpiHtml = `
-      <div style="display:grid;grid-template-columns:1.5fr repeat(4,1fr);gap:12px;margin-bottom:20px">
-        <div style="background:#1E3A5F;border-radius:14px;padding:22px 20px;color:white;display:flex;flex-direction:column;justify-content:space-between;min-height:128px">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;opacity:.65">Facturación del mes</div>
+      <div style="display:grid;grid-template-columns:1.6fr repeat(4,1fr);gap:8px;margin-bottom:12px">
+        <div style="background:#1E3A5F;border-radius:12px;padding:14px 16px;color:white;display:flex;flex-direction:column;justify-content:space-between;min-height:100px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;opacity:.65">Facturación del mes</div>
           <div>
-            <div style="font-size:26px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.15">${fmt(valorMes)}</div>
+            <div style="font-size:22px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1">${fmt(valorMes)}</div>
             ${metaMes?.meta_ingresos ? (() => {
               const pct = Math.min(Math.round((valorMes / metaMes.meta_ingresos) * 100), 100);
               const barColor = pct >= 100 ? '#34D399' : pct >= 70 ? '#FCD34D' : '#F87171';
-              return `<div style="margin-top:8px">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+              return `<div style="margin-top:6px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
                   <span style="font-size:10px;opacity:.6">Meta: ${fmt(metaMes.meta_ingresos)}</span>
-                  <span style="font-size:11px;font-weight:700;color:${barColor}">${pct}%</span>
+                  <span style="font-size:10px;font-weight:700;color:${barColor}">${pct}%</span>
                 </div>
-                <div style="height:4px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden">
-                  <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;transition:width .6s"></div>
+                <div style="height:3px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden">
+                  <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px"></div>
                 </div>
               </div>`;
-            })() : `<div style="font-size:11px;opacity:.55;margin-top:4px">${etapasMesFin.length} etapas cerradas</div>`}
+            })() : `<div style="font-size:10px;opacity:.5;margin-top:3px">${etapasMesFin.length} etapas cerradas</div>`}
           </div>
         </div>
-        <div style="background:white;border:1px solid var(--gris-borde);border-radius:14px;padding:16px 14px;display:flex;flex-direction:column;gap:10px">
-          <div style="width:34px;height:34px;background:#EBF2FF;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="17" height="17" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        <div style="background:white;border:1px solid var(--gris-borde);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px">
+          <div style="width:28px;height:28px;background:#EBF2FF;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="14" height="14" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
           </div>
-          <div style="font-size:30px;font-weight:800;color:#2563EB;line-height:1">${activasNormales}</div>
-          <div><div style="font-size:12px;font-weight:600;color:var(--texto)">Activas</div><div style="font-size:11px;color:var(--gris-mid)">En proceso</div></div>
+          <div style="font-size:26px;font-weight:800;color:#2563EB;line-height:1">${activasNormales}</div>
+          <div><div style="font-size:11px;font-weight:600;color:var(--texto)">Activas</div><div style="font-size:10px;color:var(--gris-mid)">En proceso</div></div>
         </div>
-        <div style="background:white;border:1px solid var(--gris-borde);border-radius:14px;padding:16px 14px;display:flex;flex-direction:column;gap:10px">
-          <div style="width:34px;height:34px;background:#F5F3FF;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="17" height="17" fill="none" stroke="#7C3AED" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        <div style="background:white;border:1px solid var(--gris-borde);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px">
+          <div style="width:28px;height:28px;background:#F5F3FF;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="14" height="14" fill="none" stroke="#7C3AED" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
           </div>
-          <div style="display:flex;align-items:baseline;gap:5px">
-            <div style="font-size:30px;font-weight:800;color:#7C3AED;line-height:1">${ordenesMes.length}</div>
-            ${metaMes?.meta_ordenes ? `<div style="font-size:13px;font-weight:600;color:var(--gris-mid)">/ ${metaMes.meta_ordenes}</div>` : ''}
+          <div style="display:flex;align-items:baseline;gap:4px">
+            <div style="font-size:26px;font-weight:800;color:#7C3AED;line-height:1">${ordenesMes.length}</div>
+            ${metaMes?.meta_ordenes ? `<div style="font-size:12px;font-weight:600;color:var(--gris-mid)">/ ${metaMes.meta_ordenes}</div>` : ''}
           </div>
-          <div><div style="font-size:12px;font-weight:600;color:var(--texto)">Creadas</div><div style="font-size:11px;color:var(--gris-mid)">Este mes</div></div>
+          <div><div style="font-size:11px;font-weight:600;color:var(--texto)">Creadas</div><div style="font-size:10px;color:var(--gris-mid)">Este mes</div></div>
           ${metaMes?.meta_ordenes ? (() => {
             const pct = Math.min(Math.round((ordenesMes.length / metaMes.meta_ordenes) * 100), 100);
             const barColor = pct >= 100 ? '#059669' : pct >= 70 ? '#D97706' : '#DC2626';
-            return `<div style="height:3px;background:var(--gris-borde);border-radius:99px;overflow:hidden;margin-top:6px">
-              <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;transition:width .6s"></div>
+            return `<div style="height:3px;background:var(--gris-borde);border-radius:99px;overflow:hidden;margin-top:2px">
+              <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px"></div>
             </div>`;
           })() : ''}
         </div>
-        <div style="background:white;border:1px solid var(--gris-borde);border-radius:14px;padding:16px 14px;display:flex;flex-direction:column;gap:10px">
-          <div style="width:34px;height:34px;background:#E6F5EF;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="17" height="17" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+        <div style="background:white;border:1px solid var(--gris-borde);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px">
+          <div style="width:28px;height:28px;background:#E6F5EF;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="14" height="14" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
           </div>
-          <div style="font-size:30px;font-weight:800;color:#059669;line-height:1">${entregadasMes}</div>
-          <div><div style="font-size:12px;font-weight:600;color:var(--texto)">Entregadas</div><div style="font-size:11px;color:var(--gris-mid)">Este mes</div></div>
+          <div style="font-size:26px;font-weight:800;color:#059669;line-height:1">${entregadasMes}</div>
+          <div><div style="font-size:11px;font-weight:600;color:var(--texto)">Entregadas</div><div style="font-size:10px;color:var(--gris-mid)">Este mes</div></div>
         </div>
-        <div style="background:white;border:1px solid var(--gris-borde);border-radius:14px;padding:16px 14px;display:flex;flex-direction:column;gap:10px">
-          <div style="width:34px;height:34px;background:#FEF3C7;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="17" height="17" fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <div style="background:white;border:1px solid var(--gris-borde);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px">
+          <div style="width:28px;height:28px;background:#FEF3C7;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="14" height="14" fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
-          <div style="font-size:30px;font-weight:800;color:#D97706;line-height:1">${pulmonInterno+pulmonExterno}</div>
-          <div><div style="font-size:12px;font-weight:600;color:var(--texto)">En pulmón</div><div style="font-size:11px;color:var(--gris-mid)">${pulmonInterno} int · ${pulmonExterno} ext</div></div>
+          <div style="font-size:26px;font-weight:800;color:#D97706;line-height:1">${pulmonInterno+pulmonExterno}</div>
+          <div><div style="font-size:11px;font-weight:600;color:var(--texto)">En pulmón</div><div style="font-size:10px;color:var(--gris-mid)">${pulmonInterno} int · ${pulmonExterno} ext</div></div>
         </div>
       </div>`;
 
     // — Retrasos —
     const retrasosHtml = ordenesRetraso.length ? `
-      <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;flex-wrap:wrap;gap:10px">
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-          <svg width="15" height="15" fill="none" stroke="#DC2626" stroke-width="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span style="font-size:12px;font-weight:700;color:#DC2626">${ordenesRetraso.length} con retraso:</span>
+      <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+          <svg width="13" height="13" fill="none" stroke="#DC2626" stroke-width="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span style="font-size:11px;font-weight:700;color:#DC2626">${ordenesRetraso.length} con retraso:</span>
         </div>
         ${ordenesRetraso.map(o => `
-          <div style="display:inline-flex;align-items:center;gap:6px;background:white;border:1px solid #FECACA;border-radius:7px;padding:4px 10px;cursor:pointer" onclick="abrirOrden(${o.id})">
-            <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:12px;letter-spacing:.5px">${escapeHtml(o.placa)}</span>
-            <span style="font-size:11px;color:#DC2626;font-weight:600">+${o.diasRetraso}d</span>
+          <div style="display:inline-flex;align-items:center;gap:5px;background:white;border:1px solid #FECACA;border-radius:6px;padding:3px 8px;cursor:pointer" onclick="abrirOrden(${o.id})">
+            <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:11px;letter-spacing:.5px">${escapeHtml(o.placa)}</span>
+            <span style="font-size:10px;color:#DC2626;font-weight:600">+${o.diasRetraso}d</span>
           </div>`).join('')}
       </div>` : '';
 
@@ -243,12 +243,12 @@ async function cargarDashboardMes() {
       { label:'Lista',      val:listaEntrega,color:'#16A34A', bg:'#DCFCE7' },
     ];
     const pipelineHtml = pasos.map((p, i) => `
-      <div style="flex:1;min-width:0;display:flex;align-items:center;gap:4px">
-        <div style="flex:1;min-width:0;background:${p.bg};border-radius:10px;padding:12px 6px;text-align:center">
-          <div style="font-size:24px;font-weight:800;color:${p.color};line-height:1">${p.val}</div>
-          <div style="font-size:10px;font-weight:600;color:${p.color};margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
+      <div style="flex:1;min-width:0;display:flex;align-items:center;gap:3px">
+        <div style="flex:1;min-width:0;background:${p.bg};border-radius:8px;padding:8px 4px;text-align:center">
+          <div style="font-size:20px;font-weight:800;color:${p.color};line-height:1">${p.val}</div>
+          <div style="font-size:9px;font-weight:600;color:${p.color};margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
         </div>
-        ${i < pasos.length-1 ? `<svg width="12" height="12" fill="none" stroke="var(--gris-mid)" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>` : ''}
+        ${i < pasos.length-1 ? `<svg width="10" height="10" fill="none" stroke="var(--gris-mid)" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>` : ''}
       </div>`).join('');
 
     // — Próximas entregas —
@@ -265,8 +265,8 @@ async function cargarDashboardMes() {
       </div>`;
     }).join('') : '<div style="font-size:12px;color:var(--gris-mid);padding:8px 0">Sin próximas entregas programadas.</div>';
 
-    // — Tabla órdenes activas —
-    const filasOrdenes = ordenesActivas.map(o => {
+    // — Tabla órdenes activas (máx 3, luego "Ver todas") —
+    const buildFila = o => {
       const ets         = etapasPorOrden[o.id] || [];
       const etapaActiva = ets.find(e => e.inicio && !e.fin);
       const responsable = etapaActiva?.tecnico || '—';
@@ -281,36 +281,45 @@ async function cargarDashboardMes() {
       const rC = { Alto:'#DC2626', Medio:'#D97706', Bajo:'#059669' };
       const rB = { Alto:'#FEE2E2', Medio:'#FEF3C7', Bajo:'#E6F5EF' };
       return `<tr style="border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id})" onmouseenter="this.style.background='var(--gris-bg)'" onmouseleave="this.style.background=''">
-        <td style="padding:10px 12px;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--gris-mid);white-space:nowrap">${formatOT(o.id)}</td>
-        <td style="padding:10px 12px">
-          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;letter-spacing:.8px">${escapeHtml(o.placa)}</div>
+        <td style="padding:7px 10px;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:var(--gris-mid);white-space:nowrap">${formatOT(o.id)}</td>
+        <td style="padding:7px 10px">
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:12px;letter-spacing:.8px">${escapeHtml(o.placa)}</div>
           <div style="font-size:10px;color:var(--gris-mid)">${[o.marca,o.linea].filter(Boolean).map(escapeHtml).join(' ')||'—'}</div>
         </td>
-        <td style="padding:10px 12px">
-          <span style="font-size:11px;font-weight:600;color:${srvC};background:${srvBg};padding:3px 8px;border-radius:6px;white-space:nowrap">${srvLabel}</span>
+        <td style="padding:7px 10px">
+          <span style="font-size:10px;font-weight:600;color:${srvC};background:${srvBg};padding:2px 7px;border-radius:5px;white-space:nowrap">${srvLabel}</span>
         </td>
-        <td style="padding:10px 12px;font-size:12px;color:var(--texto)">${escapeHtml(responsable)}</td>
-        <td style="padding:10px 12px;text-align:center;font-weight:700;font-size:13px;color:${diasTaller>10?'#DC2626':diasTaller>5?'#D97706':'var(--texto)'}">${diasTaller}d</td>
-        <td style="padding:10px 12px;text-align:center">
-          ${riesgo ? `<span style="font-size:10px;font-weight:700;color:${rC[riesgo]};background:${rB[riesgo]};padding:2px 7px;border-radius:99px">${riesgo}</span>` : '<span style="font-size:11px;color:var(--gris-mid)">—</span>'}
+        <td style="padding:7px 10px;font-size:11px;color:var(--texto)">${escapeHtml(responsable)}</td>
+        <td style="padding:7px 10px;text-align:center;font-weight:700;font-size:12px;color:${diasTaller>10?'#DC2626':diasTaller>5?'#D97706':'var(--texto)'}">${diasTaller}d</td>
+        <td style="padding:7px 10px;text-align:center">
+          ${riesgo ? `<span style="font-size:10px;font-weight:700;color:${rC[riesgo]};background:${rB[riesgo]};padding:2px 6px;border-radius:99px">${riesgo}</span>` : '<span style="font-size:10px;color:var(--gris-mid)">—</span>'}
         </td>
       </tr>`;
-    }).join('');
+    };
+    const filasOrdenes    = ordenesActivas.slice(0,3).map(buildFila).join('');
+    const restanteOrdenes = ordenesActivas.length - 3;
 
     const tablaHtml = ordenesActivas.length ? `
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:560px">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:520px">
           <thead><tr style="background:var(--gris-bg)">
-            <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:2px solid var(--gris-borde)">No. Orden</th>
-            <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:2px solid var(--gris-borde)">Placa</th>
-            <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:2px solid var(--gris-borde)">Estado</th>
-            <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:2px solid var(--gris-borde)">Responsable</th>
-            <th style="padding:8px 12px;text-align:center;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:2px solid var(--gris-borde)">Días</th>
-            <th style="padding:8px 12px;text-align:center;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:2px solid var(--gris-borde)">Riesgo</th>
+            <th style="padding:6px 10px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:1px solid var(--gris-borde)">No. Orden</th>
+            <th style="padding:6px 10px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:1px solid var(--gris-borde)">Placa</th>
+            <th style="padding:6px 10px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:1px solid var(--gris-borde)">Estado</th>
+            <th style="padding:6px 10px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:1px solid var(--gris-borde)">Responsable</th>
+            <th style="padding:6px 10px;text-align:center;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:1px solid var(--gris-borde)">Días</th>
+            <th style="padding:6px 10px;text-align:center;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:1px solid var(--gris-borde)">Riesgo</th>
           </tr></thead>
           <tbody>${filasOrdenes}</tbody>
         </table>
-      </div>` : '<div class="empty-state"><p>Sin órdenes activas.</p></div>';
+      </div>
+      ${restanteOrdenes > 0 ? `
+        <div style="text-align:center;margin-top:10px">
+          <button onclick="switchTab('ordenes')" style="background:none;border:1px solid var(--gris-borde);border-radius:8px;padding:6px 16px;font-size:11px;font-weight:600;color:var(--gris-mid);cursor:pointer">
+            Ver todas las órdenes (${restanteOrdenes} más)
+          </button>
+        </div>` : ''}
+      ` : '<div class="empty-state"><p>Sin órdenes activas.</p></div>';
 
     // — Tiempo promedio —
     const tiemposHtml = Object.entries(tiemposPorSrv).length
@@ -322,12 +331,12 @@ async function cargarDashboardMes() {
             const dias = Math.floor(h/8);
             const label = dias > 0 ? `${dias}d ${h%8}h` : h > 0 ? `${h}h ${m}m` : `${m}m`;
             const color = srvColor[srv]||'#6B7280';
-            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--gris-borde)">
-              <div style="display:flex;align-items:center;gap:8px">
-                <div style="width:9px;height:9px;border-radius:50%;background:${color};flex-shrink:0"></div>
-                <span style="font-size:13px;color:var(--texto)">${srvNombre[srv]||srv}</span>
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gris-borde)">
+              <div style="display:flex;align-items:center;gap:6px">
+                <div style="width:7px;height:7px;border-radius:50%;background:${color};flex-shrink:0"></div>
+                <span style="font-size:11px;color:var(--texto)">${srvNombre[srv]||srv}</span>
               </div>
-              <span style="font-size:13px;font-weight:700;color:${color};font-family:'DM Mono',monospace">${label}</span>
+              <span style="font-size:11px;font-weight:700;color:${color};font-family:'DM Mono',monospace">${label}</span>
             </div>`;
           }).join('')
       : '<div style="font-size:12px;color:var(--gris-mid);padding:8px 0">Sin datos históricos aún.</div>';
@@ -337,50 +346,50 @@ async function cargarDashboardMes() {
     // ────────────────────────────────────────────────────────
     cont.innerHTML = `
       <!-- Header -->
-      <div style="margin-bottom:20px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gris-mid);margin-bottom:3px">Resumen Operativo del mes</div>
-        <div style="font-size:22px;font-weight:800;color:var(--texto);text-transform:capitalize">${mesLabel}</div>
+      <div style="margin-bottom:10px;display:flex;align-items:baseline;gap:10px">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gris-mid)">Resumen Operativo del mes</div>
+        <div style="font-size:18px;font-weight:800;color:var(--texto);text-transform:capitalize">${mesLabel}</div>
       </div>
 
       ${kpiHtml}
       ${retrasosHtml}
 
       <!-- Flujo + Próximas -->
-      <div style="display:grid;grid-template-columns:1fr 300px;gap:14px;margin-bottom:16px;align-items:start">
-        <div class="card" style="padding:18px">
-          <div style="font-size:14px;font-weight:700;color:var(--texto);margin-bottom:3px">Flujo operativo del taller</div>
-          <div style="font-size:11px;color:var(--gris-mid);margin-bottom:14px">Estado actual de órdenes activas por proceso</div>
-          <div style="display:flex;align-items:stretch;gap:4px;overflow-x:auto">${pipelineHtml}</div>
+      <div style="display:grid;grid-template-columns:1fr 260px;gap:10px;margin-bottom:10px;align-items:start">
+        <div class="card" style="padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Flujo operativo del taller</div>
+          <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Órdenes activas por proceso</div>
+          <div style="display:flex;align-items:stretch;gap:3px;overflow-x:auto">${pipelineHtml}</div>
         </div>
-        <div class="card" style="padding:18px">
-          <div style="font-size:14px;font-weight:700;color:var(--texto);margin-bottom:14px">Próximas entregas</div>
+        <div class="card" style="padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:10px">Próximas entregas</div>
           ${proximasHtml}
         </div>
       </div>
 
       <!-- Órdenes activas + sidebar -->
-      <div style="display:grid;grid-template-columns:1fr 260px;gap:14px;align-items:start">
-        <div class="card" style="padding:18px">
-          <div style="font-size:14px;font-weight:700;color:var(--texto);margin-bottom:3px">Órdenes de trabajo activas</div>
-          <div style="font-size:11px;color:var(--gris-mid);margin-bottom:14px">Seguimiento en tiempo real</div>
+      <div style="display:grid;grid-template-columns:1fr 230px;gap:10px;align-items:start">
+        <div class="card" style="padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Órdenes de trabajo activas</div>
+          <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Seguimiento en tiempo real</div>
           ${tablaHtml}
         </div>
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <div class="card" style="padding:16px">
-            <div style="font-size:13px;font-weight:700;color:var(--texto);margin-bottom:3px">Tiempo promedio por etapa</div>
-            <div style="font-size:11px;color:var(--gris-mid);margin-bottom:12px">Histórico general</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="card" style="padding:12px 14px">
+            <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Tiempo promedio por etapa</div>
+            <div style="font-size:10px;color:var(--gris-mid);margin-bottom:8px">Histórico general</div>
             ${tiemposHtml}
           </div>
-          <div class="card" style="padding:16px">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+          <div class="card" style="padding:12px 14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
               <div>
-                <div style="font-size:13px;font-weight:700;color:var(--texto);margin-bottom:3px">Repuestos pendientes</div>
-                <div style="font-size:11px;color:var(--gris-mid);margin-bottom:10px">Órdenes en espera</div>
-                <div style="font-size:36px;font-weight:800;color:${solicitudesPend.length>0?'#DC2626':'#059669'};line-height:1">${solicitudesPend.length}</div>
-                <div style="font-size:11px;font-weight:600;color:${solicitudesPend.length>0?'#DC2626':'#059669'};margin-top:5px">${solicitudesPend.length>0?'Atención requerida':'Al día'}</div>
+                <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Repuestos pendientes</div>
+                <div style="font-size:10px;color:var(--gris-mid);margin-bottom:6px">Órdenes en espera</div>
+                <div style="font-size:30px;font-weight:800;color:${solicitudesPend.length>0?'#DC2626':'#059669'};line-height:1">${solicitudesPend.length}</div>
+                <div style="font-size:10px;font-weight:600;color:${solicitudesPend.length>0?'#DC2626':'#059669'};margin-top:4px">${solicitudesPend.length>0?'Atención requerida':'Al día'}</div>
               </div>
-              <div style="width:48px;height:48px;background:${solicitudesPend.length>0?'#FEE2E2':'#E6F5EF'};border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                <svg width="24" height="24" fill="none" stroke="${solicitudesPend.length>0?'#DC2626':'#059669'}" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+              <div style="width:38px;height:38px;background:${solicitudesPend.length>0?'#FEE2E2':'#E6F5EF'};border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="18" height="18" fill="none" stroke="${solicitudesPend.length>0?'#DC2626':'#059669'}" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
               </div>
             </div>
           </div>
