@@ -163,8 +163,8 @@ function montarTaller() {
         font-family:'DM Mono',monospace;font-size:1.35vw;font-weight:700;
         color:#FFFFFF;letter-spacing:.04em;line-height:1;
       }
-      .tv-vehiculo { font-size:.52vw;color:rgba(255,255,255,.28);margin-top:.1vh; }
-      .tv-propietario { font-size:.58vw;color:rgba(255,255,255,.5);margin-top:.2vh;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:11vw; }
+      .tv-vehiculo { font-size:.52vw;color:rgba(255,255,255,.5);margin-top:.1vh; }
+      .tv-propietario { font-size:.6vw;font-weight:600;color:rgba(255,255,255,.85);margin-top:.2vh;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:11vw; }
 
       /* ── CHIPS DE ETAPA ── */
       .etapas-chips { display:flex;flex-wrap:wrap;gap:.3vw;align-items:center; }
@@ -679,7 +679,7 @@ async function cargarPantallaTaller() {
       return `<tr id="tv-row-${orden.id}" onclick="_tvVerDetalle(${orden.id})" style="cursor:pointer">
         <td>
           <div class="tv-placa">${orden.placa}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:.46vw;font-weight:500;color:rgba(255,255,255,.25);letter-spacing:.05em;margin-top:.15vh">${formatOT(orden.id)}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.48vw;font-weight:600;color:rgba(255,255,255,.55);letter-spacing:.05em;margin-top:.15vh">${formatOT(orden.id)}</div>
           ${orden.propietario ? `<div class="tv-propietario">${orden.propietario}</div>` : ''}
           <div class="tv-vehiculo">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
         </td>
