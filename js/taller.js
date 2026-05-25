@@ -150,7 +150,7 @@ function montarTaller() {
       .tv-tbody tr:hover { background:rgba(255,255,255,.03); }
       .tv-tbody tr.flash { animation:flash-row 1.5s ease-in-out; }
       .tv-tbody td {
-        padding:.9vh 1.4vw;vertical-align:middle;
+        padding:.45vh 1.4vw;vertical-align:middle;
       }
       .tv-col-placa   { width:12%; }
       .tv-col-etapas  { width:42%; }
@@ -160,10 +160,10 @@ function montarTaller() {
       .tv-col-estado  { width:14%; }
 
       .tv-placa {
-        font-family:'DM Mono',monospace;font-size:1.6vw;font-weight:700;
+        font-family:'DM Mono',monospace;font-size:2vw;font-weight:700;
         color:#FFFFFF;letter-spacing:.04em;line-height:1;
       }
-      .tv-vehiculo { font-size:.65vw;color:rgba(255,255,255,.32);margin-top:.2vh; }
+      .tv-vehiculo { font-size:.52vw;color:rgba(255,255,255,.28);margin-top:.1vh; }
 
       /* ── CHIPS DE ETAPA ── */
       .etapas-chips { display:flex;flex-wrap:wrap;gap:.3vw;align-items:center; }
@@ -247,6 +247,35 @@ function montarTaller() {
       .tv-panel-empty {
         font-size:.7vw;color:rgba(255,255,255,.15);
         font-style:italic;padding:1vh 0;text-align:center;
+      }
+
+      /* ── PANEL PROGRAMADAS ── */
+      .tv-panel-section {
+        display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0;
+      }
+      .tv-panel-divider {
+        border-top:1px solid rgba(255,255,255,.06);flex-shrink:0;
+      }
+      .tv-prog-item {
+        display:flex;align-items:center;gap:.6vw;
+        padding:.45vh .8vw;border-radius:.4vw;
+        background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.18);
+        flex-shrink:0;cursor:default;
+      }
+      .tv-prog-dot {
+        width:.45vw;height:.45vw;border-radius:50%;background:#818CF8;flex-shrink:0;
+      }
+      .tv-prog-placa {
+        font-family:'DM Mono',monospace;font-size:.85vw;font-weight:700;
+        color:#C7D2FE;letter-spacing:.04em;line-height:1;flex:1;min-width:0;
+      }
+      .tv-prog-fecha {
+        font-family:'DM Mono',monospace;font-size:.55vw;color:rgba(199,210,254,.45);
+        flex-shrink:0;
+      }
+      .tv-prog-ot {
+        font-family:'DM Mono',monospace;font-size:.5vw;color:rgba(199,210,254,.35);
+        margin-top:.1vh;
       }
 
       /* ── OVERLAY ── */
@@ -526,12 +555,13 @@ async function cargarPantallaTaller() {
     const manana = new Date(hoy); manana.setDate(manana.getDate()+1);
     const hoyISO = hoy.toISOString().split('T')[0];
 
-    const [ordenesActivas, entregadasHoy, etapasActivas, etapasTodas, aprobacionesTodas] = await Promise.all([
+    const [ordenesActivas, entregadasHoy, etapasActivas, etapasTodas, aprobacionesTodas, ordenesProgramadas] = await Promise.all([
       api(`/ordenes?estado=eq.Activa&order=fecha_entrega_1.asc`).catch(()=>[]) || [],
       api(`/ordenes?estado=eq.Entregada&entregada_en=gte.${hoy.toISOString()}&order=entregada_en.desc`).catch(()=>[]) || [],
       api(`/etapas?fin=is.null&inicio=not.is.null&select=id,orden_id,etapa,servicio,mecanico_id,tecnico,inicio,pausado,pausa_inicio,tiempo_pausado_min`).catch(()=>[]) || [],
       api(`/etapas?select=id,orden_id,etapa,servicio,inicio,fin,tecnico&order=creado_en.asc`).catch(()=>[]) || [],
-      api(`/aprobaciones_etapa?estado=eq.aprobado&select=etapa_id`).catch(()=>[]) || []
+      api(`/aprobaciones_etapa?estado=eq.aprobado&select=etapa_id`).catch(()=>[]) || [],
+      api(`/ordenes?estado=eq.Programada&order=fecha_programada.asc&select=id,placa,marca,linea,fecha_programada`).catch(()=>[]) || []
     ]);
 
     const aprobadas = new Set(aprobacionesTodas.map(a => a.etapa_id));
@@ -642,7 +672,7 @@ async function cargarPantallaTaller() {
       return `<tr id="tv-row-${orden.id}" onclick="_tvVerDetalle(${orden.id})" style="cursor:pointer">
         <td>
           <div class="tv-placa">${orden.placa}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:.6vw;font-weight:600;color:rgba(255,255,255,.35);letter-spacing:.05em;margin-top:.15vh">${formatOT(orden.id)}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.48vw;font-weight:500;color:rgba(255,255,255,.28);letter-spacing:.05em;margin-top:.1vh">${formatOT(orden.id)}</div>
           <div class="tv-vehiculo">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
         </td>
         <td><div class="etapas-chips">${chips}</div></td>
@@ -653,12 +683,12 @@ async function cargarPantallaTaller() {
       </tr>`;
     }
 
-    // ── Panel derecho ────────────────────────────────────────
+    // ── Panel derecho: Listos hoy ────────────────────────────
     const panelItems = [
       ...ordenesListas.map(o  => ({ orden:o, tipo:'listo'    })),
       ...entregadasHoy.map(o  => ({ orden:o, tipo:'entregado' }))
     ];
-    const panelHtml = panelItems.length
+    const panelListosHtml = panelItems.length
       ? panelItems.map(({orden, tipo}) => {
           const hora = tipo === 'entregado' ? _tvHoraStr(orden.entregada_en) : '';
           const statusTxt = tipo === 'listo' ? 'Listo para entrega' : '✓ Entregado';
@@ -672,6 +702,25 @@ async function cargarPantallaTaller() {
           </div>`;
         }).join('')
       : '<div class="tv-panel-empty">Sin terminados hoy</div>';
+
+    // ── Panel derecho: Programadas ───────────────────────────
+    const progHtml = ordenesProgramadas.length
+      ? ordenesProgramadas.map(o => {
+          const fp   = o.fecha_programada ? new Date(o.fecha_programada + 'T00:00:00') : null;
+          const dias = fp ? Math.round((fp - hoy) / 86400000) : null;
+          const label = dias === 0 ? 'Hoy' : dias === 1 ? 'Mañana' : dias !== null ? `en ${dias}d` : '';
+          return `<div class="tv-prog-item">
+            <div class="tv-prog-dot"></div>
+            <div style="flex:1;min-width:0">
+              <div class="tv-prog-placa">${o.placa}</div>
+              <div class="tv-prog-ot">${formatOT(o.id)} · ${[o.marca,o.linea].filter(Boolean).join(' ')||'—'}</div>
+            </div>
+            ${label ? `<div class="tv-prog-fecha">${label}</div>` : ''}
+          </div>`;
+        }).join('')
+      : '<div class="tv-panel-empty">Sin programadas</div>';
+
+    const panelHtml = panelListosHtml; // alias para compatibilidad
 
     // ── Render completo ──────────────────────────────────────
     const filasHtml = ordenesEnGrid.map(renderFila).join('');
@@ -687,7 +736,7 @@ async function cargarPantallaTaller() {
           <div id="taller-fecha" class="tv-date"></div>
         </div>
 
-        <div class="tv-kpi-strip">
+        <div class="tv-kpi-strip" style="grid-template-columns:repeat(5,1fr)">
           <div class="tv-kpi">
             <div class="tv-kpi-num" style="color:#93C5FD">${ordenesActivas.length}</div>
             <div class="tv-kpi-label">Órdenes<br>activas</div>
@@ -703,6 +752,10 @@ async function cargarPantallaTaller() {
           <div class="tv-kpi">
             <div class="tv-kpi-num" style="color:#FCD34D">${enProceso.length}</div>
             <div class="tv-kpi-label">En proceso<br>ahora</div>
+          </div>
+          <div class="tv-kpi">
+            <div class="tv-kpi-num" style="color:#818CF8">${ordenesProgramadas.length}</div>
+            <div class="tv-kpi-label">Programadas</div>
           </div>
         </div>
 
@@ -728,8 +781,15 @@ async function cargarPantallaTaller() {
           </div>
 
           <div class="tv-panel-right">
-            <div class="tv-panel-title">Listos hoy</div>
-            <div class="tv-panel-list">${panelHtml}</div>
+            <div class="tv-panel-section">
+              <div class="tv-panel-title">Listos hoy</div>
+              <div class="tv-panel-list">${panelListosHtml}</div>
+            </div>
+            <div class="tv-panel-divider"></div>
+            <div class="tv-panel-section">
+              <div class="tv-panel-title" style="color:rgba(199,210,254,.45)">Programadas · ${ordenesProgramadas.length}</div>
+              <div class="tv-panel-list" style="gap:.3vh">${progHtml}</div>
+            </div>
           </div>
         </div>
       </div>
