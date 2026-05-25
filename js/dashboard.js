@@ -256,12 +256,12 @@ async function cargarDashboardMes() {
       const color = o.dias === 0 ? 'var(--rojo)' : o.dias <= 2 ? '#D97706' : '#059669';
       const bg    = o.dias === 0 ? '#FEE2E2'     : o.dias <= 2 ? '#FEF3C7' : '#E6F5EF';
       const label = o.dias === 0 ? 'Hoy' : o.dias === 1 ? 'Mañana' : `${o.dias}d`;
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id})">
-        <div style="flex:1;min-width:0">
-          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:13px;letter-spacing:.5px">${escapeHtml(o.placa)}</div>
-          <div style="font-size:11px;color:var(--gris-mid);margin-top:1px">${[o.marca,o.linea,o.modelo].filter(Boolean).map(escapeHtml).join(' ')||'—'} · ${escapeHtml(o.propietario||'—')}</div>
+      return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id})">
+        <div style="flex:1;min-width:0;overflow:hidden">
+          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:11px;letter-spacing:.5px">${escapeHtml(o.placa)}</div>
+          <div style="font-size:10px;color:var(--gris-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(o.propietario||'—')}</div>
         </div>
-        <span style="font-size:11px;font-weight:700;color:${color};background:${bg};padding:3px 8px;border-radius:99px;flex-shrink:0">${label}</span>
+        <span style="font-size:10px;font-weight:700;color:${color};background:${bg};padding:2px 6px;border-radius:99px;flex-shrink:0">${label}</span>
       </div>`;
     }).join('') : '<div style="font-size:12px;color:var(--gris-mid);padding:8px 0">Sin próximas entregas programadas.</div>';
 
@@ -354,46 +354,49 @@ async function cargarDashboardMes() {
       ${kpiHtml}
       ${retrasosHtml}
 
-      <!-- Flujo + Próximas -->
-      <div style="display:grid;grid-template-columns:1fr 260px;gap:10px;margin-bottom:10px;align-items:start">
-        <div class="card" style="padding:12px 14px">
-          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Flujo operativo del taller</div>
-          <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Órdenes activas por proceso</div>
-          <div style="display:flex;align-items:stretch;gap:3px;overflow-x:auto">${pipelineHtml}</div>
-        </div>
-        <div class="card" style="padding:12px 14px">
-          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:10px">Próximas entregas</div>
-          ${proximasHtml}
-        </div>
-      </div>
+      <!-- Layout principal: izquierda (flujo + tabla) | derecha (próximas + tiempo + repuestos) -->
+      <div style="display:grid;grid-template-columns:1fr 220px;gap:10px;align-items:start">
 
-      <!-- Órdenes activas + sidebar -->
-      <div style="display:grid;grid-template-columns:1fr 230px;gap:10px;align-items:start">
-        <div class="card" style="padding:12px 14px">
-          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Órdenes de trabajo activas</div>
-          <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Seguimiento en tiempo real</div>
-          ${tablaHtml}
-        </div>
+        <!-- Columna izquierda -->
         <div style="display:flex;flex-direction:column;gap:10px">
           <div class="card" style="padding:12px 14px">
-            <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Tiempo promedio por etapa</div>
+            <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Flujo operativo del taller</div>
+            <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Órdenes activas por proceso</div>
+            <div style="display:flex;align-items:stretch;gap:3px;overflow-x:auto">${pipelineHtml}</div>
+          </div>
+          <div class="card" style="padding:12px 14px">
+            <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Órdenes de trabajo activas</div>
+            <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Seguimiento en tiempo real</div>
+            ${tablaHtml}
+          </div>
+        </div>
+
+        <!-- Columna derecha -->
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="card" style="padding:12px 14px">
+            <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:8px">Próximas entregas</div>
+            ${proximasHtml}
+          </div>
+          <div class="card" style="padding:12px 14px">
+            <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Tiempo promedio</div>
             <div style="font-size:10px;color:var(--gris-mid);margin-bottom:8px">Histórico general</div>
             ${tiemposHtml}
           </div>
           <div class="card" style="padding:12px 14px">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
               <div>
-                <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Repuestos pendientes</div>
-                <div style="font-size:10px;color:var(--gris-mid);margin-bottom:6px">Órdenes en espera</div>
-                <div style="font-size:30px;font-weight:800;color:${solicitudesPend.length>0?'#DC2626':'#059669'};line-height:1">${solicitudesPend.length}</div>
-                <div style="font-size:10px;font-weight:600;color:${solicitudesPend.length>0?'#DC2626':'#059669'};margin-top:4px">${solicitudesPend.length>0?'Atención requerida':'Al día'}</div>
+                <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Repuestos</div>
+                <div style="font-size:10px;color:var(--gris-mid);margin-bottom:6px">Pendientes</div>
+                <div style="font-size:28px;font-weight:800;color:${solicitudesPend.length>0?'#DC2626':'#059669'};line-height:1">${solicitudesPend.length}</div>
+                <div style="font-size:10px;font-weight:600;color:${solicitudesPend.length>0?'#DC2626':'#059669'};margin-top:3px">${solicitudesPend.length>0?'Atención requerida':'Al día'}</div>
               </div>
-              <div style="width:38px;height:38px;background:${solicitudesPend.length>0?'#FEE2E2':'#E6F5EF'};border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                <svg width="18" height="18" fill="none" stroke="${solicitudesPend.length>0?'#DC2626':'#059669'}" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+              <div style="width:34px;height:34px;background:${solicitudesPend.length>0?'#FEE2E2':'#E6F5EF'};border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="16" height="16" fill="none" stroke="${solicitudesPend.length>0?'#DC2626':'#059669'}" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
               </div>
             </div>
           </div>
         </div>
+
       </div>`;
 
   } catch(e) {
