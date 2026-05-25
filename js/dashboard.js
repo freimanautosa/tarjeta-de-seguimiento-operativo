@@ -119,11 +119,14 @@ async function cargarDashboardMes() {
       .filter(o => o.fecha_entrega_1 || o.fecha_entrega_2)
       .map(o => {
         const f = o.fecha_entrega_1 ? new Date(o.fecha_entrega_1) : new Date(o.fecha_entrega_2);
-        f.setHours(0,0,0,0);
-        return { ...o, fechaRef: f, dias: Math.round((f - hoy) / 86400000) };
+        const fDia = new Date(f); fDia.setHours(0,0,0,0);
+        // Hora si fue guardada con tiempo (no medianoche exacta)
+        const tieneHora = o.fecha_entrega_1 && (f.getHours() !== 0 || f.getMinutes() !== 0);
+        const horaStr = tieneHora ? f.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', hour12:false }) : null;
+        return { ...o, fechaRef: fDia, dias: Math.round((fDia - hoy) / 86400000), horaStr };
       })
       .filter(o => o.dias >= 0)
-      .sort((a,b) => a.dias - b.dias)
+      .sort((a,b) => a.dias - b.dias || (a.horaStr||'99:99').localeCompare(b.horaStr||'99:99'))
       .slice(0, 7);
 
     // ── Flujo operativo (pipeline) ────────────────────────────
@@ -261,7 +264,10 @@ async function cargarDashboardMes() {
           <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:11px;letter-spacing:.5px">${escapeHtml(o.placa)}</div>
           <div style="font-size:10px;color:var(--gris-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(o.propietario||'—')}</div>
         </div>
-        <span style="font-size:10px;font-weight:700;color:${color};background:${bg};padding:2px 6px;border-radius:99px;flex-shrink:0">${label}</span>
+        <div style="text-align:right;flex-shrink:0">
+          <span style="font-size:10px;font-weight:700;color:${color};background:${bg};padding:2px 6px;border-radius:99px;display:block">${label}</span>
+          ${o.horaStr ? `<span style="font-family:'DM Mono',monospace;font-size:9px;color:${color};opacity:.75;display:block;margin-top:2px">${o.horaStr}</span>` : ''}
+        </div>
       </div>`;
     }).join('') : '<div style="font-size:12px;color:var(--gris-mid);padding:8px 0">Sin próximas entregas programadas.</div>';
 

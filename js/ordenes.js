@@ -2831,7 +2831,7 @@ async function abrirEditarOrden(ordenId) {
             ${['Leve','Moderado','Fuerte','Pérdida Total'].map(d=>`<option ${orden.nivel_dano===d?'selected':''}>${d}</option>`).join('')}
           </select>
         </div>
-        <div class="field"><label>Fecha entrega 1</label><input id="ed-fecha1" type="date" value="${orden.fecha_entrega_1?.split('T')[0]||''}"></div>
+        <div class="field"><label>Fecha estimada de entrega</label><input id="ed-fecha1" type="datetime-local" value="${orden.fecha_entrega_1 ? orden.fecha_entrega_1.slice(0,16) : ''}"></div>
         <div class="field"><label>Fecha entrega 2</label><input id="ed-fecha2" type="date" value="${orden.fecha_entrega_2?.split('T')[0]||''}"></div>
       </div>
     </div>

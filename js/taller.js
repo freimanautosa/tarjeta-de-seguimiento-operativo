@@ -484,12 +484,17 @@ function _tvHoraStr(isoStr) {
 }
 
 function _tvEntregaInfo(orden) {
-  if (!orden.fecha_entrega_1) return { color:'rgba(255,255,255,.3)', label:'Sin fecha' };
-  const dias = Math.round((new Date(orden.fecha_entrega_1) - new Date()) / 86400000);
-  if (dias < 0)   return { color:'#F87171', label:`${Math.abs(dias)}d vencida` };
-  if (dias === 0) return { color:'#FCD34D', label:'Hoy' };
-  if (dias <= 2)  return { color:'#FCD34D', label:`${dias}d` };
-  return { color:'#4ADE80', label:`${dias}d` };
+  if (!orden.fecha_entrega_1) return { color:'rgba(255,255,255,.3)', label:'Sin fecha', hora:null };
+  const f    = new Date(orden.fecha_entrega_1);
+  const fDia = new Date(f); fDia.setHours(0,0,0,0);
+  const hoy  = new Date(); hoy.setHours(0,0,0,0);
+  const dias = Math.round((fDia - hoy) / 86400000);
+  const tieneHora = f.getHours() !== 0 || f.getMinutes() !== 0;
+  const hora = tieneHora ? f.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',hour12:false}) : null;
+  if (dias < 0)   return { color:'#F87171', label:`${Math.abs(dias)}d vencida`, hora };
+  if (dias === 0) return { color:'#FCD34D', label:'Hoy', hora };
+  if (dias <= 2)  return { color:'#FCD34D', label:`${dias}d`, hora };
+  return { color:'#4ADE80', label:`${dias}d`, hora };
 }
 
 function _tvMostrarOverlay(orden, etapasOrden, badge, esVerde, aprobadas) {
@@ -678,7 +683,10 @@ async function cargarPantallaTaller() {
         <td><div class="etapas-chips">${chips}</div></td>
         <td>${tecHtml}</td>
         <td>${timerHtml}</td>
-        <td><span class="tv-entrega-chip" style="color:${entColor}">${entLabel}</span></td>
+        <td>
+          <span class="tv-entrega-chip" style="color:${entColor}">${entLabel}</span>
+          ${(() => { const { hora } = _tvEntregaInfo(orden); return hora ? `<div style="font-family:'DM Mono',monospace;font-size:.6vw;color:${entColor};opacity:.65;margin-top:.15vh">${hora}</div>` : ''; })()}
+        </td>
         <td>${badge}</td>
       </tr>`;
     }
