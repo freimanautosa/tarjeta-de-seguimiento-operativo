@@ -201,20 +201,82 @@ function _cotLeerItems(tbodyId) {
 const N8N_PDF_WEBHOOK = 'https://automatizacionesfreimanautos-n8n.qs0sgf.easypanel.host/webhook/cotizacion-pdf';
 
 async function generarPdfCotizacion(cotId) {
+  // Deshabilitar botón mientras genera
+  const btn = document.querySelector(`button[data-pdf="${cotId}"]`);
+  const txtOrig = btn?.textContent || 'Generar PDF';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando...'; }
+
   try {
+    // Obtener cotización del caché o desde Supabase
+    let cot = todasCotizaciones.find(c => c.id === cotId);
+    if (!cot) {
+      const arr = await api(`/cotizaciones?id=eq.${cotId}&limit=1`);
+      cot = arr?.[0];
+    }
+    if (!cot) throw new Error('Cotización no encontrada');
+
+    // Parsear ítems (se guardan como JSON string en Supabase)
+    let repuestos = [];
+    let moItems   = [];
+    try { repuestos = typeof cot.repuestos       === 'string' ? JSON.parse(cot.repuestos)       : (cot.repuestos       || []); } catch(e) { repuestos = []; }
+    try { moItems   = typeof cot.mano_obra_items === 'string' ? JSON.parse(cot.mano_obra_items) : (cot.mano_obra_items || []); } catch(e) { moItems   = []; }
+
+    // Payload completo para el workflow de n8n
+    const payload = {
+      cotizacion_id:     cot.id,
+      codigo_cotizacion: cot.codigo_cotizacion || '',
+      fecha:             cot.fecha             || '',
+      nombre_cliente:    cot.nombre_cliente    || '',
+      cedula_cliente:    cot.cedula_cliente    || '',
+      telefono_cliente:  cot.telefono_cliente  || '',
+      correo_cliente:    cot.correo_cliente    || '',
+      kilometraje:       cot.kilometraje       || '',
+      placa:             cot.placa             || '',
+      marca:             cot.marca             || '',
+      modelo:            cot.modelo            || '',
+      año:               cot.año               || '',
+      color:             cot.color             || '',
+      vin:               cot.vin               || '',
+      repuestos:         repuestos,
+      mano_obra_items:   moItems,
+      total_repuestos:   cot.total_repuestos   || 0,
+      mano_obra:         cot.mano_obra         || 0,
+      descuento_total:   cot.descuento_total   || 0,
+      iva:               cot.iva               || 0,
+      total_general:     cot.total_general     || 0,
+      tecnico:           cot.tecnico           || '',
+      aseguradora:       cot.aseguradora       || '',
+      tipo_cliente:      cot.tipo_cliente      || '',
+      nivel_dano:        cot.nivel_dano        || ''
+    };
+
+    toast('Generando PDF...');
     const res = await fetch(N8N_PDF_WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cotizacion_id: cotId })
+      body: JSON.stringify(payload)
     });
-    const data = await res.json();
-    const pdfUrl = data?.url || data?.pdf_url || null;
-    if (pdfUrl) {
-      await api(`/cotizaciones?id=eq.${cotId}`, 'PATCH', { url_pdf: pdfUrl });
+    if (!res.ok) {
+      const errTxt = await res.text().catch(() => '');
+      throw new Error(`n8n ${res.status}: ${errTxt.slice(0, 120)}`);
     }
+    const data = await res.json();
+    const pdfUrl = data?.url_pdf || data?.url || data?.pdf_url || null;
+
+    if (!pdfUrl) throw new Error('n8n no devolvió la URL del PDF');
+
+    // Guardar URL en Supabase y actualizar caché
+    await api(`/cotizaciones?id=eq.${cotId}`, 'PATCH', { url_pdf: pdfUrl });
+    const idx = todasCotizaciones.findIndex(c => c.id === cotId);
+    if (idx !== -1) todasCotizaciones[idx].url_pdf = pdfUrl;
+
+    toast('PDF generado ✓');
+    await cargarCotizaciones();
+    window.open(pdfUrl, '_blank');
     return pdfUrl;
   } catch(e) {
-    console.warn('Error generando PDF:', e);
+    toast('Error al generar PDF: ' + e.message, 'err');
+    if (btn) { btn.disabled = false; btn.textContent = txtOrig; }
     return null;
   }
 }
@@ -252,11 +314,18 @@ async function guardarNuevaCotizacion(conPdf = false) {
       marca:             document.getElementById('cn-marca')?.value.trim() || '',
       modelo:            document.getElementById('cn-linea')?.value.trim() || '',
       año:               document.getElementById('cn-ano')?.value.trim() || '',
+      color:             document.getElementById('cn-color')?.value.trim() || '',
+      vin:               document.getElementById('cn-vin')?.value.trim().toUpperCase() || '',
+      kilometraje:       document.getElementById('cn-km')?.value.trim() || '',
       nombre_cliente:    nombre,
       cedula_cliente:    document.getElementById('cn-cedula')?.value.trim() || '',
+      telefono_cliente:  document.getElementById('cn-celular')?.value.trim() || '',
+      correo_cliente:    document.getElementById('cn-correo')?.value.trim() || '',
       repuestos:         JSON.stringify(repItems),
+      mano_obra_items:   JSON.stringify(moItems),
       total_repuestos:   totalRep,
       mano_obra:         totalMo,
+      iva:               iva,
       total_general:     totalFinal,
       estado:            'pendiente'
     };
@@ -334,7 +403,7 @@ function renderCotizaciones(data) {
     }
     const tienOrden = c.orden_id != null;
     return `<div class="cot-card">
-      <div class="cot-card-top">
+      <div class="cot-card-top" onclick="abrirDetalleCotizacion(${c.id})" style="cursor:pointer">
         <div>
           <div class="cot-placa">${c.placa || '—'}</div>
           <div class="cot-codigo">${c.codigo_cotizacion || '—'}</div>
@@ -342,25 +411,175 @@ function renderCotizaciones(data) {
         </div>
         <span class="${badgeCls}">${badgeTxt}</span>
       </div>
-      <div class="cot-card-mid">
+      <div class="cot-card-mid" onclick="abrirDetalleCotizacion(${c.id})" style="cursor:pointer">
         <div class="cot-chip"><strong>${c.fecha || formatFecha(c.created_at)}</strong></div>
         <div class="cot-chip">Tecnico: <strong>${c.tecnico || '—'}</strong></div>
         <div class="cot-chip"><strong>${[c.marca, c.modelo, c.año].filter(Boolean).join(' ') || '—'}</strong></div>
         <div class="cot-chip">Valor: <strong>${fmt(c.total_general)}</strong></div>
       </div>
       <div class="cot-card-bot">
-        ${c.url_pdf ? `<a href="${c.url_pdf}" target="_blank" class="btn btn-outline btn-sm" style="font-size:12px">Ver PDF</a>` : ''}
+        ${c.url_pdf
+          ? `<a href="${c.url_pdf}" target="_blank" class="btn btn-outline btn-sm" style="font-size:12px" onclick="event.stopPropagation()">📄 Ver PDF</a>
+             <button class="btn btn-ghost btn-sm" style="font-size:11px;opacity:.7" onclick="event.stopPropagation();generarPdfCotizacion(${c.id})" data-pdf="${c.id}">↺ Regen.</button>`
+          : `<button class="btn btn-outline btn-sm" style="font-size:12px" onclick="event.stopPropagation();generarPdfCotizacion(${c.id})" data-pdf="${c.id}">📄 Generar PDF</button>`
+        }
         ${estado === 'pendiente' ? `
-          <button class="btn btn-success btn-sm" onclick="aprobarCotizacion(${c.id})">Aprobar → Crear Orden</button>
-          <button class="btn btn-danger btn-sm" onclick="rechazarCotizacion(${c.id})">Rechazar</button>
+          <button class="btn btn-success btn-sm" onclick="event.stopPropagation();aprobarCotizacion(${c.id})">Aprobar → Crear Orden</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();rechazarCotizacion(${c.id})">Rechazar</button>
         ` : ''}
         ${estado === 'aprobada' && !tienOrden ? `
-          <button class="btn btn-primary btn-sm" onclick="convertirEnOrden(${c.id})">+ Crear orden desde esta</button>
+          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();convertirEnOrden(${c.id})">+ Crear orden desde esta</button>
         ` : ''}
         ${tienOrden ? `<span style="font-size:12px;color:var(--verde);font-weight:600">✓ Orden creada</span>` : ''}
       </div>
     </div>`;
   }).join('');
+}
+
+// ─── MODAL DETALLE COTIZACIÓN ─────────────────────────────
+
+function cerrarModalCotizacion() {
+  const m = document.getElementById('modal-cot-detalle');
+  if (m) m.classList.remove('show');
+}
+
+async function abrirDetalleCotizacion(cotId) {
+  // Crear modal si no existe
+  let modal = document.getElementById('modal-cot-detalle');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-cot-detalle';
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="modal" style="max-width:680px;max-height:90vh;display:flex;flex-direction:column">
+        <div class="modal-header">
+          <h2 id="mcot-titulo">Cotización</h2>
+          <button class="btn btn-ghost btn-sm" onclick="cerrarModalCotizacion()">✕</button>
+        </div>
+        <div class="modal-body" id="mcot-body" style="overflow-y:auto;flex:1"><div class="loading-state">Cargando...</div></div>
+        <div class="modal-footer" id="mcot-footer"></div>
+      </div>`;
+    modal.addEventListener('click', e => { if (e.target === modal) cerrarModalCotizacion(); });
+    document.body.appendChild(modal);
+  }
+  modal.classList.add('show');
+  document.getElementById('mcot-body').innerHTML = '<div class="loading-state">Cargando...</div>';
+  document.getElementById('mcot-footer').innerHTML = '';
+
+  // Obtener cotización
+  let cot = todasCotizaciones.find(c => c.id === cotId);
+  if (!cot) {
+    const arr = await api(`/cotizaciones?id=eq.${cotId}&limit=1`).catch(() => []);
+    cot = arr?.[0];
+  }
+  if (!cot) {
+    document.getElementById('mcot-body').innerHTML = '<div class="empty-state">No se encontró la cotización.</div>';
+    return;
+  }
+
+  document.getElementById('mcot-titulo').textContent = `${cot.codigo_cotizacion || 'Cotización'} — ${cot.placa || ''}`;
+
+  const fmt = n => n != null ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(n) : '—';
+
+  // Parsear ítems
+  let repuestos = [];
+  let moItems   = [];
+  try { repuestos = typeof cot.repuestos       === 'string' ? JSON.parse(cot.repuestos)       : (cot.repuestos       || []); } catch(e) { repuestos = []; }
+  try { moItems   = typeof cot.mano_obra_items === 'string' ? JSON.parse(cot.mano_obra_items) : (cot.mano_obra_items || []); } catch(e) { moItems   = []; }
+
+  const filaItem = it => `
+    <tr>
+      <td style="padding:6px 8px;text-align:center">${it.cantidad ?? '—'}</td>
+      <td style="padding:6px 8px">${escapeHtml(it.descripcion || '—')}</td>
+      <td style="padding:6px 8px;text-align:right">${fmt(it.valor_unitario)}</td>
+      <td style="padding:6px 8px;text-align:center">${it.descuento_pct ?? 0}%</td>
+      <td style="padding:6px 8px;text-align:right;font-weight:600">${fmt(it.total)}</td>
+    </tr>`;
+
+  const tablaItems = (items, vacia) => {
+    if (!items.length) return `<p style="font-size:13px;color:var(--gris-mid);padding:8px 0">${vacia}</p>`;
+    return `<table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:var(--gris-bg);font-size:11px;text-transform:uppercase;color:var(--gris-mid)">
+        <th style="padding:6px 8px;text-align:center">Cant.</th>
+        <th style="padding:6px 8px;text-align:left">Descripción</th>
+        <th style="padding:6px 8px;text-align:right">Vr. Unit.</th>
+        <th style="padding:6px 8px;text-align:center">Dcto.</th>
+        <th style="padding:6px 8px;text-align:right">Total</th>
+      </tr></thead>
+      <tbody>${items.map(filaItem).join('')}</tbody>
+    </table>`;
+  };
+
+  const chip = (label, val) => val
+    ? `<div style="display:flex;flex-direction:column;gap:2px">
+         <div style="font-size:10px;color:var(--gris-mid);text-transform:uppercase;letter-spacing:.4px">${label}</div>
+         <div style="font-size:13px;font-weight:500">${escapeHtml(String(val))}</div>
+       </div>` : '';
+
+  document.getElementById('mcot-body').innerHTML = `
+    <!-- VEHÍCULO -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gris-mid);margin-bottom:10px">Vehículo</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;background:var(--gris-bg);border-radius:10px;padding:14px">
+        ${chip('Placa', cot.placa)}
+        ${chip('Marca', cot.marca)}
+        ${chip('Línea', cot.modelo)}
+        ${chip('Año', cot.año)}
+        ${chip('Color', cot.color)}
+        ${chip('VIN', cot.vin)}
+        ${chip('Km', cot.kilometraje)}
+      </div>
+    </div>
+    <!-- CLIENTE -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gris-mid);margin-bottom:10px">Cliente</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;background:var(--gris-bg);border-radius:10px;padding:14px">
+        ${chip('Nombre', cot.nombre_cliente)}
+        ${chip('Cédula/NIT', cot.cedula_cliente)}
+        ${chip('Teléfono', cot.telefono_cliente)}
+        ${chip('Correo', cot.correo_cliente)}
+        ${chip('Aseguradora', cot.aseguradora)}
+        ${chip('Tipo cliente', cot.tipo_cliente)}
+        ${chip('Nivel de daño', cot.nivel_dano)}
+      </div>
+    </div>
+    <!-- REPUESTOS -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gris-mid);margin-bottom:10px">Repuestos</div>
+      ${tablaItems(repuestos, 'Sin repuestos')}
+    </div>
+    <!-- MANO DE OBRA -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gris-mid);margin-bottom:10px">Mano de obra</div>
+      ${tablaItems(moItems, 'Sin mano de obra')}
+    </div>
+    <!-- TOTALES -->
+    <div style="background:var(--gris-bg);border-radius:10px;padding:14px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span>Repuestos</span><span>${fmt(cot.total_repuestos)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span>Mano de obra</span><span>${fmt(cot.mano_obra)}</span></div>
+      ${cot.iva ? `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span>IVA 19%</span><span>${fmt(cot.iva)}</span></div>` : ''}
+      <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;padding:8px 0 4px;border-top:1px solid var(--gris-borde);margin-top:4px"><span>Total</span><span>${fmt(cot.total_general)}</span></div>
+    </div>`;
+
+  // Botones del footer
+  const estado = cot.estado || 'pendiente';
+  const tienOrden = cot.orden_id != null;
+  const footerEl = document.getElementById('mcot-footer');
+  footerEl.innerHTML = `
+    <button class="btn btn-ghost" onclick="cerrarModalCotizacion()">Cerrar</button>
+    ${cot.url_pdf
+      ? `<a href="${cot.url_pdf}" target="_blank" class="btn btn-outline" style="text-decoration:none">📄 Ver PDF</a>
+         <button class="btn btn-ghost btn-sm" onclick="generarPdfCotizacion(${cot.id})" data-pdf="${cot.id}">↺ Regen. PDF</button>`
+      : `<button class="btn btn-outline" onclick="generarPdfCotizacion(${cot.id})" data-pdf="${cot.id}">📄 Generar PDF</button>`
+    }
+    ${estado === 'pendiente' ? `
+      <button class="btn btn-success" onclick="cerrarModalCotizacion();aprobarCotizacion(${cot.id})">✓ Aprobar → Crear Orden</button>
+      <button class="btn btn-danger btn-sm" onclick="cerrarModalCotizacion();rechazarCotizacion(${cot.id})">Rechazar</button>
+    ` : ''}
+    ${estado === 'aprobada' && !tienOrden ? `
+      <button class="btn btn-primary" onclick="cerrarModalCotizacion();convertirEnOrden(${cot.id})">+ Crear orden</button>
+    ` : ''}
+    ${tienOrden ? `<span style="font-size:13px;color:var(--verde);font-weight:600;padding:0 8px">✓ Orden ya creada</span>` : ''}`;
 }
 
 async function aprobarCotizacion(id) {
@@ -428,8 +647,6 @@ async function crearOrdenDesdeCotizacion(cot) {
     color:           cot.color           || null,
     propietario:     cot.nombre_cliente  || null,
     telefono:        cot.telefono_cliente || null,
-    cedula_cliente:  cot.cedula_cliente  || null,
-    correo_cliente:  cot.correo_cliente  || null,
     aseguradora:     cot.aseguradora     || null,
     tipo_cliente:    cot.tipo_cliente    || null,
     nivel_dano:      cot.nivel_dano      || null,
