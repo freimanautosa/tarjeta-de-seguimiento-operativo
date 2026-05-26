@@ -477,6 +477,16 @@ async function abrirOrden(id) {
                   : 'Sin pulmón activo'}
             </div>
           </div>
+          ${orden.aseguradora ? `
+          <div class="sidebar-card">
+            <div class="sidebar-card-header" style="background:#F5F3FF;color:#6D28D9;display:flex;align-items:center;gap:6px">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Seguimiento Aseguradora
+            </div>
+            <div class="sidebar-card-body">
+              ${typeof renderSeccionAseguradora === 'function' ? renderSeccionAseguradora(orden) : ''}
+            </div>
+          </div>` : ''}
           <div class="sidebar-card">
             <div class="sidebar-card-header">Cotización PDF</div>
             <div class="sidebar-card-body">
@@ -1922,6 +1932,10 @@ function montarJefe() {
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
         <span class="nav-label">Vehículos</span>
       </button>
+      <button class="nav-item" id="nav-aseguradoras" onclick="navJefe('aseguradoras')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span class="nav-label">Aseguradoras</span>
+      </button>
     `;
   }
 
@@ -1966,7 +1980,7 @@ function montarJefe() {
 
 function navJefe(pag) {
   // Actualizar clases active en sidebar y bottom nav
-  const pages = ['ordenes', 'nueva', 'dashboard', 'cotizaciones', 'calendario', 'mecanicos', 'repuestos', 'reportes', 'flotillas'];
+  const pages = ['ordenes', 'nueva', 'dashboard', 'cotizaciones', 'calendario', 'mecanicos', 'repuestos', 'reportes', 'flotillas', 'aseguradoras'];
   pages.forEach(p => {
     const navBtn = document.getElementById('nav-' + p);
     const bnavBtn = document.getElementById('bnav-' + p);
@@ -2032,6 +2046,11 @@ function navJefe(pag) {
       pagId = 'pag-flotillas';
       titulo = 'Flotillas';
       setTimeout(() => { if (typeof montarFlotillas === 'function') montarFlotillas(); }, 50);
+      break;
+    case 'aseguradoras':
+      pagId = 'pag-aseguradoras';
+      titulo = 'Aseguradoras';
+      setTimeout(() => { if (typeof montarAseguradoras === 'function') montarAseguradoras(); }, 50);
       break;
     default:
       pagId = 'pag-ordenes';
