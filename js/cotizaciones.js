@@ -229,24 +229,36 @@ async function guardarNuevaCotizacion(conPdf = false) {
   if (btnPdf)     { btnPdf.disabled = true; }
 
   try {
-    const conIva      = document.getElementById('cn-iva-check')?.checked || false;
-    const repItems    = _cotLeerItems('cot-rep-tbody');
-    const moItems     = _cotLeerItems('cot-mo-tbody');
-    const subtotalRep = repItems.reduce((s, i) => s + i.total, 0);
-    const subtotalMo  = moItems.reduce((s, i)  => s + i.total, 0);
-    const total       = subtotalRep + subtotalMo;
-    const iva         = conIva ? Math.round(total * 0.19) : 0;
-    const totalFinal  = total + iva;
+    const repItems   = _cotLeerItems('cot-rep-tbody');
+    const moItems    = _cotLeerItems('cot-mo-tbody');
+    const totalRep   = repItems.reduce((s, i) => s + i.total, 0);
+    const totalMo    = moItems.reduce((s, i)  => s + i.total, 0);
+    const conIva     = document.getElementById('cn-iva-check')?.checked || false;
+    const subtotal   = totalRep + totalMo;
+    const iva        = conIva ? Math.round(subtotal * 0.19) : 0;
+    const totalFinal = subtotal + iva;
+
+    // Código único tipo COT-2026-000001
+    const codigoCot = `COT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
+    const now  = new Date();
+    const fecha = now.toLocaleDateString('es-CO');
+    const hora  = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
 
     const body = {
-      placa:          document.getElementById('cn-placa')?.value.trim().toUpperCase() || null,
-      marca:          document.getElementById('cn-marca')?.value.trim() || null,
-      modelo:         document.getElementById('cn-linea')?.value.trim() || null,
-      año:            parseInt(document.getElementById('cn-ano')?.value) || null,
-      nombre_cliente: nombre,
-      cedula_cliente: document.getElementById('cn-cedula')?.value.trim() || null,
-      total_general:  totalFinal,
-      estado:         'pendiente'
+      codigo_cotizacion: codigoCot,
+      fecha:             fecha,
+      hora:              hora,
+      placa:             document.getElementById('cn-placa')?.value.trim().toUpperCase() || '',
+      marca:             document.getElementById('cn-marca')?.value.trim() || '',
+      modelo:            document.getElementById('cn-linea')?.value.trim() || '',
+      año:               document.getElementById('cn-ano')?.value.trim() || '',
+      nombre_cliente:    nombre,
+      cedula_cliente:    document.getElementById('cn-cedula')?.value.trim() || '',
+      repuestos:         JSON.stringify(repItems),
+      total_repuestos:   totalRep,
+      mano_obra:         totalMo,
+      total_general:     totalFinal,
+      estado:            'pendiente'
     };
 
     const res = await api('/cotizaciones?select=id', 'POST', body, { Prefer: 'return=representation' });
@@ -411,8 +423,8 @@ async function crearOrdenDesdeCotizacion(cot) {
   const body = {
     placa:           cot.placa           || null,
     marca:           cot.marca           || null,
-    linea:           cot.linea           || cot.modelo || null,
-    modelo:          cot.año             || cot.modelo || null,
+    linea:           cot.modelo          || null,
+    modelo:          cot.año             || null,
     color:           cot.color           || null,
     propietario:     cot.nombre_cliente  || null,
     telefono:        cot.telefono_cliente || null,
