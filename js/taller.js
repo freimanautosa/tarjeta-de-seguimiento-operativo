@@ -174,10 +174,10 @@ function montarTaller() {
         font-size:.62vw;font-weight:700;white-space:nowrap;border:1px solid transparent;
       }
       .chip-approved { background:rgba(34,197,94,.15);color:#4ADE80;border-color:rgba(34,197,94,.35); }
-      .chip-done     { background:rgba(34,197,94,.07);color:rgba(74,222,128,.55);border-color:rgba(34,197,94,.18); }
+      .chip-done     { background:rgba(34,197,94,.09);color:rgba(74,222,128,.88);border-color:rgba(34,197,94,.25); }
       .chip-active   { background:rgba(245,158,11,.15);color:#FCD34D;border-color:rgba(245,158,11,.35); }
-      .chip-waiting  { background:rgba(245,158,11,.10);color:rgba(252,211,77,.75);border-color:rgba(245,158,11,.28); }
-      .chip-pending  { background:rgba(255,255,255,.06);color:rgba(255,255,255,.55);border-color:rgba(255,255,255,.18); }
+      .chip-waiting  { background:rgba(245,158,11,.10);color:rgba(252,211,77,.85);border-color:rgba(245,158,11,.28); }
+      .chip-pending  { background:rgba(255,255,255,.08);color:rgba(255,255,255,.88);border-color:rgba(255,255,255,.25); }
       .chip-dot { width:.45vw;height:.45vw;border-radius:50%;flex-shrink:0; }
       .chip-dot.approved { background:#22C55E; }
       .chip-dot.done     { background:rgba(34,197,94,.45); }
@@ -574,9 +574,10 @@ async function cargarPantallaTaller() {
     const aprobadas = new Set(aprobacionesTodas.map(a => a.etapa_id));
 
     // ── Clasificar órdenes ───────────────────────────────────
+    // Una orden está "lista" solo cuando TODAS sus etapas tienen fin Y calidad aprobada
     const ordenesListas = ordenesActivas.filter(o => {
       const ets = etapasTodas.filter(e => e.orden_id === o.id);
-      return ets.length > 0 && ets.every(e => e.fin);
+      return ets.length > 0 && ets.every(e => e.fin) && ets.every(e => aprobadas.has(e.id));
     });
     const listasIds = new Set(ordenesListas.map(o => o.id));
 

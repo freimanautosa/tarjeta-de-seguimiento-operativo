@@ -127,6 +127,10 @@ async function cargarOrdenes() {
           <div class="srv-chips">${chips || '<span style="font-size:12px;color:var(--gris-mid)">Sin etapas</span>'}</div>
           <div class="orden-fecha">${formatFecha(o.creado_en)}${o.fecha_entrega_1 ? '<br>Entrega: '+formatFecha(o.fecha_entrega_1) : ''}</div>
         </div>
+        ${total === 0 ? `<div style="margin:6px 0 2px;padding:5px 10px;background:#FEF3C7;border-radius:5px;font-size:11px;font-weight:600;color:#92400E;display:flex;align-items:center;gap:5px">
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Sin etapas asignadas — pendiente configurar servicios
+        </div>` : ''}
       </div>`;
     }).join('');
   } catch(e) { lista.innerHTML = `<div class="empty-state">Error cargando órdenes: ${e.message}</div>`; }
@@ -1903,7 +1907,7 @@ function montarJefe() {
       </button>
       <button class="nav-item" id="nav-mecanicos" onclick="navJefe('mecanicos')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-        <span class="nav-label">Mecánicos</span>
+        <span class="nav-label">Operarios</span>
       </button>
       <button class="nav-item" id="nav-repuestos" onclick="navJefe('repuestos')" style="position:relative">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
@@ -2011,7 +2015,7 @@ function navJefe(pag) {
       break;
     case 'mecanicos':
       pagId = 'pag-mecanicos';
-      titulo = 'Mecánicos';
+      titulo = 'Operarios';
       cargarMecanicosVista();
       break;
     case 'repuestos':
@@ -2166,8 +2170,14 @@ async function calCambiarMes(delta) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// VISTA MECÁNICOS
+// VISTA OPERARIOS
 // ═══════════════════════════════════════════════════════════
+const ROL_LABEL = {
+  mecanico: 'Mecánico', pintor: 'Pintor', latonero: 'Latonero',
+  detailing: 'Detailing', tot: 'T.O.T.', repuestos: 'Repuestos',
+  taller: 'Pantalla Taller', 'Asesor Previsora': 'Asesor Previsora'
+};
+
 async function cargarMecanicosVista() {
   const cont = document.getElementById('pag-mecanicos');
   if (!cont) return;
@@ -2184,11 +2194,16 @@ async function cargarMecanicosVista() {
       : [];
 
     const srvColor = { latoneria:'#DC2626', pintura:'#D97706', mecanica:'#2563EB', adicionales:'#059669' };
+    const esGerente = sesion?.perfil === 'gerente';
 
     cont.innerHTML = `
-      ${sesion?.perfil === 'gerente' ? `
-      <div style="margin-bottom:12px">
-        <button class="btn btn-ghost btn-sm" onclick="abrirCambiarPassJefe()" style="color:var(--azul)">
+      ${esGerente ? `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="abrirModalOperario(null)" style="display:flex;align-items:center;gap:6px">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nuevo Operario
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="abrirCambiarPassJefe()" style="color:var(--azul);display:flex;align-items:center;gap:6px">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           Contraseña del Jefe
         </button>
@@ -2218,11 +2233,20 @@ async function cargarMecanicosVista() {
               <div style="width:36px;height:36px;border-radius:50%;background:var(--azul-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--azul);flex-shrink:0">${escapeHtml(m.nombre.charAt(0).toUpperCase())}</div>
               <div style="flex:1;min-width:0">
                 <div style="font-weight:600;font-size:14px">${escapeHtml(m.nombre)}</div>
-                <div style="font-size:11px;color:var(--gris-mid)">${escapeHtml(m.rol)||'Técnico'} · ${etapas.length} etapa${etapas.length!==1?'s':''} activa${etapas.length!==1?'s':''}</div>
+                <div style="font-size:11px;color:var(--gris-mid)">${escapeHtml(ROL_LABEL[m.rol] || m.rol || 'Técnico')} · ${etapas.length} etapa${etapas.length!==1?'s':''} activa${etapas.length!==1?'s':''}</div>
               </div>
-              <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirCambiarPassMecanico(${m.id},'${escapeHtml(m.nombre)}')" title="Cambiar contraseña">
-                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              </button>
+              <div style="display:flex;gap:4px;flex-shrink:0">
+                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirCambiarPassMecanico(${m.id},'${escapeHtml(m.nombre)}')" title="Cambiar contraseña">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </button>
+                ${esGerente ? `
+                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirModalOperario(${JSON.stringify(m).replace(/"/g,'&quot;')})" title="Editar">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="btn btn-ghost btn-xs" style="color:var(--rojo)" onclick="event.stopPropagation();eliminarOperario(${m.id},'${escapeHtml(m.nombre)}')" title="Desactivar">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </button>` : ''}
+              </div>
             </div>
             <div style="padding:0 16px 8px">${etapsHtml}</div>
           </div>`;
@@ -2232,6 +2256,130 @@ async function cargarMecanicosVista() {
   } catch(e) {
     cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
   }
+}
+
+// ─── CRUD OPERARIOS (solo gerente) ───────────────────────
+
+function abrirModalOperario(mec) {
+  // mec = null → crear nuevo, mec = objeto → editar
+  document.getElementById('modal-operario')?.remove();
+  const esEditar = mec !== null && mec !== undefined;
+  const roles = [
+    { val:'mecanico',  label:'Mecánico'  },
+    { val:'pintor',    label:'Pintor'    },
+    { val:'latonero',  label:'Latonero'  },
+    { val:'detailing', label:'Detailing' },
+    { val:'tot',       label:'T.O.T.'   },
+    { val:'repuestos', label:'Repuestos' }
+  ];
+  const m = document.createElement('div');
+  m.id = 'modal-operario';
+  m.className = 'modal-overlay show';
+  m.innerHTML = `
+    <div class="modal-card" style="max-width:420px">
+      <div class="modal-header">
+        <div class="modal-titulo">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          ${esEditar ? 'Editar operario' : 'Nuevo operario'}
+        </div>
+        <button class="modal-cerrar" onclick="document.getElementById('modal-operario').remove()">✕</button>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div class="field">
+          <label>Nombre completo</label>
+          <input id="op-nombre" type="text" placeholder="Nombre del operario" value="${esEditar ? escapeHtml(mec.nombre||'') : ''}">
+        </div>
+        <div class="field">
+          <label>Cédula</label>
+          <input id="op-cedula" type="text" placeholder="Número de cédula"
+            value="${esEditar ? escapeHtml(mec.cedula||'') : ''}"
+            ${esEditar ? 'readonly style="background:var(--gris-bg);color:var(--gris-mid)"' : ''}>
+          ${esEditar ? '<div style="font-size:11px;color:var(--gris-mid);margin-top:3px">La cédula no se puede cambiar. Usa el candado 🔒 para cambiar contraseña.</div>' : ''}
+        </div>
+        <div class="field">
+          <label>Perfil / Rol</label>
+          <select id="op-rol">
+            ${roles.map(r => `<option value="${r.val}" ${esEditar && mec.rol===r.val ? 'selected':''}>${r.label}</option>`).join('')}
+          </select>
+        </div>
+        ${!esEditar ? `
+        <div class="field">
+          <label>Contraseña inicial</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="op-pass" type="password" placeholder="Dejar vacío = usar cédula como clave" style="flex:1">
+            <button type="button" onclick="const i=document.getElementById('op-pass');i.type=i.type==='password'?'text':'password'" style="flex-shrink:0;width:38px;height:38px;border:1.5px solid var(--gris-borde);border-radius:6px;background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--gris-mid)">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div style="font-size:11px;color:var(--gris-mid);margin-top:3px">Si lo dejas vacío, la cédula será la contraseña inicial.</div>
+        </div>` : ''}
+        <div id="op-error" style="display:none;background:var(--rojo-bg);color:var(--rojo);border-radius:6px;padding:10px 14px;font-size:13px"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-ghost" onclick="document.getElementById('modal-operario').remove()">Cancelar</button>
+          <button class="btn btn-primary" id="op-btn-save" onclick="guardarOperario(${esEditar ? mec.id : 'null'}, '${esEditar ? escapeHtml(mec.cedula||'') : ''}')">
+            ${esEditar ? 'Guardar cambios' : 'Crear operario'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
+  setTimeout(() => document.getElementById('op-nombre')?.focus(), 80);
+}
+
+async function guardarOperario(mecId, cedulaOriginal) {
+  const nombre = document.getElementById('op-nombre')?.value.trim();
+  const cedula = mecId ? cedulaOriginal : document.getElementById('op-cedula')?.value.trim();
+  const rol    = document.getElementById('op-rol')?.value;
+  const pass   = document.getElementById('op-pass')?.value || '';
+  const errEl  = document.getElementById('op-error');
+  const showErr = msg => { errEl.textContent = msg; errEl.style.display = 'block'; };
+  errEl.style.display = 'none';
+
+  if (!nombre) { showErr('Ingresa el nombre del operario.'); return; }
+  if (!cedula) { showErr('Ingresa la cédula.'); return; }
+  if (!mecId && pass && pass.length < 6) { showErr('La contraseña debe tener al menos 6 caracteres.'); return; }
+
+  const btn = document.getElementById('op-btn-save');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+
+  try {
+    if (mecId) {
+      // Editar: solo actualiza nombre y rol
+      await api(`/mecanicos?id=eq.${mecId}`, 'PATCH', { nombre, rol });
+      toast(`${nombre} actualizado ✓`);
+    } else {
+      // Crear: primero registrar en Supabase Auth
+      const signupPass = pass.length >= 6 ? pass : cedula;
+      const signupRes = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
+        body: JSON.stringify({ email: `${cedula}@freimanautos.com`, password: signupPass })
+      });
+      const signupData = await signupRes.json().catch(() => ({}));
+      if (!signupRes.ok && signupData?.msg !== 'User already registered') {
+        console.warn('signup result:', signupData);
+        // Continúa igual — puede que ya exista en auth pero no en mecanicos
+      }
+      // Insertar en tabla mecanicos
+      await api('/mecanicos', 'POST', { nombre, cedula, rol, activo: true }, { Prefer: 'return=minimal' });
+      toast(`${nombre} creado ✓ — contraseña inicial: ${signupPass === cedula ? 'su cédula' : 'la que configuraste'}`);
+    }
+    document.getElementById('modal-operario')?.remove();
+    cargarMecanicosVista();
+  } catch(e) {
+    showErr('Error: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = mecId ? 'Guardar cambios' : 'Crear operario'; }
+  }
+}
+
+async function eliminarOperario(mecId, nombre) {
+  if (!confirm(`¿Desactivar a ${nombre}?\n\nYa no podrá ingresar al sistema ni aparecerá en la lista de operarios.\nPuedes reactivarlo desde Supabase si es necesario.`)) return;
+  try {
+    await api(`/mecanicos?id=eq.${mecId}`, 'PATCH', { activo: false });
+    toast(`${nombre} desactivado ✓`);
+    cargarMecanicosVista();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
 // ═══════════════════════════════════════════════════════════
 // GESTIÓN DE CONTRASEÑAS (jefe/gerente)
