@@ -1534,6 +1534,33 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .badge-cot-aprobada  { background:var(--verde-bg); color:var(--verde); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
 .badge-cot-rechazada { background:var(--rojo-bg); color:var(--rojo); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
 
+/* ── NUEVA COTIZACIÓN — TABLA DE ITEMS ─────────────────── */
+.cot-table-wrap { overflow-x:auto; border-radius:8px; border:1px solid var(--gris-borde); margin-bottom:2px; }
+.cot-items-table { width:100%; border-collapse:collapse; font-size:13px; min-width:520px; }
+.cot-items-table th { padding:8px 10px; text-align:left; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--gris-mid); background:var(--gris-bg); border-bottom:1px solid var(--gris-borde); white-space:nowrap; }
+.cot-items-table td { padding:5px 6px; border-bottom:1px solid var(--gris-borde); vertical-align:middle; }
+.cot-item-row:last-child td { border-bottom:none; }
+.cot-item-row:hover { background:var(--gris-bg); }
+
+.cot-inp { width:100%; padding:5px 8px; border:1px solid transparent; border-radius:5px; font-size:13px; background:transparent; color:var(--texto); transition:border-color .15s, background .15s; }
+.cot-inp:hover { border-color:var(--gris-borde); background:white; }
+.cot-inp:focus { outline:none; border-color:var(--azul-mid); background:white; box-shadow:0 0 0 2px rgba(42,82,152,.12); }
+.cot-inp-num { width:56px; text-align:center; font-family:'DM Mono',monospace; }
+.cot-inp-dto { width:52px; text-align:center; font-family:'DM Mono',monospace; }
+.cot-inp-val { font-family:'DM Mono',monospace; }
+.cot-inp-desc { min-width:160px; font-family:'DM Sans',sans-serif; }
+.cot-row-total { font-weight:600; font-family:'DM Mono',monospace; font-size:13px; white-space:nowrap; text-align:right; padding-right:10px; color:var(--azul); }
+
+.btn-del-row { width:26px; height:26px; border-radius:5px; background:none; border:1px solid var(--gris-borde); color:var(--gris-mid); font-size:17px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; flex-shrink:0; }
+.btn-del-row:hover { background:var(--rojo-bg); border-color:var(--rojo); color:var(--rojo); }
+
+/* ── RESUMEN DE TOTALES ─────────────────────────────────── */
+.cot-resumen { background:var(--gris-bg); border-radius:10px; border:1px solid var(--gris-borde); padding:16px 20px; }
+.cot-res-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; font-size:14px; border-top:1px solid var(--gris-borde); }
+.cot-res-row:first-child { border-top:none; }
+.cot-res-total { font-weight:700; font-size:16px; color:var(--azul); }
+.cot-res-total span:last-child { font-family:'DM Mono',monospace; }
+
 
 
 
@@ -1953,9 +1980,9 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   color: var(--azul);
 }
 .tipo-cliente-btn.selected {
-  border-color: var(--azul-mid);
-  background: var(--azul-light);
-  color: var(--azul);
+  border-color: var(--azul) !important;
+  background: var(--azul-light) !important;
+  color: var(--azul) !important;
   box-shadow: 0 0 0 3px rgba(42,82,152,0.12);
 }
 
@@ -2099,9 +2126,9 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   color: var(--azul);
 }
 .tipo-cliente-btn.selected {
-  border-color: var(--azul-mid);
-  background: var(--azul-light);
-  color: var(--azul);
+  border-color: var(--azul) !important;
+  background: var(--azul-light) !important;
+  color: var(--azul) !important;
   box-shadow: 0 0 0 3px rgba(42,82,152,0.12);
 }
 

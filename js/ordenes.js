@@ -811,7 +811,7 @@ async function asignarMecanico(eid, k) {
 // NUEVA ORDEN
 // ============================================================
 function resetNuevaOrden() {
-  const fields = ['n-placa', 'n-marca', 'n-linea', 'n-modelo', 'n-color', 'n-propietario', 'n-telefono', 'n-km', 'n-fecha1', 'n-fecha2', 'n-inv-obs', 'n-cedula-cliente', 'n-vin', 'n-correo-cliente'];
+  const fields = ['n-placa', 'n-marca', 'n-linea', 'n-modelo', 'n-color', 'n-propietario', 'n-telefono', 'n-km', 'n-fecha1', 'n-fecha2', 'n-inv-obs', 'n-cedula-cliente', 'n-vin', 'n-correo-cliente', 'n-descripcion-general', 'n-fecha-programada'];
   fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const aseguradora = document.getElementById('n-aseguradora');
   const dano = document.getElementById('n-dano');
@@ -1203,7 +1203,24 @@ async function recargarListasNuevaOrden() {
 
 async function crearOrden() {
   const placa = document.getElementById('n-placa')?.value.trim().toUpperCase();
-  if (!placa) { toast('La placa es obligatoria', 'err'); return; }
+  if (!placa) { toast('La placa es obligatoria', 'err'); document.getElementById('n-placa')?.focus(); return; }
+
+  // Tipo de cliente OBLIGATORIO
+  const tipoClienteVal = document.getElementById('n-tipo-cliente')?.value;
+  if (!tipoClienteVal) {
+    const errEl = document.getElementById('n-tipo-cliente-error');
+    if (errEl) errEl.style.display = 'block';
+    document.getElementById('tipo-cliente-grid')?.scrollIntoView({ behavior:'smooth', block:'center' });
+    toast('Selecciona el tipo de cliente', 'err');
+    return;
+  }
+  const errElTc = document.getElementById('n-tipo-cliente-error');
+  if (errElTc) errElTc.style.display = 'none';
+
+  // KM OBLIGATORIO
+  const kmVal = document.getElementById('n-km')?.value;
+  if (!kmVal || parseInt(kmVal) < 0) { toast('El kilometraje es obligatorio', 'err'); document.getElementById('n-km')?.focus(); return; }
+
   const cedulaCliente = document.getElementById('n-cedula-cliente')?.value.trim() || '';
   const vin = document.getElementById('n-vin')?.value.trim().toUpperCase() || null;
   const correoCliente = document.getElementById('n-correo-cliente')?.value.trim() || null;
@@ -1266,7 +1283,8 @@ async function crearOrden() {
     })(),
     cliente_id: clienteId,
     vin: vin || null,
-    correo_cliente: correoCliente || null
+    correo_cliente: correoCliente || null,
+    descripcion_general: document.getElementById('n-descripcion-general')?.value.trim() || null
   };
 
   try {

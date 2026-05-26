@@ -146,257 +146,254 @@
         <div id="detalle-contenido"></div>
       </div>
       <div class="pagina" id="pag-nueva">
-        <div class="card" style="padding:28px">
+        <div class="card" style="padding:16px 18px">
 
-          <div class="form-section">
-            <div class="form-section-titulo">Identificación del vehículo</div>
+          <!-- ══ FILA SUPERIOR: Placa + Tipo cliente + KM ══ -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 120px;gap:10px;margin-bottom:4px">
 
-            <!-- Autocomplete de placa -->
-            <div style="display:flex;gap:8px">
-              <div class="field" style="flex:1;position:relative">
-                <label>Placa *</label>
-                <div style="position:relative">
-                  <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--gris-mid);pointer-events:none" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  <input id="n-placa" placeholder="LUN954"
-                    style="text-transform:uppercase;font-family:'DM Mono',monospace;letter-spacing:2px;padding-left:34px"
-                    oninput="this.value=this.value.toUpperCase();autocompletarPlaca(this.value)"
-                    onblur="setTimeout(()=>cerrarSugerenciasPlaca(),200)"
-                    onkeydown="navSugerenciasPlaca(event)">
-                </div>
-                <div id="placa-sugerencias" class="placa-sugerencias" style="display:none"></div>
+            <!-- Placa -->
+            <div class="field" style="margin:0;position:relative">
+              <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gris-mid)">Placa *</label>
+              <div style="position:relative">
+                <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gris-mid);pointer-events:none" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input id="n-placa" placeholder="GKX673"
+                  style="text-transform:uppercase;font-family:'DM Mono',monospace;letter-spacing:2px;padding-left:30px;font-size:15px;font-weight:700"
+                  oninput="this.value=this.value.toUpperCase();autocompletarPlaca(this.value)"
+                  onblur="setTimeout(()=>cerrarSugerenciasPlaca(),200)"
+                  onkeydown="navSugerenciasPlaca(event)">
               </div>
-              <div style="display:flex;align-items:flex-end;gap:6px">
-                <button class="btn btn-ghost" onclick="buscarPorPlaca()" style="height:41px;display:flex;align-items:center;gap:5px">
-                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  Buscar
+              <div id="placa-sugerencias" class="placa-sugerencias" style="display:none"></div>
+            </div>
+
+            <!-- Tipo cliente OBLIGATORIO -->
+            <div class="field" style="margin:0">
+              <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gris-mid)">Tipo de cliente <span style="color:#DC2626">*</span></label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:2px" id="tipo-cliente-grid">
+                <button type="button" id="tcb-particular" class="tipo-cliente-btn" onclick="selTipoCliente(this,'particular')" style="padding:7px 6px;border:1.5px solid var(--gris-borde);border-radius:8px;background:white;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;color:var(--gris-mid);transition:all .15s">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Particular
                 </button>
-                <!-- OCR tarjeta de propiedad -->
-                <label class="btn btn-ghost" style="height:41px;display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;font-size:13px" title="Leer tarjeta de propiedad">
-                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                  Tarjeta
-                  <input type="file" id="ocr-tarjeta-input" accept="image/*" style="display:none" onchange="ocrTarjetaPropiedad(this)">
-                </label>
+                <button type="button" id="tcb-aseguradora" class="tipo-cliente-btn" onclick="selTipoCliente(this,'aseguradora')" style="padding:7px 6px;border:1.5px solid var(--gris-borde);border-radius:8px;background:white;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;color:var(--gris-mid);transition:all .15s">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Aseguradora
+                </button>
+                <button type="button" id="tcb-flotilla" class="tipo-cliente-btn" onclick="selTipoCliente(this,'flotilla')" style="padding:7px 6px;border:1.5px solid var(--gris-borde);border-radius:8px;background:white;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;color:var(--gris-mid);transition:all .15s">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Flotilla
+                </button>
+                <button type="button" id="tcb-empresa" class="tipo-cliente-btn" onclick="selTipoCliente(this,'empresa')" style="padding:7px 6px;border:1.5px solid var(--gris-borde);border-radius:8px;background:white;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;color:var(--gris-mid);transition:all .15s">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Empresa
+                </button>
               </div>
+              <div id="n-tipo-cliente-error" style="display:none;font-size:10px;color:#DC2626;margin-top:3px;font-weight:600">Selecciona el tipo de cliente</div>
+              <input type="hidden" id="n-tipo-cliente">
             </div>
 
-            <!-- Estado OCR -->
-            <div id="ocr-estado" style="display:none;margin-top:8px;font-size:12px;padding:8px 12px;border-radius:6px;border:1px solid var(--gris-borde);background:var(--gris-bg)"></div>
-
-            <div id="placa-resultado" class="placa-resultado"></div>
-            <div id="historial-previo" class="historial-previo">
-              <div class="seccion-titulo" style="margin-bottom:8px">Historial con esta placa</div>
-              <div id="historial-lista"></div>
-            </div>
-          </div>
-
-
-
-          <!-- ═══ TIPO DE CLIENTE ═══ -->
-          <div class="form-section">
-            <div class="form-section-titulo">Tipo de cliente</div>
-            <div class="tipo-cliente-tabs">
-              <div class="tipo-cliente-tab" id="tcb-particular" onclick="selTipoCliente(this,'particular')">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Particular
-              </div>
-              <div class="tipo-cliente-tab" id="tcb-aseguradora" onclick="selTipoCliente(this,'aseguradora')">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                Aseguradora
-              </div>
-              <div class="tipo-cliente-tab" id="tcb-flotilla" onclick="selTipoCliente(this,'flotilla')">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                Flotilla
-              </div>
-              <div class="tipo-cliente-tab" id="tcb-empresa" onclick="selTipoCliente(this,'empresa')">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                Empresa
-              </div>
-            </div>
-            <input type="hidden" id="n-tipo-cliente">
-
-            <!-- PARTICULAR -->
-            <div id="n-wrap-particular" style="display:none">
-              <div class="grid-2">
-                <div class="field full"><label>Nombre completo *</label><input id="n-propietario" placeholder="Nombre completo"></div>
-                <div class="field"><label>Teléfono</label><input id="n-telefono" type="tel" placeholder="3134753389"></div>
-                <div class="field"><label>Cédula</label><input id="n-cedula-cliente" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')"></div>
-                <div class="field"><label>Dirección</label><input id="n-direccion" placeholder="Cra 10 #20-30"></div>
-                <div class="field full"><label>Correo electrónico</label><input id="n-correo-cliente" type="email" placeholder="correo@ejemplo.com"></div>
-              </div>
-            </div>
-
-            <!-- ASEGURADORA -->
-            <div id="n-wrap-aseg" style="display:none">
-              <div class="grid-2">
-                <div class="field">
-                  <label>Aseguradora *</label>
-                  <div style="display:flex;gap:6px">
-                    <select id="n-aseguradora-sel" style="flex:1" onchange="toggleNuevaAseg(this.value)"><option value="">— Seleccionar —</option></select>
-                    <button class="btn btn-ghost btn-sm" onclick="agregarNuevaAsegNueva()" title="Agregar nueva">+</button>
-                  </div>
-                </div>
-                <div class="field"><label>Cliente que trae el vehículo *</label><input id="n-propietario-aseg" placeholder="Nombre completo"></div>
-                <div class="field"><label>Teléfono</label><input id="n-telefono-aseg" type="tel" placeholder="3001234567"></div>
-                <div class="field"><label>Cédula</label><input id="n-cedula-aseg" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')"></div>
-                <div class="field full"><label>Correo</label><input id="n-correo-aseg" type="email" placeholder="correo@ejemplo.com"></div>
-              </div>
-              <div id="n-wrap-aseg-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde);margin-top:8px">
-                <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nueva aseguradora</div>
-                <div class="grid-2">
-                  <div class="field"><label>Nombre</label><input id="n-aseg-nombre" placeholder="HDI Seguros, Sura..."></div>
-                  <div class="field"><label>NIT</label><input id="n-aseg-nit" placeholder="900123456-7"></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- FLOTILLA -->
-            <div id="n-wrap-flot" style="display:none">
-              <div class="field">
-                <label>Flotilla *</label>
-                <div style="display:flex;gap:6px">
-                  <select id="n-flotilla-sel" style="flex:1" onchange="toggleNuevaFlot(this.value)"><option value="">— Seleccionar —</option></select>
-                  <button class="btn btn-ghost btn-sm" onclick="agregarNuevaFlotNueva()" title="Agregar nueva">+</button>
-                </div>
-              </div>
-              <div id="n-wrap-flot-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde);margin-top:8px">
-                <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nueva flotilla</div>
-                <div class="grid-2">
-                  <div class="field"><label>Nombre</label><input id="n-flot-nombre" placeholder="Transportes XYZ S.A.S."></div>
-                  <div class="field"><label>NIT</label><input id="n-flot-nit" placeholder="900123456-7"></div>
-                  <div class="field" style="grid-column:1/-1"><label>Dirección</label><input id="n-flot-dir" placeholder="Cra 10 #20-30"></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- EMPRESA -->
-            <div id="n-wrap-empresa" style="display:none">
-              <div class="grid-2">
-                <div class="field">
-                  <label>Empresa *</label>
-                  <div style="display:flex;gap:6px">
-                    <select id="n-empresa-sel" style="flex:1" onchange="toggleNuevaEmpresa(this.value)"><option value="">— Seleccionar —</option></select>
-                    <button class="btn btn-ghost btn-sm" onclick="agregarNuevaEmpresaNueva()" title="Agregar nueva">+</button>
-                  </div>
-                </div>
-                <div class="field"><label>Teléfono empresa</label><input id="n-empresa-tel" type="tel" placeholder="6011234567"></div>
-              </div>
-              <div id="n-wrap-empresa-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:12px;border:1px solid var(--gris-borde);margin-top:8px">
-                <div style="font-size:11px;font-weight:600;color:var(--gris-mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Nueva empresa</div>
-                <div class="grid-2">
-                  <div class="field"><label>Razón social</label><input id="n-emp-nombre" placeholder="Empresa S.A.S."></div>
-                  <div class="field"><label>NIT</label><input id="n-emp-nit" placeholder="900123456-7"></div>
-                </div>
-              </div>
+            <!-- KM OBLIGATORIO -->
+            <div class="field" style="margin:0">
+              <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gris-mid)">KM <span style="color:#DC2626">*</span></label>
+              <input id="n-km" placeholder="45000" type="number" min="0" style="font-family:'DM Mono',monospace">
             </div>
           </div>
 
-          <!-- ═══ DATOS DEL VEHÍCULO ═══ -->
-          <div class="form-section">
-            <div class="form-section-titulo" style="display:flex;align-items:center;gap:8px">
-              <svg width="16" height="16" fill="none" stroke="var(--azul)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 16H9m10 0h3v-3.15a1 1 0 00-.84-.99L16 11l-2.7-3.6a1 1 0 00-.8-.4H5.24a2 2 0 00-1.8 1.1l-.8 1.63A6 6 0 002 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>
-              Datos del vehículo
+          <!-- OCR + búsqueda + resultado -->
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+            <button class="btn btn-ghost btn-sm" onclick="buscarPorPlaca()" style="display:flex;align-items:center;gap:4px;font-size:12px">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Buscar
+            </button>
+            <label class="btn btn-ghost btn-sm" style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px" title="Leer tarjeta de propiedad con cámara">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Tarjeta OCR
+              <input type="file" id="ocr-tarjeta-input" accept="image/*" style="display:none" onchange="ocrTarjetaPropiedad(this)">
+            </label>
+          </div>
+          <div id="ocr-estado" style="display:none;margin-bottom:8px;font-size:11px;padding:7px 10px;border-radius:6px;border:1px solid var(--gris-borde);background:var(--gris-bg)"></div>
+          <div id="placa-resultado" class="placa-resultado"></div>
+          <div id="historial-previo" class="historial-previo" style="margin-bottom:8px">
+            <div class="seccion-titulo" style="margin-bottom:6px;font-size:11px">Historial con esta placa</div>
+            <div id="historial-lista"></div>
+          </div>
+
+          <div style="height:1px;background:var(--gris-borde);margin:10px 0"></div>
+
+          <!-- ══ DATOS CLIENTE (según tipo) ══ -->
+          <div id="n-wrap-particular" style="display:none">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gris-mid);margin-bottom:8px">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;vertical-align:middle"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del cliente
             </div>
-            <div class="grid-2">
-              <div class="field"><label>Marca</label>
-                <div class="input-icon-wrap"><svg class="input-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg><input id="n-marca" placeholder="Toyota"></div>
-              </div>
-              <div class="field"><label>Línea</label>
-                <div class="input-icon-wrap"><svg class="input-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg><input id="n-linea" placeholder="Hilux"></div>
-              </div>
-              <div class="field"><label>Modelo (año)</label>
-                <div class="input-icon-wrap"><svg class="input-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><input id="n-modelo" placeholder="2021" maxlength="4"></div>
-              </div>
-              <div class="field"><label>Color</label>
-                <div class="input-icon-wrap"><svg class="input-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><input id="n-color" placeholder="Blanco"></div>
-              </div>
-              <div class="field"><label>Kilometraje</label>
-                <div class="input-icon-wrap"><svg class="input-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><input id="n-km" placeholder="45000" type="number" min="0"></div>
-              </div>
-              <div class="field full"><label>VIN <span style="font-weight:400;color:var(--gris-mid);font-size:11px">(17 caracteres, opcional)</span></label>
-                <div class="input-icon-wrap"><svg class="input-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="5" rx="1"/><rect x="3" y="10" width="18" height="5" rx="1"/><rect x="3" y="17" width="18" height="4" rx="1"/></svg><input id="n-vin" placeholder="WBA3A5C50DF256145" maxlength="17" style="font-family:'DM Mono',monospace;letter-spacing:1px" oninput="this.value=this.value.toUpperCase()"></div>
-              </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="field" style="grid-column:1/-1;margin:0"><label id="lbl-n-propietario">Nombre completo *</label><input id="n-propietario" placeholder="Nombre completo"></div>
+              <div class="field" style="margin:0"><label>Teléfono</label><input id="n-telefono" type="tel" placeholder="3134753389"></div>
+              <div class="field" style="margin:0"><label id="lbl-n-cedula">Cédula</label><input id="n-cedula-cliente" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')"></div>
+              <div class="field" style="margin:0"><label>Dirección</label><input id="n-direccion" placeholder="Cra 10 #20-30"></div>
+              <div class="field" style="margin:0"><label>Correo electrónico</label><input id="n-correo-cliente" type="email" placeholder="correo@ejemplo.com"></div>
             </div>
           </div>
 
-          <!-- ═══ FECHAS DE ENTREGA ═══ -->
-          <div class="form-section">
-            <div class="form-section-titulo" style="display:flex;align-items:center;gap:8px">
-              <svg width="16" height="16" fill="none" stroke="var(--azul)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              Fechas de entrega
+          <div id="n-wrap-aseg" style="display:none">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gris-mid);margin-bottom:8px">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;vertical-align:middle"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Aseguradora
             </div>
-            <div class="grid-2">
-              <div class="field">
-                <label>Fecha estimada de entrega</label>
-                <input id="n-fecha1" type="datetime-local">
-                <div style="font-size:11px;color:var(--gris-mid);margin-top:3px">Fecha y hora prometida al cliente</div>
-              </div>
-              <div class="field">
-                <label>Fecha máxima de entrega</label>
-                <input id="n-fecha2" type="date">
-                <div style="font-size:11px;color:var(--gris-mid);margin-top:3px">Plazo máximo con aseguradora</div>
-              </div>
-            </div>
-            <!-- Programar ingreso futuro -->
-            <div style="margin-top:12px;padding:12px 14px;background:#EBF2FF;border:1px solid #BFDBFE;border-radius:10px">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-                <svg width="14" height="14" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <span style="font-size:12px;font-weight:700;color:#1E40AF">Programar ingreso</span>
-                <span style="font-size:11px;color:#3B82F6;margin-left:auto">Opcional</span>
-              </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
               <div class="field" style="margin:0">
-                <label style="color:#1E40AF">Fecha de ingreso al taller</label>
-                <input id="n-fecha-programada" type="date">
-                <div style="font-size:11px;color:#3B82F6;margin-top:3px">Si es una fecha futura, la orden queda como <strong>Programada</strong> y no como Activa</div>
+                <label>Aseguradora *</label>
+                <div style="display:flex;gap:5px">
+                  <select id="n-aseguradora-sel" style="flex:1" onchange="toggleNuevaAseg(this.value)"><option value="">— Seleccionar —</option></select>
+                  <button class="btn btn-ghost btn-sm" onclick="agregarNuevaAsegNueva()" title="Agregar nueva">+</button>
+                </div>
+              </div>
+              <div class="field" style="margin:0"><label>Cliente que trae el vehículo *</label><input id="n-propietario-aseg" placeholder="Nombre completo"></div>
+              <div class="field" style="margin:0"><label>Teléfono</label><input id="n-telefono-aseg" type="tel" placeholder="3001234567"></div>
+              <div class="field" style="margin:0"><label>Cédula</label><input id="n-cedula-aseg" placeholder="Número de cédula" oninput="this.value=this.value.replace(/\D/g,'')"></div>
+              <div class="field" style="grid-column:1/-1;margin:0"><label>Correo</label><input id="n-correo-aseg" type="email" placeholder="correo@ejemplo.com"></div>
+            </div>
+            <div id="n-wrap-aseg-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:10px;border:1px solid var(--gris-borde);margin-top:8px">
+              <div style="font-size:10px;font-weight:700;color:var(--gris-mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Nueva aseguradora</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div class="field" style="margin:0"><label>Nombre</label><input id="n-aseg-nombre" placeholder="HDI Seguros, Sura..."></div>
+                <div class="field" style="margin:0"><label>NIT</label><input id="n-aseg-nit" placeholder="900123456-7"></div>
               </div>
             </div>
           </div>
 
-          <!-- ═══ INVENTARIO + COMBUSTIBLE ═══ -->
-          <div class="form-section">
-            <div class="form-section-titulo">Inventario del vehículo</div>
-            <div class="inv-grid" id="inv-grid">
-              <div class="inv-item" onclick="toggleInv(this,'llantas')"><input type="checkbox" value="llantas"> 4 Llantas completas</div>
-              <div class="inv-item" onclick="toggleInv(this,'llanta_repuesto')"><input type="checkbox" value="llanta_repuesto"> Llanta de repuesto</div>
-              <div class="inv-item" onclick="toggleInv(this,'gato')"><input type="checkbox" value="gato"> Gato</div>
-              <div class="inv-item" onclick="toggleInv(this,'radio')"><input type="checkbox" value="radio"> Radio / Pantalla</div>
-              <div class="inv-item" onclick="toggleInv(this,'documentos')"><input type="checkbox" value="documentos"> Documentos</div>
-              <div class="inv-item" onclick="toggleInv(this,'tapetes')"><input type="checkbox" value="tapetes"> Tapetes</div>
-              <div class="inv-item" onclick="toggleInv(this,'herramientas')"><input type="checkbox" value="herramientas"> Herramientas</div>
-              <div class="inv-item" onclick="toggleInv(this,'extintor')"><input type="checkbox" value="extintor"> Extintor</div>
-              <div class="inv-item" style="flex-direction:column;align-items:flex-start;gap:3px;padding:8px 10px" onclick="event.stopPropagation()">
-                <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gris-mid)">Combustible</span>
-                <select id="n-combustible-val" style="width:100%;border:none;background:transparent;font-size:13px;color:var(--texto);cursor:pointer;outline:none;padding:0">
-                  <option value="">— Nivel —</option>
-                  <option value="vacio">Vacío</option>
-                  <option value="1/4">1/4</option>
-                  <option value="1/2">1/2</option>
-                  <option value="3/4">3/4</option>
-                  <option value="lleno">Lleno</option>
-                </select>
+          <div id="n-wrap-flot" style="display:none">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gris-mid);margin-bottom:8px">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;vertical-align:middle"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Flotilla
+            </div>
+            <div class="field" style="margin:0">
+              <label>Flotilla *</label>
+              <div style="display:flex;gap:5px">
+                <select id="n-flotilla-sel" style="flex:1" onchange="toggleNuevaFlot(this.value)"><option value="">— Seleccionar —</option></select>
+                <button class="btn btn-ghost btn-sm" onclick="agregarNuevaFlotNueva()" title="Agregar nueva">+</button>
               </div>
             </div>
-
-
-            <div class="field" style="margin-top:12px"><label>Observaciones de inventario</label>
-              <textarea id="n-inv-obs" placeholder="Ej: Cargador en guantera, silla bebé en baúl..."></textarea>
+            <div id="n-wrap-flot-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:10px;border:1px solid var(--gris-borde);margin-top:8px">
+              <div style="font-size:10px;font-weight:700;color:var(--gris-mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Nueva flotilla</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div class="field" style="margin:0"><label>Nombre</label><input id="n-flot-nombre" placeholder="Transportes XYZ S.A.S."></div>
+                <div class="field" style="margin:0"><label>NIT</label><input id="n-flot-nit" placeholder="900123456-7"></div>
+                <div class="field" style="grid-column:1/-1;margin:0"><label>Dirección</label><input id="n-flot-dir" placeholder="Cra 10 #20-30"></div>
+              </div>
             </div>
           </div>
 
-          <div class="form-section">
-            <div class="form-section-titulo" style="display:flex;align-items:center;gap:8px">
-              <svg width="16" height="16" fill="none" stroke="var(--azul)" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              Fotos de ingreso
+          <div id="n-wrap-empresa" style="display:none">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gris-mid);margin-bottom:8px">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;vertical-align:middle"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Empresa
             </div>
-            <div class="fotos-grid" id="fotos-ingreso-preview"></div>
-            <div class="upload-zone" onclick="document.getElementById('fi-ingreso').click()">
-              <input type="file" id="fi-ingreso" accept="image/*" multiple onchange="agregarFotosIngreso(this)">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;margin-bottom:2px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              <p>Clic para agregar fotos de ingreso</p>
-              <div class="upload-prog" id="prog-ingreso"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="field" style="margin:0">
+                <label>Empresa *</label>
+                <div style="display:flex;gap:5px">
+                  <select id="n-empresa-sel" style="flex:1" onchange="toggleNuevaEmpresa(this.value)"><option value="">— Seleccionar —</option></select>
+                  <button class="btn btn-ghost btn-sm" onclick="agregarNuevaEmpresaNueva()" title="Agregar nueva">+</button>
+                </div>
+              </div>
+              <div class="field" style="margin:0"><label>Teléfono empresa</label><input id="n-empresa-tel" type="tel" placeholder="6011234567"></div>
+            </div>
+            <div id="n-wrap-empresa-extra" style="display:none;background:var(--gris-bg);border-radius:8px;padding:10px;border:1px solid var(--gris-borde);margin-top:8px">
+              <div style="font-size:10px;font-weight:700;color:var(--gris-mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Nueva empresa</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div class="field" style="margin:0"><label>Razón social</label><input id="n-emp-nombre" placeholder="Empresa S.A.S."></div>
+                <div class="field" style="margin:0"><label>NIT</label><input id="n-emp-nit" placeholder="900123456-7"></div>
+              </div>
             </div>
           </div>
 
-          <div class="btn-row">
+          <div style="height:1px;background:var(--gris-borde);margin:10px 0"></div>
+
+          <!-- ══ VEHÍCULO + FECHAS en grid ══ -->
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gris-mid);margin-bottom:8px">
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;vertical-align:middle"><path d="M14 16H9m10 0h3v-3.15a1 1 0 00-.84-.99L16 11l-2.7-3.6a1 1 0 00-.8-.4H5.24a2 2 0 00-1.8 1.1l-.8 1.63A6 6 0 002 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>Datos del vehículo
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+            <div class="field" style="margin:0"><label>Marca</label><input id="n-marca" placeholder="Toyota"></div>
+            <div class="field" style="margin:0"><label>Línea</label><input id="n-linea" placeholder="Hilux"></div>
+            <div class="field" style="margin:0"><label>Modelo (año)</label><input id="n-modelo" placeholder="2021" maxlength="4"></div>
+            <div class="field" style="margin:0"><label>Color</label><input id="n-color" placeholder="Blanco"></div>
+            <div class="field" style="margin:0"><label>VIN <span style="font-weight:400;color:var(--gris-mid);font-size:10px">(opcional)</span></label><input id="n-vin" placeholder="17 caracteres" maxlength="17" style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.5px" oninput="this.value=this.value.toUpperCase()"></div>
+            <div class="field" style="margin:0"><label>Nivel de daño</label><select id="n-dano"><option value="">— Seleccionar —</option><option value="leve">Leve</option><option value="moderado">Moderado</option><option value="grave">Grave</option><option value="total">Total</option></select></div>
+          </div>
+
+          <!-- Fechas compactas -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+            <div class="field" style="margin:0">
+              <label>Entrega estimada</label>
+              <input id="n-fecha1" type="datetime-local">
+            </div>
+            <div class="field" style="margin:0">
+              <label>Fecha máxima</label>
+              <input id="n-fecha2" type="date">
+            </div>
+            <div class="field" style="margin:0">
+              <label style="color:#1E40AF">Programar ingreso <span style="font-weight:400;font-size:10px;color:#3B82F6">(futuro)</span></label>
+              <input id="n-fecha-programada" type="date">
+            </div>
+          </div>
+
+          <div style="height:1px;background:var(--gris-borde);margin:10px 0"></div>
+
+          <!-- ══ DESCRIPCIÓN GENERAL ══ -->
+          <div class="field" style="margin:0 0 10px">
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gris-mid)">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;vertical-align:middle"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              Descripción general de la orden
+            </label>
+            <textarea id="n-descripcion-general" placeholder="Describe el trabajo general a realizar en el vehículo..." style="min-height:64px;resize:vertical"></textarea>
+          </div>
+
+          <div style="height:1px;background:var(--gris-borde);margin:10px 0"></div>
+
+          <!-- ══ INVENTARIO COMPACTO ══ -->
+          <details style="margin-bottom:10px">
+            <summary style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gris-mid);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;padding:4px 0">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              Inventario del vehículo <span id="inv-resumen" style="font-weight:400;color:var(--gris-mid);font-size:10px;margin-left:4px"></span>
+              <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="inv-chevron" style="margin-left:auto"><polyline points="6 9 12 15 18 9"/></svg>
+            </summary>
+            <div style="padding-top:8px">
+              <div class="inv-grid" id="inv-grid">
+                <div class="inv-item" onclick="toggleInv(this,'llantas')"><input type="checkbox" value="llantas"> 4 Llantas</div>
+                <div class="inv-item" onclick="toggleInv(this,'llanta_repuesto')"><input type="checkbox" value="llanta_repuesto"> Llanta repuesto</div>
+                <div class="inv-item" onclick="toggleInv(this,'gato')"><input type="checkbox" value="gato"> Gato</div>
+                <div class="inv-item" onclick="toggleInv(this,'radio')"><input type="checkbox" value="radio"> Radio/Pantalla</div>
+                <div class="inv-item" onclick="toggleInv(this,'documentos')"><input type="checkbox" value="documentos"> Documentos</div>
+                <div class="inv-item" onclick="toggleInv(this,'tapetes')"><input type="checkbox" value="tapetes"> Tapetes</div>
+                <div class="inv-item" onclick="toggleInv(this,'herramientas')"><input type="checkbox" value="herramientas"> Herramientas</div>
+                <div class="inv-item" onclick="toggleInv(this,'extintor')"><input type="checkbox" value="extintor"> Extintor</div>
+                <div class="inv-item" style="flex-direction:column;align-items:flex-start;gap:2px;padding:6px 8px" onclick="event.stopPropagation()">
+                  <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gris-mid)">Combustible</span>
+                  <select id="n-combustible-val" style="width:100%;border:none;background:transparent;font-size:12px;color:var(--texto);cursor:pointer;outline:none;padding:0">
+                    <option value="">— Nivel —</option>
+                    <option value="vacio">Vacío</option>
+                    <option value="1/4">1/4</option>
+                    <option value="1/2">1/2</option>
+                    <option value="3/4">3/4</option>
+                    <option value="lleno">Lleno</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field" style="margin:8px 0 0"><label>Observaciones de inventario</label>
+                <textarea id="n-inv-obs" placeholder="Ej: Cargador en guantera, silla bebé en baúl..." style="min-height:52px"></textarea>
+              </div>
+            </div>
+          </details>
+
+          <!-- ══ FOTOS ══ -->
+          <details style="margin-bottom:12px">
+            <summary style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gris-mid);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;padding:4px 0">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              Fotos de ingreso <span id="fotos-resumen" style="font-weight:400;color:var(--gris-mid);font-size:10px;margin-left:4px"></span>
+              <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-left:auto"><polyline points="6 9 12 15 18 9"/></svg>
+            </summary>
+            <div style="padding-top:8px">
+              <div class="fotos-grid" id="fotos-ingreso-preview"></div>
+              <div class="upload-zone" onclick="document.getElementById('fi-ingreso').click()" style="padding:12px">
+                <input type="file" id="fi-ingreso" accept="image/*" multiple onchange="agregarFotosIngreso(this)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.4;display:block;margin:0 auto 4px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <p style="margin:0;font-size:12px">Clic para agregar fotos</p>
+                <div class="upload-prog" id="prog-ingreso"></div>
+              </div>
+            </div>
+          </details>
+
+          <div class="btn-row" style="padding-top:4px">
             <button class="btn btn-ghost" onclick="cancelarNuevaOrden()">Cancelar</button>
             <button class="btn btn-primary" onclick="crearOrden()">Crear orden →</button>
           </div>
@@ -406,8 +403,164 @@
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
           <input type="text" id="cot-buscar" placeholder="Buscar por placa, cliente o c digo..." style="flex:1;min-width:200px;padding:9px 14px;border:1px solid var(--gris-borde);border-radius:8px;font-size:14px" oninput="filtrarCotizaciones()">
           <select id="cot-filtro-estado" onchange="filtrarCotizaciones()" style="padding:9px 14px;border:1px solid var(--gris-borde);border-radius:8px;font-size:14px;background:white"><option value="">Todos los estados</option><option value="pendiente">Pendiente</option><option value="aprobada">Aprobada</option><option value="rechazada">Rechazada</option></select>
+          <button class="btn btn-primary" onclick="nuevaCotizacion()" style="white-space:nowrap;display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva
+          </button>
         </div>
         <div id="cot-lista"><div class="loading-state">Cargando cotizaciones...</div></div>
+      </div>
+
+      <!-- NUEVA COTIZACIÓN -->
+      <div class="pagina" id="pag-cotizacion-nueva">
+        <button class="back-btn" onclick="volverACotizaciones()">← Volver a cotizaciones</button>
+        <div class="card" style="padding:28px">
+
+          <!-- ═══ VEHÍCULO ═══ -->
+          <div class="form-section">
+            <div class="form-section-titulo" style="display:flex;align-items:center;gap:8px">
+              <svg width="16" height="16" fill="none" stroke="var(--azul)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 16H9m10 0h3v-3.15a1 1 0 00-.84-.99L16 11l-2.7-3.6a1 1 0 00-.8-.4H5.24a2 2 0 00-1.8 1.1l-.8 1.63A6 6 0 002 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>
+              Identificación del vehículo
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:10px">
+              <div class="field" style="flex:1">
+                <label>Placa *</label>
+                <input id="cn-placa" placeholder="LUN954" style="text-transform:uppercase;font-family:'DM Mono',monospace;letter-spacing:2px" oninput="this.value=this.value.toUpperCase()">
+              </div>
+              <div style="display:flex;align-items:flex-end;gap:6px">
+                <button class="btn btn-ghost" onclick="cotBuscarVehiculo()" style="height:41px;display:flex;align-items:center;gap:5px">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  Buscar
+                </button>
+                <label class="btn btn-ghost" style="height:41px;display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;font-size:13px" title="Leer tarjeta de propiedad">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  Tarjeta
+                  <input type="file" id="cn-ocr-input" accept="image/*" style="display:none" onchange="cotOcrTarjetaPropiedad(this)">
+                </label>
+              </div>
+            </div>
+            <div id="cn-ocr-estado" style="display:none;margin-top:0;margin-bottom:10px;font-size:12px;padding:8px 12px;border-radius:6px;border:1px solid var(--gris-borde);background:var(--gris-bg)"></div>
+            <div class="grid-2">
+              <div class="field"><label>Marca</label><input id="cn-marca" placeholder="Toyota"></div>
+              <div class="field"><label>Línea / Modelo</label><input id="cn-linea" placeholder="Hilux"></div>
+              <div class="field"><label>Año</label><input id="cn-ano" placeholder="2021" maxlength="4"></div>
+              <div class="field"><label>Color</label><input id="cn-color" placeholder="Blanco"></div>
+              <div class="field"><label>Kilometraje</label><input id="cn-km" type="number" min="0" placeholder="45000"></div>
+              <div class="field"><label>VIN <span style="font-weight:400;color:var(--gris-mid);font-size:11px">(opcional)</span></label><input id="cn-vin" placeholder="WBA3A5C50DF..." style="font-family:'DM Mono',monospace;letter-spacing:1px" oninput="this.value=this.value.toUpperCase()"></div>
+            </div>
+          </div>
+
+          <!-- ═══ CLIENTE ═══ -->
+          <div class="form-section">
+            <div class="form-section-titulo" style="display:flex;align-items:center;gap:8px">
+              <svg width="16" height="16" fill="none" stroke="var(--azul)" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Datos del cliente
+            </div>
+            <div class="grid-2">
+              <div class="field full"><label>Nombre completo *</label><input id="cn-nombre" placeholder="Nombre del cliente o empresa"></div>
+              <div class="field">
+                <label>Cédula / NIT</label>
+                <div style="display:flex;gap:6px">
+                  <input id="cn-cedula" placeholder="1234567890" style="flex:1" oninput="this.value=this.value.replace(/\D/g,'')">
+                  <button class="btn btn-ghost btn-sm" onclick="cotBuscarCliente()" style="white-space:nowrap" title="Buscar datos del cliente por cédula">Buscar</button>
+                </div>
+              </div>
+              <div class="field"><label>Celular</label><input id="cn-celular" type="tel" placeholder="3134567890"></div>
+              <div class="field"><label>Correo</label><input id="cn-correo" type="email" placeholder="correo@ejemplo.com"></div>
+            </div>
+          </div>
+
+          <!-- ═══ REPUESTOS ═══ -->
+          <div class="form-section">
+            <div class="form-section-titulo" style="display:flex;align-items:center;gap:8px">
+              <svg width="16" height="16" fill="none" stroke="var(--azul)" stroke-width="2" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+              Repuestos
+            </div>
+            <div class="cot-table-wrap">
+              <table class="cot-items-table">
+                <thead>
+                  <tr>
+                    <th style="width:60px">Cant.</th>
+                    <th>Descripción</th>
+                    <th style="width:80px">Dto %</th>
+                    <th style="width:120px">Valor unit.</th>
+                    <th style="width:120px">Total</th>
+                    <th style="width:36px"></th>
+                  </tr>
+                </thead>
+                <tbody id="cot-rep-tbody"></tbody>
+              </table>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px">
+              <button class="btn btn-ghost btn-sm" onclick="cotAgregarRepuesto()" style="display:flex;align-items:center;gap:5px">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Agregar repuesto
+              </button>
+              <div style="font-size:13px;color:var(--gris-texto)">Subtotal: <strong id="cn-sub-rep" style="color:var(--texto)">$0</strong></div>
+            </div>
+          </div>
+
+          <!-- ═══ MANO DE OBRA ═══ -->
+          <div class="form-section">
+            <div class="form-section-titulo" style="display:flex;align-items:center;gap:8px">
+              <svg width="16" height="16" fill="none" stroke="var(--azul)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+              Mano de Obra
+            </div>
+            <div class="cot-table-wrap">
+              <table class="cot-items-table">
+                <thead>
+                  <tr>
+                    <th style="width:60px">Cant.</th>
+                    <th>Concepto</th>
+                    <th style="width:80px">Dto %</th>
+                    <th style="width:120px">Valor unit.</th>
+                    <th style="width:120px">Total</th>
+                    <th style="width:36px"></th>
+                  </tr>
+                </thead>
+                <tbody id="cot-mo-tbody"></tbody>
+              </table>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px">
+              <button class="btn btn-ghost btn-sm" onclick="cotAgregarManoObra()" style="display:flex;align-items:center;gap:5px">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Agregar concepto
+              </button>
+              <div style="font-size:13px;color:var(--gris-texto)">Subtotal: <strong id="cn-sub-mo" style="color:var(--texto)">$0</strong></div>
+            </div>
+          </div>
+
+          <!-- ═══ RESUMEN ═══ -->
+          <div class="form-section" style="border-bottom:none;padding-bottom:0">
+            <div class="form-section-titulo" style="display:flex;align-items:center;gap:8px">
+              <svg width="16" height="16" fill="none" stroke="var(--azul)" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              Resumen
+            </div>
+            <div class="cot-resumen">
+              <div class="cot-res-row"><span>Repuestos</span><span id="cn-res-rep">$0</span></div>
+              <div class="cot-res-row"><span>Mano de obra</span><span id="cn-res-mo">$0</span></div>
+              <div class="cot-res-row" id="cn-dto-row" style="display:none"><span style="color:var(--verde)">Descuento total</span><span id="cn-dto-total" style="color:var(--verde)">−$0</span></div>
+              <div class="cot-res-row cot-res-total"><span>Total general</span><span id="cn-total">$0</span></div>
+              <div class="cot-res-row" style="border-top:none;padding-top:4px">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500">
+                  <input type="checkbox" id="cn-iva-check" onchange="_cotActualizarTotales()"> Incluir IVA (19%)
+                </label>
+              </div>
+              <div class="cot-res-row" id="cn-iva-row" style="display:none"><span>IVA (19%)</span><span id="cn-iva-val">$0</span></div>
+              <div class="cot-res-row cot-res-total" id="cn-total-iva-row" style="display:none;border-top:2px solid var(--azul)"><span>Total con IVA</span><span id="cn-total-iva">$0</span></div>
+            </div>
+          </div>
+
+          <div class="btn-row" style="margin-top:24px">
+            <button class="btn btn-ghost" onclick="volverACotizaciones()">Cancelar</button>
+            <button class="btn btn-outline" id="btn-guardar-pdf-cot" onclick="guardarNuevaCotizacion(true)" style="display:flex;align-items:center;gap:6px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Guardar + PDF
+            </button>
+            <button class="btn btn-primary" id="btn-guardar-cot" onclick="guardarNuevaCotizacion()">Guardar cotización →</button>
+          </div>
+
+        </div>
       </div>
       <div class="pagina" id="pag-mecanico">
         <div id="mec-contenido">

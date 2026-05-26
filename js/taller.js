@@ -163,7 +163,7 @@ function montarTaller() {
         font-family:'DM Mono',monospace;font-size:1.35vw;font-weight:700;
         color:#FFFFFF;letter-spacing:.04em;line-height:1;
       }
-      .tv-vehiculo { font-size:.55vw;color:rgba(255,255,255,.6);margin-top:.1vh; }
+      .tv-vehiculo { font-size:.55vw;color:rgba(255,255,255,.75);margin-top:.1vh; }
       .tv-propietario { font-size:.62vw;font-weight:600;color:#FFFFFF;margin-top:.2vh;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:16vw; }
 
       /* ── CHIPS DE ETAPA ── */
@@ -176,8 +176,8 @@ function montarTaller() {
       .chip-approved { background:rgba(34,197,94,.15);color:#4ADE80;border-color:rgba(34,197,94,.35); }
       .chip-done     { background:rgba(34,197,94,.07);color:rgba(74,222,128,.55);border-color:rgba(34,197,94,.18); }
       .chip-active   { background:rgba(245,158,11,.15);color:#FCD34D;border-color:rgba(245,158,11,.35); }
-      .chip-waiting  { background:rgba(245,158,11,.06);color:rgba(252,211,77,.45);border-color:rgba(245,158,11,.15); }
-      .chip-pending  { background:rgba(255,255,255,.04);color:rgba(255,255,255,.22);border-color:rgba(255,255,255,.07); }
+      .chip-waiting  { background:rgba(245,158,11,.10);color:rgba(252,211,77,.75);border-color:rgba(245,158,11,.28); }
+      .chip-pending  { background:rgba(255,255,255,.06);color:rgba(255,255,255,.55);border-color:rgba(255,255,255,.18); }
       .chip-dot { width:.45vw;height:.45vw;border-radius:50%;flex-shrink:0; }
       .chip-dot.approved { background:#22C55E; }
       .chip-dot.done     { background:rgba(34,197,94,.45); }
