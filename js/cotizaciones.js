@@ -256,11 +256,23 @@ async function generarPdfCotizacion(cotId) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
+
+    // Leer respuesta como texto primero para diagnóstico
+    const rawText = await res.text().catch(() => '');
+    console.log('[PDF] n8n status:', res.status, '| body:', rawText.slice(0, 300));
+
     if (!res.ok) {
-      const errTxt = await res.text().catch(() => '');
-      throw new Error(`n8n ${res.status}: ${errTxt.slice(0, 120)}`);
+      if (!rawText) throw new Error(`n8n respondió ${res.status} sin cuerpo. ¿Está el workflow activo?`);
+      throw new Error(`n8n ${res.status}: ${rawText.slice(0, 150)}`);
     }
-    const data = await res.json();
+    if (!rawText || rawText.trim() === '') {
+      throw new Error('n8n devolvió respuesta vacía. Verifica que el workflow esté ACTIVO y que el nodo "Respond to Webhook" esté configurado.');
+    }
+
+    let data;
+    try { data = JSON.parse(rawText); }
+    catch(e) { throw new Error(`n8n no devolvió JSON válido: ${rawText.slice(0, 120)}`); }
+
     const pdfUrl = data?.url_pdf || data?.url || data?.pdf_url || null;
 
     if (!pdfUrl) throw new Error('n8n no devolvió la URL del PDF');
