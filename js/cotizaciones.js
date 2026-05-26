@@ -239,25 +239,16 @@ async function guardarNuevaCotizacion(conPdf = false) {
     const totalFinal  = total + iva;
 
     const body = {
-      placa:              document.getElementById('cn-placa')?.value.trim().toUpperCase() || null,
-      marca:              document.getElementById('cn-marca')?.value.trim() || null,
-      linea:              document.getElementById('cn-linea')?.value.trim() || null,
-      año:                parseInt(document.getElementById('cn-ano')?.value) || null,
-      color:              document.getElementById('cn-color')?.value.trim() || null,
-      vin:                document.getElementById('cn-vin')?.value.trim().toUpperCase() || null,
-      km:                 parseInt(document.getElementById('cn-km')?.value) || null,
-      nombre_cliente:     nombre,
-      cedula_cliente:     document.getElementById('cn-cedula')?.value.trim() || null,
-      telefono_cliente:   document.getElementById('cn-celular')?.value.trim() || null,
-      correo_cliente:     document.getElementById('cn-correo')?.value.trim() || null,
-      items_repuestos:    repItems,
-      items_mo:           moItems,
-      subtotal_repuestos: subtotalRep,
-      subtotal_mo:        subtotalMo,
-      total_general:      totalFinal,
-      con_iva:            conIva,
-      iva:                iva,
-      estado:             'pendiente'
+      placa:            document.getElementById('cn-placa')?.value.trim().toUpperCase() || null,
+      marca:            document.getElementById('cn-marca')?.value.trim() || null,
+      linea:            document.getElementById('cn-linea')?.value.trim() || null,
+      año:              parseInt(document.getElementById('cn-ano')?.value) || null,
+      nombre_cliente:   nombre,
+      cedula_cliente:   document.getElementById('cn-cedula')?.value.trim() || null,
+      telefono_cliente: document.getElementById('cn-celular')?.value.trim() || null,
+      correo_cliente:   document.getElementById('cn-correo')?.value.trim() || null,
+      total_general:    totalFinal,
+      estado:           'pendiente'
     };
 
     const res = await api('/cotizaciones?select=id', 'POST', body, { Prefer: 'return=representation' });
