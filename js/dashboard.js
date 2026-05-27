@@ -159,67 +159,34 @@ async function cargarDashboardMes() {
     // HTML BLOCKS
     // ────────────────────────────────────────────────────────
 
-    // — KPI cards —
-    const kpiHtml = `
-      <div style="display:grid;grid-template-columns:1.6fr repeat(4,1fr);gap:8px;margin-bottom:12px">
-        <div style="background:#1E3A5F;border-radius:12px;padding:14px 16px;color:white;display:flex;flex-direction:column;justify-content:space-between;min-height:100px">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;opacity:.65">Facturación del mes</div>
-          <div>
-            <div style="font-size:22px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1">${fmt(valorMes)}</div>
-            ${metaMes?.meta_ingresos ? (() => {
-              const pct = Math.min(Math.round((valorMes / metaMes.meta_ingresos) * 100), 100);
-              const barColor = pct >= 100 ? '#34D399' : pct >= 70 ? '#FCD34D' : '#F87171';
-              return `<div style="margin-top:6px">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-                  <span style="font-size:10px;opacity:.6">Meta: ${fmt(metaMes.meta_ingresos)}</span>
-                  <span style="font-size:10px;font-weight:700;color:${barColor}">${pct}%</span>
-                </div>
-                <div style="height:3px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden">
-                  <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px"></div>
-                </div>
-              </div>`;
-            })() : `<div style="font-size:10px;opacity:.5;margin-top:3px">${etapasMesFin.length} etapas cerradas</div>`}
+    // — KPI chips (van en la barra de tabs, no en el contenido) —
+    const chipsEl = document.getElementById('dash-kpi-chips');
+    if (chipsEl) {
+      const pctFact = metaMes?.meta_ingresos ? Math.min(Math.round((valorMes / metaMes.meta_ingresos) * 100), 100) : null;
+      const barColor = pctFact !== null ? (pctFact >= 100 ? '#34D399' : pctFact >= 70 ? '#FCD34D' : '#F87171') : null;
+      const pctOrd  = metaMes?.meta_ordenes  ? Math.min(Math.round((ordenesMes.length / metaMes.meta_ordenes) * 100), 100) : null;
+
+      const chip = (num, label, sub, color, bg, onclick) =>
+        `<div onclick="${onclick}" style="background:${bg};border:1px solid ${bg === 'white' ? 'var(--gris-borde)' : 'transparent'};border-radius:8px;padding:6px 11px;cursor:${onclick ? 'pointer' : 'default'};text-align:center;min-width:62px;transition:opacity .15s" onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">
+          <div style="font-size:17px;font-weight:800;color:${color};line-height:1;font-family:'DM Mono',monospace">${num}</div>
+          <div style="font-size:9px;font-weight:600;color:${color};opacity:.75;margin-top:2px;white-space:nowrap">${label}</div>
+          ${sub ? `<div style="font-size:9px;color:${color};opacity:.5;white-space:nowrap">${sub}</div>` : ''}
+        </div>`;
+
+      chipsEl.innerHTML =
+        // Facturación
+        `<div style="background:#1E3A5F;border-radius:8px;padding:6px 12px;color:white;min-width:120px">
+          <div style="font-size:16px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1;white-space:nowrap">${fmt(valorMes)}</div>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
+            <span style="font-size:9px;opacity:.55;white-space:nowrap">Facturación${pctFact !== null ? ' · ' + pctFact + '%' : ''}</span>
           </div>
-        </div>
-        <div style="background:white;border:1px solid var(--gris-borde);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px">
-          <div style="width:28px;height:28px;background:#EBF2FF;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="14" height="14" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-          </div>
-          <div style="font-size:26px;font-weight:800;color:#2563EB;line-height:1">${activasNormales}</div>
-          <div><div style="font-size:11px;font-weight:600;color:var(--texto)">Activas</div><div style="font-size:10px;color:var(--gris-mid)">En proceso</div></div>
-        </div>
-        <div style="background:white;border:1px solid var(--gris-borde);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px">
-          <div style="width:28px;height:28px;background:#F5F3FF;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="14" height="14" fill="none" stroke="#7C3AED" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-          </div>
-          <div style="display:flex;align-items:baseline;gap:4px">
-            <div style="font-size:26px;font-weight:800;color:#7C3AED;line-height:1">${ordenesMes.length}</div>
-            ${metaMes?.meta_ordenes ? `<div style="font-size:12px;font-weight:600;color:var(--gris-mid)">/ ${metaMes.meta_ordenes}</div>` : ''}
-          </div>
-          <div><div style="font-size:11px;font-weight:600;color:var(--texto)">Creadas</div><div style="font-size:10px;color:var(--gris-mid)">Este mes</div></div>
-          ${metaMes?.meta_ordenes ? (() => {
-            const pct = Math.min(Math.round((ordenesMes.length / metaMes.meta_ordenes) * 100), 100);
-            const barColor = pct >= 100 ? '#059669' : pct >= 70 ? '#D97706' : '#DC2626';
-            return `<div style="height:3px;background:var(--gris-borde);border-radius:99px;overflow:hidden;margin-top:2px">
-              <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px"></div>
-            </div>`;
-          })() : ''}
-        </div>
-        <div style="background:white;border:1px solid var(--gris-borde);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px">
-          <div style="width:28px;height:28px;background:#E6F5EF;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="14" height="14" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
-          </div>
-          <div style="font-size:26px;font-weight:800;color:#059669;line-height:1">${entregadasMes}</div>
-          <div><div style="font-size:11px;font-weight:600;color:var(--texto)">Entregadas</div><div style="font-size:10px;color:var(--gris-mid)">Este mes</div></div>
-        </div>
-        <div style="background:white;border:1px solid var(--gris-borde);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px">
-          <div style="width:28px;height:28px;background:#FEF3C7;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="14" height="14" fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
-          <div style="font-size:26px;font-weight:800;color:#D97706;line-height:1">${pulmonInterno+pulmonExterno}</div>
-          <div><div style="font-size:11px;font-weight:600;color:var(--texto)">En pulmón</div><div style="font-size:10px;color:var(--gris-mid)">${pulmonInterno} int · ${pulmonExterno} ext</div></div>
-        </div>
-      </div>`;
+          ${barColor ? `<div style="height:2px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;margin-top:4px"><div style="height:100%;width:${pctFact}%;background:${barColor};border-radius:99px"></div></div>` : ''}
+        </div>` +
+        chip(activasNormales, 'Activas', 'En proceso', '#2563EB', 'white', "navJefe('ordenes')") +
+        chip(ordenesMes.length + (pctOrd !== null ? `<span style='font-size:11px;opacity:.6'>/${metaMes.meta_ordenes}</span>` : ''), 'Creadas', 'Este mes', '#7C3AED', 'white', "dashFiltrarOrdenes('creadas')") +
+        chip(entregadasMes, 'Entregadas', 'Este mes', '#059669', 'white', "dashFiltrarOrdenes('entregadas')") +
+        chip(pulmonInterno + pulmonExterno, 'En pulmón', pulmonInterno + ' int · ' + pulmonExterno + ' ext', '#D97706', 'white', "dashFiltrarOrdenes('pulmon')");
+    }
 
     // — Retrasos —
     const retrasosHtml = ordenesRetraso.length ? `
@@ -351,25 +318,13 @@ async function cargarDashboardMes() {
     // RENDER
     // ────────────────────────────────────────────────────────
     cont.innerHTML = `
-      <!-- Header -->
-      <div style="margin-bottom:10px;display:flex;align-items:baseline;gap:10px">
-        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gris-mid)">Resumen Operativo del mes</div>
-        <div style="font-size:18px;font-weight:800;color:var(--texto);text-transform:capitalize">${mesLabel}</div>
-      </div>
-
-      ${kpiHtml}
       ${retrasosHtml}
 
-      <!-- Layout principal: izquierda (flujo + tabla) | derecha (próximas + tiempo + repuestos) -->
+      <!-- Layout principal: izquierda (tabla) | derecha (próximas + tiempo + repuestos) -->
       <div style="display:grid;grid-template-columns:1fr 220px;gap:10px;align-items:start">
 
         <!-- Columna izquierda -->
         <div style="display:flex;flex-direction:column;gap:10px">
-          <div class="card" style="padding:12px 14px">
-            <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Flujo operativo del taller</div>
-            <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Órdenes activas por proceso</div>
-            <div style="display:flex;align-items:stretch;gap:3px;overflow-x:auto">${pipelineHtml}</div>
-          </div>
           <div class="card" style="padding:12px 14px">
             <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Órdenes de trabajo activas</div>
             <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Seguimiento en tiempo real</div>
@@ -1168,4 +1123,24 @@ function switchDashTab(tab) {
     if (btnMet)  btnMet.classList.add('active');
     if (typeof cargarDashboardMetas === 'function') cargarDashboardMetas();
   }
+}
+
+// ── Chips KPI clickables ─────────────────────────────────
+function dashFiltrarOrdenes(tipo) {
+  navJefe('ordenes');
+  setTimeout(() => {
+    const btns = document.querySelectorAll('#filtros-bar .filtro-btn');
+    btns.forEach(b => b.classList.remove('active'));
+    if (tipo === 'creadas') {
+      // Muestra todas (activas + entregadas del mes) — sin filtro especial
+      const btn = document.querySelector('#filtros-bar .filtro-btn');
+      if (btn) { btn.click(); }
+    } else if (tipo === 'entregadas') {
+      const btn = [...btns].find(b => b.textContent.includes('Entregada'));
+      if (btn) btn.click(); else setFiltro('Entregada', null);
+    } else if (tipo === 'pulmon') {
+      const btn = [...btns].find(b => b.textContent.toLowerCase().includes('pulm'));
+      if (btn) btn.click(); else setFiltro('pulmon', null);
+    }
+  }, 100);
 }

@@ -1967,7 +1967,9 @@ function montarJefe() {
 
   // Cargar la lista de mecánicos para los selects
   cargarMecanicos().finally(() => {
-    navJefe('dashboard');
+    // Restaurar última página visitada (para que F5 no pierda el contexto)
+    const ultimaPag = localStorage.getItem('ultima_pag_jefe') || 'dashboard';
+    navJefe(ultimaPag);
   });
   
   // Cargar capacidad al inicio
@@ -2058,16 +2060,20 @@ function navJefe(pag) {
   }
 
   mostrarPagina(pagId);
-  
+
   const titleEl = document.getElementById('topbar-title');
   if (titleEl) titleEl.textContent = titulo;
-  
+
   const actionsEl = document.getElementById('topbar-actions');
   if (actionsEl) actionsEl.innerHTML = '';
-  
+
+  // Guardar última página para restaurar en F5
+  const pagsSinGuardar = ['nueva', 'detalle'];
+  if (!pagsSinGuardar.includes(pag)) localStorage.setItem('ultima_pag_jefe', pag);
+
   // Si es la página de órdenes, cargar las órdenes
   if (pag === 'ordenes') cargarOrdenes();
-  
+
   closeSidebar();
 }
 // ═══════════════════════════════════════════════════════════
