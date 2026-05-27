@@ -2717,70 +2717,91 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .input-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--gris-mid); pointer-events:none; flex-shrink:0; }
 
 /* ══════════════════════════════════════════════════════════
-   DASHBOARD RESPONSIVE
-   Regla: mobile-first dentro de este bloque.
-   Chips en desktop: grandes con sub-label.
-   Chips en móvil: compactos, solo número + etiqueta principal.
+   DASHBOARD KPI STRIP
+   Desktop: 5 columnas iguales, full-width, debajo de los tabs.
+   Móvil:   fila horizontal scrolleable, chips compactos.
 ══════════════════════════════════════════════════════════ */
 
-/* Global: ocultar scrollbar nativa en chips */
-#dash-kpi-chips { scrollbar-width: none; }
-#dash-kpi-chips::-webkit-scrollbar { display: none; }
+/* ── Strip base (desktop) ── */
+.dash-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
 
+/* Ocultar scrollbar nativa */
+.dash-kpi-strip { scrollbar-width: none; }
+.dash-kpi-strip::-webkit-scrollbar { display: none; }
+
+/* Chips hijos: llenan su columna */
+.dash-kpi-strip > div {
+  min-width: 0 !important; /* permite que el grid comprima por debajo del inline min-width */
+  width: 100%;
+}
+
+/* Chip facturación: sin white-space nowrap para que el valor se ajuste */
+.dash-kpi-strip > div:first-child > div:first-child {
+  white-space: normal;
+  word-break: break-all;
+}
+
+/* ── Strip en móvil: scroll horizontal ── */
 @media (max-width: 768px) {
-
-  /* ── Fila tabs + chips: columna, chips abajo ── */
-  #dash-tabs-row {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 8px;
-  }
-
-  /* ── Chips: fila horizontal scrolleable, sin wrap ── */
-  #dash-kpi-chips {
-    width: 100%;
+  .dash-kpi-strip {
+    display: flex;
+    flex-wrap: nowrap;
     overflow-x: auto;
-    flex-wrap: nowrap !important;
-    align-items: stretch;
+    gap: 6px;
     padding-bottom: 2px;
+    margin-bottom: 12px;
   }
 
-  /* ── Todos los chips: más compactos ── */
-  #dash-kpi-chips > div {
-    padding: 6px 10px !important;
-    min-width: 52px !important;
+  /* Tabs: solo flex wrap normal */
+  #dash-tabs-row {
+    flex-wrap: wrap;
   }
 
-  /* ── Número/valor principal: más pequeño ── */
-  #dash-kpi-chips > div > div:first-child {
-    font-size: 16px !important;
+  /* Chips: tamaño compacto, fijo para que quepan varios visibles */
+  .dash-kpi-strip > div {
+    flex-shrink: 0;
+    min-width: 80px !important;
+    padding: 7px 10px !important;
   }
 
-  /* ── Chip facturación: valor monetario aún más pequeño ── */
-  #dash-kpi-chips > div:first-child {
+  /* Chip facturación: un poco más ancho */
+  .dash-kpi-strip > div:first-child {
     min-width: 110px !important;
   }
-  #dash-kpi-chips > div:first-child > div:first-child {
-    font-size: 13px !important;
-    white-space: nowrap;
+
+  /* Número principal: más pequeño en móvil */
+  .dash-kpi-strip > div > div:first-child {
+    font-size: 15px !important;
   }
 
-  /* ── Etiqueta principal (Activas, Creadas…): más pequeña ── */
-  #dash-kpi-chips > div > div:nth-child(2) {
+  /* Valor facturación */
+  .dash-kpi-strip > div:first-child > div:first-child {
+    font-size: 13px !important;
+    white-space: nowrap;
+    word-break: normal;
+  }
+
+  /* Etiqueta: legible pero compacta */
+  .dash-kpi-strip > div > div:nth-child(2) {
     font-size: 9px !important;
   }
 
-  /* ── Sub-etiqueta (En proceso / Este mes) + barra progreso: ocultos ── */
-  #dash-kpi-chips > div > div:nth-child(3) {
+  /* Sub-etiqueta y barra progreso: ocultos en móvil */
+  .dash-kpi-strip > div > div:nth-child(3) {
     display: none !important;
   }
 
-  /* ── Grid principal dashboard: una sola columna ── */
+  /* Grid dashboard principal: 1 columna */
   .dash-mes-grid {
     grid-template-columns: 1fr !important;
   }
 
-  /* ── Fechas en nueva orden: 1 columna ── */
+  /* Fechas en nueva orden: 1 columna */
   .n-fechas-grid {
     grid-template-columns: 1fr !important;
   }
