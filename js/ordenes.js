@@ -378,38 +378,48 @@ async function abrirOrden(id) {
       <div class="detalle-grid">
         <div>
           <div class="detalle-header-card">
+            <!-- Fila placa + badges -->
             <div class="detalle-placa-row">
               <div>
-                <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+                <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
                   <div class="detalle-placa">${escapeHtml(orden.placa)}</div>
-                  <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--gris-mid,#94A3B8);letter-spacing:.5px">${formatOT(orden.id)}</div>
+                  <div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--gris-mid);letter-spacing:.5px">${formatOT(orden.id)}</div>
                 </div>
                 <div class="detalle-vehiculo">${[orden.marca,orden.linea,orden.modelo,orden.color].filter(Boolean).map(escapeHtml).join(' · ')}</div>
               </div>
-              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:5px;justify-content:flex-end">
                 <span class="badge badge-${estadoClase}">${estadoTexto}</span>
                 ${orden.tipo_cliente ? `<span class="badge badge-${orden.tipo_cliente}">${orden.tipo_cliente}</span>` : ''}
               </div>
             </div>
-            <div class="donut-section">
-              <svg class="donut-svg" width="56" height="56" viewBox="0 0 56 56">
-                <circle class="donut-track" cx="28" cy="28" r="22"/>
-                <circle class="donut-fill ${pct===100?'completa':'proceso'}" cx="28" cy="28" r="22"
-                  style="stroke-dasharray:${(pct/100)*circ} ${circ}"/>
-                <text class="donut-pct" x="28" y="32" text-anchor="middle">${pct}%</text>
-              </svg>
-              <div class="donut-info">
-                <div class="donut-label">Progreso general</div>
-                <div class="donut-val">${comp} / ${total} etapas</div>
-                <div style="display:flex;gap:16px;flex-wrap:wrap">
-                  <div><div class="donut-label">Etapa activa</div><div style="font-size:13px;font-weight:600">${tiempoEtapa}</div></div>
-                  <div><div class="donut-label">Tiempo total</div><div style="font-size:13px;font-weight:600">${tiempoTotal}</div></div>
-                </div>
+            <!-- Strip de progreso compacto -->
+            <div class="det-progress-strip">
+              <div class="det-ps-cell det-ps-donut">
+                <svg width="44" height="44" viewBox="0 0 56 56">
+                  <circle class="donut-track" cx="28" cy="28" r="22"/>
+                  <circle class="donut-fill ${pct===100?'completa':'proceso'}" cx="28" cy="28" r="22"
+                    style="stroke-dasharray:${(pct/100)*circ} ${circ}"/>
+                  <text class="donut-pct" x="28" y="32" text-anchor="middle">${pct}%</text>
+                </svg>
+              </div>
+              <div class="det-ps-divider"></div>
+              <div class="det-ps-cell">
+                <div class="det-ps-label">Progreso general</div>
+                <div class="det-ps-val">${comp} / ${total} etapas</div>
+              </div>
+              <div class="det-ps-divider"></div>
+              <div class="det-ps-cell">
+                <div class="det-ps-label">Etapa activa</div>
+                <div class="det-ps-val">${tiempoEtapa}</div>
+              </div>
+              <div class="det-ps-divider"></div>
+              <div class="det-ps-cell">
+                <div class="det-ps-label">Tiempo total</div>
+                <div class="det-ps-val">${tiempoTotal}</div>
               </div>
             </div>
-            <div class="timeline-wrap">
-              <div class="etapas-timeline" id="d-timeline">${tlHtml}</div>
-            </div>
+            <!-- Timeline de etapas -->
+            ${tlHtml ? `<div class="timeline-wrap" style="padding:10px 0 2px"><div class="etapas-timeline" id="d-timeline">${tlHtml}</div></div>` : ''}
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <div class="seccion-titulo" style="margin-bottom:0">Datos del vehículo y cliente</div>
@@ -419,14 +429,14 @@ async function abrirOrden(id) {
             </button>` : ''}
           </div>
           <div class="info-chips" style="margin-bottom:16px">
-            <div class="info-chip"><div class="info-chip-label">Propietario</div><div class="info-chip-val">${escapeHtml(orden.propietario)||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Teléfono</div><div class="info-chip-val">${escapeHtml(orden.telefono)||'—'}</div></div>
+            <div class="info-chip${!orden.propietario?' info-chip-empty':''}"><div class="info-chip-label">Propietario</div><div class="info-chip-val">${escapeHtml(orden.propietario)||'—'}</div></div>
+            <div class="info-chip${!orden.telefono?' info-chip-empty':''}"><div class="info-chip-label">Teléfono</div><div class="info-chip-val">${orden.telefono?`<a href="tel:${escapeHtml(orden.telefono)}" style="color:var(--azul-mid);text-decoration:none">${escapeHtml(orden.telefono)}</a>`:'—'}</div></div>
             <div class="info-chip"><div class="info-chip-label">Tipo cliente</div><div class="info-chip-val">${escapeHtml(orden.tipo_cliente)||'—'}</div></div>
             <div class="info-chip"><div class="info-chip-label">Aseguradora</div><div class="info-chip-val">${escapeHtml(orden.aseguradora)||'—'}</div></div>
             <div class="info-chip"><div class="info-chip-label">Nivel daño</div><div class="info-chip-val">${escapeHtml(orden.nivel_dano)||'—'}</div></div>
             <div class="info-chip"><div class="info-chip-label">Kilometraje</div><div class="info-chip-val">${orden.kilometraje?orden.kilometraje.toLocaleString('es-CO')+' km':'—'}</div></div>
             <div class="info-chip"><div class="info-chip-label">VIN</div><div class="info-chip-val" style="font-family:'DM Mono',monospace;font-size:11px">${escapeHtml(orden.vin)||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Correo</div><div class="info-chip-val">${escapeHtml(orden.correo_cliente)||'—'}</div></div>
+            <div class="info-chip${!orden.correo_cliente?' info-chip-empty':''}"><div class="info-chip-label">Correo</div><div class="info-chip-val">${orden.correo_cliente?`<a href="mailto:${escapeHtml(orden.correo_cliente)}" style="color:var(--azul-mid);text-decoration:none">${escapeHtml(orden.correo_cliente)}</a>`:'—'}</div></div>
             <div class="info-chip"><div class="info-chip-label">Ingreso</div><div class="info-chip-val">${formatFecha(orden.creado_en)}</div></div>
             <div class="info-chip"><div class="info-chip-label">Fecha entrega 1</div><div class="info-chip-val">${formatFecha(orden.fecha_entrega_1)}</div></div>
             <div class="info-chip"><div class="info-chip-label">Fecha entrega 2</div><div class="info-chip-val">${formatFecha(orden.fecha_entrega_2)}</div></div>
