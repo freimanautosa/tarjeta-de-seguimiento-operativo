@@ -685,30 +685,26 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
           <div class="ts-chip">Fin: <strong>${e.fin?formatTS(e.fin):'—'}</strong></div>
           ${dur}
         </div>
-        <div class="grid-2" style="margin-bottom:12px">
-          <div class="field"><label>Técnico asignado</label>
+        <div class="etapa-campos-row">
+          <div class="field etapa-campo-tec"><label>Técnico asignado</label>
             <select id="tec-${k}" onchange="asignarMecanico(${eid},'${k}')">
               <option value="">— Sin asignar —</option>
               ${mecanicos.filter(m=>!['taller','repuestos','Asesor Previsora'].includes(m.rol)).map(m=>`<option value="${m.id}" ${e.mecanico_id===m.id?'selected':''}>${escapeHtml(m.nombre)}</option>`).join('')}
             </select>
           </div>
-          <div style="display:flex;gap:8px">
-            <div class="field" style="flex:1"><label>H. Facturadas</label>
-              <input id="hf-${k}" type="number" step="0.5" value="${e.horas_facturadas||''}" placeholder="0" onblur="patchHoras(${eid},'${k}')">
-            </div>
-            <div class="field" style="flex:1"><label>H. Adicionales</label>
-              <input id="ha-${k}" type="number" step="0.5" value="${e.horas_adicionales||''}" placeholder="0" onblur="patchHoras(${eid},'${k}')">
-            </div>
+          <div class="field etapa-campo-sm"><label>H. Facturadas</label>
+            <input id="hf-${k}" type="number" step="0.5" value="${e.horas_facturadas||''}" placeholder="0" onblur="patchHoras(${eid},'${k}')">
+          </div>
+          <div class="field etapa-campo-sm"><label>H. Adicionales</label>
+            <input id="ha-${k}" type="number" step="0.5" value="${e.horas_adicionales||''}" placeholder="0" onblur="patchHoras(${eid},'${k}')">
+          </div>
+          <div class="field etapa-campo-sm"><label>Valor COP</label>
+            <input id="val-${k}" type="number" step="1000" value="${e.valor||''}" placeholder="0"
+              style="font-weight:600;color:var(--verde)"
+              onblur="patchValor(${eid},'${k}')">
           </div>
         </div>
-
-        <div class="field" style="margin-bottom:12px">
-          <label style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris-mid)"> Valor </label>
-          <input id="val-${k}" type="number" step="1000" value="${e.valor||''}" placeholder="0"
-            style="font-size:14px;font-weight:600;color:var(--verde)"
-            onblur="patchValor(${eid},'${k}')">
-          ${e.valor ? '<div style="font-size:11px;color:var(--gris-mid);margin-top:3px">' + new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(e.valor) + '</div>' : '' }
-        </div>
+        ${e.valor ? `<div style="font-size:11px;color:var(--gris-mid);margin-bottom:10px">${new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(e.valor)}</div>` : ''}
 
         <div class="fotos-section" style="margin-top:0">
           <label style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris-mid)">Fotos (${eFotos.length})</label>

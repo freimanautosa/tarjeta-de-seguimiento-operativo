@@ -475,7 +475,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 }
 .field input, .field select, .field textarea {
   width: 100%;
-  padding: 10px 13px;
+  padding: 8px 11px;
   border: 1.5px solid var(--gris-borde);
   border-radius: 6px;
   font-size: 14px;
@@ -1140,10 +1140,29 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .etapa-header:hover { background: #ECEEF2; }
 .etapa-nombre { font-weight: 600; font-size: 13px; flex: 1; }
 .etapa-tecnico { font-size: 11px; color: var(--gris-mid); margin-top: 1px; }
-.etapa-body { padding: 16px; display: none; }
+.etapa-body { padding: 12px 14px; display: none; }
 .etapa-body.open { display: block; }
-.etapa-actions { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
-.timestamps { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.etapa-actions { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+.timestamps { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+
+/* Fila de campos compacta en etapa */
+.etapa-campos-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: end;
+}
+.etapa-campo-tec {}
+.etapa-campo-sm {}
+.etapa-campos-row .field input,
+.etapa-campos-row .field select {
+  padding: 7px 10px;
+  font-size: 13px;
+}
+@media (max-width: 768px) {
+  .etapa-campos-row { grid-template-columns: 1fr 1fr; }
+}
 .ts-chip {
   font-family: 'DM Mono', monospace;
   font-size: 11px;
