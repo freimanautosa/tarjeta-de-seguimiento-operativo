@@ -395,14 +395,14 @@ async function abrirOrden(id) {
             <!-- Strip de progreso compacto -->
             <div class="det-progress-strip">
               <div class="det-ps-cell det-ps-progress">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+                <div style="display:flex;align-items:center;justify-content:space-between">
                   <div class="det-ps-label">Progreso general</div>
-                  <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${pct===100?'var(--verde)':'var(--azul-mid)'}">${pct}%</div>
+                  <div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:800;color:${pct===100?'var(--verde)':'var(--azul-mid)'};background:${pct===100?'var(--verde-bg)':'var(--azul-light)'};padding:1px 7px;border-radius:20px">${pct}%</div>
                 </div>
                 <div class="det-pbar-track">
-                  <div class="det-pbar-fill ${pct===100?'completa':''}" style="width:${pct}%"></div>
+                  <div class="det-pbar-fill ${pct===100?'completa':''}" style="width:${pct===0?'0':pct+'%'}"></div>
                 </div>
-                <div class="det-ps-val" style="margin-top:4px">${comp} / ${total} etapas</div>
+                <div class="det-ps-val">${comp} / ${total} etapas</div>
               </div>
               <div class="det-ps-divider"></div>
               <div class="det-ps-cell">

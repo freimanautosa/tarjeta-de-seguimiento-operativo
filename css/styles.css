@@ -869,78 +869,79 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   background: white;
   border: 1.5px solid var(--gris-borde);
   border-radius: var(--radio);
-  padding: 16px 20px;
-  margin-bottom: 14px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
 }
 .detalle-placa-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 .detalle-placa {
   font-family: 'DM Mono', monospace;
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
   color: var(--texto);
   line-height: 1;
 }
-.detalle-vehiculo { font-size: 13px; color: var(--gris-mid); margin-top: 4px; }
+.detalle-vehiculo { font-size: 12px; color: var(--gris-mid); margin-top: 3px; }
 
 /* Progress strip compacto */
 .det-progress-strip {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   background: var(--gris-bg);
   border: 1px solid var(--gris-borde);
-  border-radius: 8px;
+  border-radius: 7px;
   overflow: hidden;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 .det-ps-cell {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 10px 16px;
+  padding: 8px 14px;
   flex: 1;
   min-width: 0;
 }
 .det-ps-progress {
   flex: 2;
-  min-width: 160px;
+  min-width: 140px;
 }
 .det-pbar-track {
-  height: 6px;
-  background: var(--gris-borde);
+  height: 8px;
+  background: #D1D5DB;
   border-radius: 99px;
   overflow: hidden;
+  margin: 4px 0;
 }
 .det-pbar-fill {
   height: 100%;
   border-radius: 99px;
   background: var(--azul-mid);
   transition: width .4s cubic-bezier(.23,1,.32,1);
-  min-width: 3px;
+  min-width: 4px;
 }
 .det-pbar-fill.completa { background: var(--verde); }
 .det-ps-divider {
   width: 1px;
-  height: 36px;
   background: var(--gris-borde);
   flex-shrink: 0;
+  align-self: stretch;
 }
 .det-ps-label {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
   color: var(--gris-mid);
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 .det-ps-val {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--texto);
   white-space: nowrap;
@@ -985,17 +986,17 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .det-datos-faltantes-banner {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 8px;
   background: #FFFBEB;
   border: 1.5px solid #FDE68A;
-  border-radius: 9px;
-  padding: 11px 14px;
-  margin-bottom: 12px;
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin-bottom: 10px;
   color: #92400E;
-  font-size: 13px;
+  font-size: 12px;
 }
 .det-datos-faltantes-list {
-  font-size: 12px;
+  font-size: 11px;
   color: #B45309;
   margin-top: 2px;
 }
@@ -1003,55 +1004,54 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 /* Grid vehículo + cliente */
 .det-datos-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 .det-datos-card {
   background: white;
   border: 1.5px solid var(--gris-borde);
-  border-radius: 9px;
+  border-radius: 8px;
   overflow: hidden;
 }
 .det-datos-card-titulo {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
+  gap: 5px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.7px;
   text-transform: uppercase;
   color: var(--azul);
   background: var(--azul-light);
-  padding: 8px 12px;
+  padding: 6px 11px;
   border-bottom: 1px solid var(--gris-borde);
 }
-.det-datos-filas {
-  padding: 4px 0;
-}
+.det-datos-filas { padding: 2px 0; }
 .det-dato-fila {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 5px 11px;
   border-bottom: 1px solid var(--gris-bg);
-  font-size: 13px;
+  font-size: 12px;
 }
 .det-dato-fila:last-child { border-bottom: none; }
 .det-dato-lbl {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--gris-mid);
   font-weight: 600;
   flex-shrink: 0;
   white-space: nowrap;
 }
 .det-dato-val {
+  font-size: 12px;
   font-weight: 600;
   color: var(--texto);
   text-align: right;
@@ -1656,10 +1656,10 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   .btn-row .btn { flex: 1; min-width: 120px; }
 
   /* ── Detalle de orden: header compacto ── */
-  .detalle-header-card { padding: 12px 14px; margin-bottom: 10px; }
-  .detalle-placa { font-size: 22px; letter-spacing: 1.5px; }
-  .detalle-vehiculo { font-size: 12px; }
-  .detalle-placa-row { margin-bottom: 10px; }
+  .detalle-header-card { padding: 10px 12px; margin-bottom: 8px; }
+  .detalle-placa { font-size: 18px; letter-spacing: 1px; }
+  .detalle-vehiculo { font-size: 11px; }
+  .detalle-placa-row { margin-bottom: 7px; }
 
   /* ── Progress strip: apila las celdas en móvil ── */
   .det-progress-strip { flex-direction: column; gap: 0; }
