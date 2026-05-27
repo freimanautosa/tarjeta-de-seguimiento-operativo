@@ -825,7 +825,7 @@ async function asignarMecanico(eid, k) {
 // NUEVA ORDEN
 // ============================================================
 function resetNuevaOrden() {
-  const fields = ['n-placa', 'n-marca', 'n-linea', 'n-modelo', 'n-color', 'n-propietario', 'n-telefono', 'n-km', 'n-fecha1', 'n-fecha2', 'n-inv-obs', 'n-cedula-cliente', 'n-vin', 'n-correo-cliente'];
+  const fields = ['n-placa', 'n-marca', 'n-linea', 'n-modelo', 'n-color', 'n-propietario', 'n-telefono', 'n-km', 'n-fecha1', 'n-fecha2', 'n-inv-obs', 'n-cedula-cliente', 'n-vin', 'n-correo-cliente', 'n-descripcion-general', 'n-fecha-programada'];
   fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const aseguradora = document.getElementById('n-aseguradora');
   const dano = document.getElementById('n-dano');
@@ -1285,8 +1285,17 @@ async function crearOrden() {
     kilometraje: parseInt(document.getElementById('n-km')?.value) || null,
     fecha_entrega_1: document.getElementById('n-fecha1')?.value || null,
     fecha_entrega_2: document.getElementById('n-fecha2')?.value || null,
+    fecha_programada: document.getElementById('n-fecha-programada')?.value || null,
+    descripcion_general: document.getElementById('n-descripcion-general')?.value.trim() || null,
     inventario: JSON.stringify({ items: invItems, observaciones: document.getElementById('n-inv-obs')?.value.trim() || null }),
-    estado: 'Activa',
+    estado: (() => {
+      const fp = document.getElementById('n-fecha-programada')?.value;
+      if (fp) {
+        const hoy = new Date(); hoy.setHours(0,0,0,0);
+        if (new Date(fp) > hoy) return 'Programada';
+      }
+      return 'Activa';
+    })(),
     cliente_id: clienteId,
     vin: vin || null,
     correo_cliente: correoCliente || null

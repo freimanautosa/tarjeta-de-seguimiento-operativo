@@ -568,7 +568,7 @@ async function cargarPantallaTaller() {
       api(`/etapas?fin=is.null&inicio=not.is.null&select=id,orden_id,etapa,servicio,mecanico_id,tecnico,inicio,pausado,pausa_inicio,tiempo_pausado_min`).catch(()=>[]) || [],
       api(`/etapas?select=id,orden_id,etapa,servicio,inicio,fin,tecnico&order=creado_en.asc`).catch(()=>[]) || [],
       api(`/aprobaciones_etapa?estado=eq.aprobado&select=etapa_id`).catch(()=>[]) || [],
-      api(`/ordenes?estado=eq.Programada&order=created_at.asc&select=id,placa,marca,linea,fecha_entrega_1`).catch(()=>[]) || []
+      api(`/ordenes?estado=eq.Programada&order=fecha_programada.asc&select=id,placa,marca,linea,fecha_programada`).catch(()=>[]) || []
     ]);
 
     const aprobadas = new Set(aprobacionesTodas.map(a => a.etapa_id));
@@ -720,7 +720,7 @@ async function cargarPantallaTaller() {
     // ── Panel derecho: Programadas ───────────────────────────
     const progHtml = ordenesProgramadas.length
       ? ordenesProgramadas.map(o => {
-          const fp   = o.fecha_entrega_1 ? new Date(o.fecha_entrega_1) : null;
+          const fp   = o.fecha_programada ? new Date(o.fecha_programada + 'T00:00:00') : null;
           const dias = fp ? Math.round((fp - hoy) / 86400000) : null;
           const label = dias === 0 ? 'Hoy' : dias === 1 ? 'Mañana' : dias !== null ? `en ${dias}d` : '';
           return `<div class="tv-prog-item">
