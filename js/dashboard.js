@@ -317,7 +317,7 @@ async function cargarDashboardMes() {
       ${retrasosHtml}
 
       <!-- Layout principal: izquierda (tabla) | derecha (próximas + tiempo + repuestos) -->
-      <div style="display:grid;grid-template-columns:1fr 220px;gap:10px;align-items:start">
+      <div class="dash-mes-grid" style="display:grid;grid-template-columns:1fr 220px;gap:10px;align-items:start">
 
         <!-- Columna izquierda -->
         <div style="display:flex;flex-direction:column;gap:10px">

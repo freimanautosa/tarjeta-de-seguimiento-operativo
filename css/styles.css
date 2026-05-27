@@ -2215,3 +2215,48 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .input-icon-wrap { position: relative; }
 .input-icon-wrap input { padding-left: 32px; }
 .input-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--gris-mid); pointer-events:none; flex-shrink:0; }
+
+/* ══════════════════════════════════════════════════════════
+   DASHBOARD RESPONSIVE
+══════════════════════════════════════════════════════════ */
+
+/* Chips KPI — scroll horizontal en móvil */
+#dash-kpi-chips {
+  scrollbar-width: none;
+}
+#dash-kpi-chips::-webkit-scrollbar { display: none; }
+
+@media (max-width: 768px) {
+  /* Fila de tabs + chips: apila en columna, chips con scroll horizontal */
+  #pag-dashboard > div:first-child {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  #dash-kpi-chips {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    align-items: stretch;
+    padding-bottom: 2px;
+  }
+  /* Grid principal: una sola columna */
+  .dash-mes-grid {
+    grid-template-columns: 1fr !important;
+  }
+  /* Fechas en nueva orden: 1 columna */
+  .n-fechas-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Chips un poco más compactos en pantallas muy pequeñas */
+  #dash-kpi-chips > div {
+    padding: 7px 11px !important;
+    min-width: 64px !important;
+  }
+  #dash-kpi-chips > div > div:first-child {
+    font-size: 19px !important;
+  }
+}
