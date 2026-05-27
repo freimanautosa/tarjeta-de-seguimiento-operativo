@@ -76,10 +76,19 @@ function _buildOrdenRow(o, etapas) {
   const fechaEnt = o.fecha_entrega_1 ? formatFecha(o.fecha_entrega_1) : '—';
   const searchStr = [(o.placa||''), (o.propietario||''), (tecnico||''), (o.marca||''), (o.linea||'')].join(' ').toLowerCase();
 
+  // Alerta de contacto faltante
+  const sinContacto = !o.telefono && !o.correo_cliente;
+  const sinTel      = !o.telefono && o.correo_cliente;
+  const contactAlert = sinContacto
+    ? `<span class="ord-alert-contact" title="Sin teléfono ni correo">⚠ Sin contacto</span>`
+    : sinTel
+      ? `<span class="ord-alert-contact ord-alert-soft" title="Sin teléfono">⚠ Sin tel.</span>`
+      : '';
+
   return `<tr class="ord-row" onclick="abrirOrden(${o.id})" data-search="${escapeHtml(searchStr)}">
     <td>
       <div class="ord-placa">${escapeHtml(o.placa)}</div>
-      <div class="ord-ot">${formatOT(o.id)}</div>
+      <div class="ord-ot">${formatOT(o.id)}${contactAlert}</div>
     </td>
     <td>
       <div class="ord-veh-nombre">${[o.marca,o.linea].filter(Boolean).map(escapeHtml).join(' ') || '—'}</div>
@@ -1518,8 +1527,12 @@ function buildChecklist(containerId, servicios, existentes) {
         <input type="text" placeholder="${et.tot ? '¿Quién es el tercero?' : 'Especifica cuál...'}" style="font-size:13px;margin-top:4px">
       </div>` : '';
       const mecsFiltrados = mecElegibles;
+      // Para "Armado": al cambiar técnico, auto-rellena "Desarmado" si existe
+      const onChangeArmado = et.esArmado
+        ? `onchange="_autoFillDesarmado(this.value,'${containerId}')"`
+        : '';
       const mecHtml = !iniciada ? `<div class="mec-select-wrap" id="mec-${et.key}" style="margin-top:6px;display:${checked ? 'block' : 'none'}">
-        <select id="mec-sel-${et.key}" style="font-size:13px">
+        <select id="mec-sel-${et.key}" style="font-size:13px" ${onChangeArmado}>
           <option value="">— Asignar técnico * —</option>
           ${mecsFiltrados.map(m => `<option value="${m.id}" ${m.id == mecSelected ? ' selected' : ''}>${escapeHtml(m.nombre)}</option>`).join('')}
         </select>
@@ -1562,6 +1575,28 @@ function onChkChange(key, checked) {
   }
   const camposDiv = document.getElementById('campos-' + key);
   if (camposDiv) camposDiv.style.display = checked ? 'block' : 'none';
+
+  // Si se selecciona "Armado", marcar "Desarmado" automáticamente y mostrar sus campos
+  if (key === 'lat_armado' && checked) {
+    const chkDes = document.getElementById('chk-lat_desarmado');
+    if (chkDes && !chkDes.checked && !chkDes.disabled) {
+      chkDes.checked = true;
+      onChkChange('lat_desarmado', true);
+    }
+  }
+}
+
+// Auto-rellena el técnico de "Desarmado" con el mismo de "Armado"
+function _autoFillDesarmado(mecId, containerId) {
+  const desSelId = 'mec-sel-lat_desarmado';
+  const desSel = document.getElementById(desSelId);
+  if (!desSel) return;
+  // Solo pre-llena si Desarmado está visible/checked y no tiene técnico asignado aún
+  const chkDes = document.getElementById('chk-lat_desarmado');
+  if (!chkDes?.checked) return;
+  if (!desSel.value || desSel.value === mecId) {
+    desSel.value = mecId;
+  }
 }
 
 function recogerChecklist(containerId) {
