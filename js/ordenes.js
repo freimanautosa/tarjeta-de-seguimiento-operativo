@@ -76,14 +76,15 @@ function _buildOrdenRow(o, etapas) {
   const fechaEnt = o.fecha_entrega_1 ? formatFecha(o.fecha_entrega_1) : '—';
   const searchStr = [(o.placa||''), (o.propietario||''), (tecnico||''), (o.marca||''), (o.linea||'')].join(' ').toLowerCase();
 
-  // Alerta de contacto faltante
-  const sinContacto = !o.telefono && !o.correo_cliente;
-  const sinTel      = !o.telefono && o.correo_cliente;
-  const contactAlert = sinContacto
-    ? `<span class="ord-alert-contact" title="Sin teléfono ni correo">⚠ Sin contacto</span>`
-    : sinTel
-      ? `<span class="ord-alert-contact ord-alert-soft" title="Sin teléfono">⚠ Sin tel.</span>`
-      : '';
+  // Alerta de contacto / datos faltantes
+  const camposFaltantes = [];
+  if (!o.propietario)   camposFaltantes.push('nombre');
+  if (!o.marca)         camposFaltantes.push('marca');
+  if (!o.linea)         camposFaltantes.push('línea');
+  if (!o.telefono)      camposFaltantes.push('teléfono');
+  const contactAlert = camposFaltantes.length
+    ? `<span class="ord-alert-contact" title="Faltan: ${camposFaltantes.join(', ')}">⚠ Faltan datos</span>`
+    : '';
 
   return `<tr class="ord-row" onclick="abrirOrden(${o.id})" data-search="${escapeHtml(searchStr)}">
     <td>
@@ -3178,6 +3179,43 @@ async function abrirEditarOrden(ordenId) {
   // Establecer estado visual inicial
   toggleTipoClienteEdit(tipoActual);
   if (esEmpresa) toggleTipoPersonaEdit('empresa');
+
+  // Banner + campos resaltados si hay datos faltantes
+  const _datosFaltantesEdit = [];
+  const _resaltarCampo = (id, label) => {
+    const el = document.getElementById(id);
+    if (el && !el.value.trim()) {
+      el.style.borderColor = '#EF4444';
+      el.style.boxShadow = '0 0 0 2px rgba(239,68,68,.15)';
+      el.addEventListener('input', function _clear() {
+        el.style.borderColor = '';
+        el.style.boxShadow = '';
+        el.removeEventListener('input', _clear);
+        // Quitar banner si ya no hay campos vacíos
+        const banner = document.getElementById('ed-datos-faltantes-banner');
+        if (banner) {
+          const aun = ['ed-propietario','ed-marca','ed-linea','ed-telefono'].some(i => {
+            const inp = document.getElementById(i);
+            return inp && !inp.value.trim();
+          });
+          if (!aun) banner.remove();
+        }
+      }, { once: true });
+      _datosFaltantesEdit.push(label);
+    }
+  };
+  _resaltarCampo('ed-propietario', 'Nombre del propietario');
+  _resaltarCampo('ed-marca',       'Marca del vehículo');
+  _resaltarCampo('ed-linea',       'Línea del vehículo');
+  _resaltarCampo('ed-telefono',    'Teléfono de contacto');
+
+  if (_datosFaltantesEdit.length) {
+    const banner = document.createElement('div');
+    banner.id = 'ed-datos-faltantes-banner';
+    banner.style.cssText = 'background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400E;display:flex;align-items:flex-start;gap:8px;margin-bottom:4px';
+    banner.innerHTML = `<span style="font-size:15px;flex-shrink:0">⚠</span><div><strong>Faltan datos por completar:</strong><div style="margin-top:3px;font-size:12px;color:#B45309">${_datosFaltantesEdit.join(' · ')}</div></div>`;
+    body.insertAdjacentElement('afterbegin', banner);
+  }
 
   modal.classList.add('show');
 }

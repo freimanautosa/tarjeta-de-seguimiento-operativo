@@ -24,7 +24,7 @@ function montarTaller() {
   if (main)      { main.style.marginLeft = '0'; main.style.height = '100vh'; main.style.overflow = 'hidden'; }
   if (content)   { content.style.padding = '0'; content.style.maxWidth = '100%'; content.style.height = '100%'; }
 
-  document.body.style.background = '#060B14';
+  document.body.style.background = '#FFFFFF';
   document.body.style.overflow   = 'hidden';
   document.body.style.height     = '100vh';
 
@@ -35,7 +35,7 @@ function montarTaller() {
       @keyframes pulse-dot  { 0%,100%{opacity:1} 50%{opacity:.35} }
       @keyframes flash-row  {
         0%,100%{background:transparent}
-        30%,70%{background:rgba(245,158,11,.08)}
+        30%,70%{background:rgba(245,158,11,.07)}
       }
       @keyframes overlay-in {
         from{opacity:0;transform:scale(.95)}
@@ -46,43 +46,44 @@ function montarTaller() {
         to{opacity:1;transform:translateX(0)}
       }
       #pag-taller {
-        background:#060B14;height:100vh;overflow:hidden;
+        background:#FFFFFF;height:100vh;overflow:hidden;
         display:flex;flex-direction:column;font-size:1vw;
       }
       .tv-shell {
         display:flex;flex-direction:column;height:100vh;overflow:hidden;position:relative;
+        background:#FFFFFF;
       }
 
       /* ── PANTALLA DE ACTIVACIÓN ── */
       .tv-activate-screen {
-        position:fixed;inset:0;background:#060B14;z-index:100;
+        position:fixed;inset:0;background:#FFFFFF;z-index:100;
         display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vh;
       }
       .tv-activate-logo {
-        width:12vw;opacity:.4;filter:grayscale(1) brightness(2);
+        width:14vw;opacity:.85;
       }
       .tv-activate-title {
-        font-family:'DM Mono',monospace;font-size:1.2vw;color:rgba(255,255,255,.5);
+        font-family:'DM Mono',monospace;font-size:1.2vw;color:#9CA3AF;
         letter-spacing:.2em;text-transform:uppercase;
       }
       .tv-activate-btn {
         font-family:'DM Mono',monospace;font-size:1.1vw;font-weight:700;
         letter-spacing:.12em;text-transform:uppercase;
-        background:#22C55E;color:#060B14;border:none;cursor:pointer;
+        background:#1E3A5F;color:#FFFFFF;border:none;cursor:pointer;
         padding:1.2vh 3vw;border-radius:.5vw;
         transition:transform .15s,box-shadow .15s;
       }
       .tv-activate-btn:hover {
         transform:scale(1.03);
-        box-shadow:0 0 2vw rgba(34,197,94,.4);
+        box-shadow:0 .4vw 1.5vw rgba(30,58,95,.3);
       }
       .tv-activate-sub {
-        font-size:.7vw;color:rgba(255,255,255,.25);letter-spacing:.1em;text-transform:uppercase;
+        font-size:.7vw;color:#9CA3AF;letter-spacing:.1em;text-transform:uppercase;
       }
 
       /* ── HEADER ── */
       .tv-header {
-        background:#060B14;border-bottom:1px solid rgba(255,255,255,.1);
+        background:#FFFFFF;border-bottom:1px solid rgba(0,0,0,.09);
         padding:0 2vw;height:6vh;flex-shrink:0;
         display:flex;align-items:center;justify-content:space-between;
       }
@@ -93,24 +94,25 @@ function montarTaller() {
       }
       .tv-brand-name {
         font-family:'DM Mono',monospace;font-size:.65vw;
-        letter-spacing:.18em;color:rgba(255,255,255,.4);text-transform:uppercase;
+        letter-spacing:.18em;color:#9CA3AF;text-transform:uppercase;
       }
       .tv-clock {
         font-family:'DM Mono',monospace;font-size:2vw;font-weight:700;
-        letter-spacing:.06em;color:#FFFFFF;
+        letter-spacing:.06em;color:#111827;
       }
       .tv-date {
         font-family:'DM Mono',monospace;font-size:.7vw;
-        letter-spacing:.08em;color:#FFFFFF;text-align:right;text-transform:uppercase;
+        letter-spacing:.08em;color:#374151;text-align:right;text-transform:uppercase;
       }
 
       /* ── KPI STRIP ── */
       .tv-kpi-strip {
         display:grid;grid-template-columns:repeat(4,1fr);
-        border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;
+        border-bottom:1px solid rgba(0,0,0,.08);flex-shrink:0;
+        background:#FAFBFC;
       }
       .tv-kpi {
-        padding:.8vh 2vw;border-right:1px solid rgba(255,255,255,.08);
+        padding:.8vh 2vw;border-right:1px solid rgba(0,0,0,.07);
         display:flex;align-items:center;gap:.8vw;
       }
       .tv-kpi:last-child { border-right:none; }
@@ -119,7 +121,7 @@ function montarTaller() {
       }
       .tv-kpi-label {
         font-size:.75vw;font-weight:600;text-transform:uppercase;
-        letter-spacing:.09em;color:rgba(255,255,255,.38);line-height:1.4;
+        letter-spacing:.09em;color:#9CA3AF;line-height:1.4;
       }
 
       /* ── BODY ── */
@@ -138,16 +140,16 @@ function montarTaller() {
       .tv-thead th {
         padding:.6vh 1.4vw;font-size:.6vw;font-weight:700;
         letter-spacing:.15em;text-transform:uppercase;
-        color:rgba(255,255,255,.28);text-align:left;
-        background:rgba(255,255,255,.03);
-        border-bottom:1px solid rgba(255,255,255,.07);
+        color:#9CA3AF;text-align:left;
+        background:#F8FAFC;
+        border-bottom:1px solid #E2E8F0;
         white-space:nowrap;
       }
       .tv-tbody tr {
-        border-bottom:1px solid rgba(255,255,255,.05);
+        border-bottom:1px solid rgba(0,0,0,.05);
         transition:background .15s;
       }
-      .tv-tbody tr:hover { background:rgba(255,255,255,.03); }
+      .tv-tbody tr:hover { background:rgba(0,0,0,.025); }
       .tv-tbody tr.flash { animation:flash-row 1.5s ease-in-out; }
       .tv-tbody td {
         padding:.45vh 1.4vw;vertical-align:middle;
@@ -161,10 +163,10 @@ function montarTaller() {
 
       .tv-placa {
         font-family:'DM Mono',monospace;font-size:1.35vw;font-weight:700;
-        color:#FFFFFF;letter-spacing:.04em;line-height:1;
+        color:#111827;letter-spacing:.04em;line-height:1;
       }
-      .tv-vehiculo { font-size:.55vw;color:rgba(255,255,255,.75);margin-top:.1vh; }
-      .tv-propietario { font-size:.62vw;font-weight:600;color:#FFFFFF;margin-top:.2vh;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:16vw; }
+      .tv-vehiculo { font-size:.55vw;color:#6B7280;margin-top:.1vh; }
+      .tv-propietario { font-size:.62vw;font-weight:600;color:#374151;margin-top:.2vh;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:16vw; }
 
       /* ── CHIPS DE ETAPA ── */
       .etapas-chips { display:flex;flex-wrap:wrap;gap:.3vw;align-items:center; }
@@ -173,21 +175,21 @@ function montarTaller() {
         padding:.2vh .5vw;border-radius:.3vw;
         font-size:.62vw;font-weight:700;white-space:nowrap;border:1px solid transparent;
       }
-      .chip-approved { background:rgba(34,197,94,.15);color:#4ADE80;border-color:rgba(34,197,94,.35); }
-      .chip-done     { background:rgba(34,197,94,.09);color:rgba(74,222,128,.88);border-color:rgba(34,197,94,.25); }
-      .chip-active   { background:rgba(245,158,11,.15);color:#FCD34D;border-color:rgba(245,158,11,.35); }
-      .chip-waiting  { background:rgba(245,158,11,.10);color:rgba(252,211,77,.85);border-color:rgba(245,158,11,.28); }
-      .chip-pending  { background:rgba(255,255,255,.08);color:rgba(255,255,255,.88);border-color:rgba(255,255,255,.25); }
+      .chip-approved { background:#DCFCE7;color:#15803D;border-color:#BBF7D0; }
+      .chip-done     { background:#F0FDF4;color:#16A34A;border-color:#D1FAE5; }
+      .chip-active   { background:#FEF3C7;color:#B45309;border-color:#FDE68A; }
+      .chip-waiting  { background:#FFFBEB;color:#D97706;border-color:#FDE68A; }
+      .chip-pending  { background:#F3F4F6;color:#6B7280;border-color:#E5E7EB; }
       .chip-dot { width:.45vw;height:.45vw;border-radius:50%;flex-shrink:0; }
       .chip-dot.approved { background:#22C55E; }
-      .chip-dot.done     { background:rgba(34,197,94,.45); }
+      .chip-dot.done     { background:#4ADE80; }
       .chip-dot.active   { background:#F59E0B; }
-      .chip-dot.waiting  { background:transparent;border:.8px solid rgba(245,158,11,.5); }
-      .chip-dot.pending  { background:transparent;border:.8px solid rgba(255,255,255,.15); }
+      .chip-dot.waiting  { background:transparent;border:.8px solid #F59E0B; }
+      .chip-dot.pending  { background:transparent;border:.8px solid #D1D5DB; }
 
-      .tv-tec { font-size:.75vw;color:rgba(255,255,255,.45); }
+      .tv-tec { font-size:.75vw;color:#6B7280; }
       .tv-timer-val {
-        font-family:'DM Mono',monospace;font-size:.85vw;font-weight:700;color:#FCD34D;
+        font-family:'DM Mono',monospace;font-size:.85vw;font-weight:700;color:#B45309;
       }
       .tv-entrega-chip { font-family:'DM Mono',monospace;font-size:.75vw;font-weight:700; }
 
@@ -196,22 +198,23 @@ function montarTaller() {
         padding:.25vh .6vw;border-radius:.3vw;
         text-transform:uppercase;letter-spacing:.07em;border:1px solid;white-space:nowrap;
       }
-      .tv-badge-blue   { background:rgba(59,130,246,.13);color:#93C5FD;border-color:rgba(59,130,246,.3); }
-      .tv-badge-amber  { background:rgba(245,158,11,.13);color:#FCD34D;border-color:rgba(245,158,11,.3); }
-      .tv-badge-red    { background:rgba(248,113,113,.13);color:#F87171;border-color:rgba(248,113,113,.3); }
-      .tv-badge-gray   { background:rgba(255,255,255,.07);color:rgba(255,255,255,.45);border-color:rgba(255,255,255,.12); }
+      .tv-badge-blue   { background:#DBEAFE;color:#1E40AF;border-color:#BFDBFE; }
+      .tv-badge-amber  { background:#FEF3C7;color:#B45309;border-color:#FDE68A; }
+      .tv-badge-red    { background:#FEE2E2;color:#DC2626;border-color:#FECACA; }
+      .tv-badge-gray   { background:#F9FAFB;color:#6B7280;border-color:#E5E7EB; }
 
       /* ── PANEL DERECHO ── */
       .tv-panel-right {
         width:17vw;flex-shrink:0;
-        border-left:1px solid rgba(255,255,255,.08);
+        border-left:1px solid rgba(0,0,0,.09);
         display:flex;flex-direction:column;overflow:hidden;
+        background:#FAFBFC;
       }
       .tv-panel-title {
         font-family:'DM Mono',monospace;font-size:.6vw;font-weight:700;
         letter-spacing:.18em;text-transform:uppercase;
-        color:rgba(255,255,255,.35);
-        padding:.7vh 1.2vw;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;
+        color:#9CA3AF;
+        padding:.7vh 1.2vw;border-bottom:1px solid rgba(0,0,0,.07);flex-shrink:0;
       }
       .tv-panel-list {
         flex:1;overflow:hidden;padding:.4vh .5vw;
@@ -223,30 +226,30 @@ function montarTaller() {
         animation:slide-in-right .4s ease;flex-shrink:0;cursor:pointer;
       }
       .tv-panel-item.listo {
-        background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);
+        background:#FFFBEB;border:1px solid #FDE68A;
       }
       .tv-panel-item.entregado {
-        background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.18);
+        background:#F0FDF4;border:1px solid #BBF7D0;
       }
       .tv-panel-dot { width:.5vw;height:.5vw;border-radius:50%;flex-shrink:0; }
-      .tv-panel-dot.listo    { background:#FCD34D; }
-      .tv-panel-dot.entregado{ background:#4ADE80; }
+      .tv-panel-dot.listo    { background:#F59E0B; }
+      .tv-panel-dot.entregado{ background:#22C55E; }
       .tv-panel-info { flex:1;min-width:0; }
       .tv-panel-placa {
         font-family:'DM Mono',monospace;font-size:.95vw;font-weight:700;
-        color:#FFFFFF;letter-spacing:.04em;line-height:1;
+        color:#111827;letter-spacing:.04em;line-height:1;
       }
       .tv-panel-status {
         font-size:.6vw;font-weight:500;margin-top:.15vh;
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
       }
-      .tv-panel-status.listo    { color:rgba(252,211,77,.65); }
-      .tv-panel-status.entregado{ color:rgba(74,222,128,.65); }
+      .tv-panel-status.listo    { color:#D97706; }
+      .tv-panel-status.entregado{ color:#16A34A; }
       .tv-panel-time {
-        font-family:'DM Mono',monospace;font-size:.6vw;color:rgba(255,255,255,.25);
+        font-family:'DM Mono',monospace;font-size:.6vw;color:#9CA3AF;
       }
       .tv-panel-empty {
-        font-size:.7vw;color:rgba(255,255,255,.15);
+        font-size:.7vw;color:#D1D5DB;
         font-style:italic;padding:1vh 0;text-align:center;
       }
 
@@ -255,123 +258,116 @@ function montarTaller() {
         display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0;
       }
       .tv-panel-divider {
-        border-top:1px solid rgba(255,255,255,.06);flex-shrink:0;
+        border-top:1px solid rgba(0,0,0,.07);flex-shrink:0;
       }
       .tv-prog-item {
         display:flex;align-items:center;gap:.6vw;
         padding:.45vh .8vw;border-radius:.4vw;
-        background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.18);
+        background:#EEF2FF;border:1px solid #C7D2FE;
         flex-shrink:0;cursor:default;
       }
       .tv-prog-dot {
-        width:.45vw;height:.45vw;border-radius:50%;background:#818CF8;flex-shrink:0;
+        width:.45vw;height:.45vw;border-radius:50%;background:#6366F1;flex-shrink:0;
       }
       .tv-prog-placa {
         font-family:'DM Mono',monospace;font-size:.85vw;font-weight:700;
-        color:#C7D2FE;letter-spacing:.04em;line-height:1;flex:1;min-width:0;
+        color:#4338CA;letter-spacing:.04em;line-height:1;flex:1;min-width:0;
       }
       .tv-prog-fecha {
-        font-family:'DM Mono',monospace;font-size:.55vw;color:rgba(199,210,254,.45);
+        font-family:'DM Mono',monospace;font-size:.55vw;color:#6B7280;
         flex-shrink:0;
       }
       .tv-prog-ot {
-        font-family:'DM Mono',monospace;font-size:.5vw;color:rgba(199,210,254,.35);
+        font-family:'DM Mono',monospace;font-size:.5vw;color:#9CA3AF;
         margin-top:.1vh;
       }
 
       /* ── OVERLAY ── */
       .tv-update-overlay {
-        position:absolute;inset:0;background:rgba(6,11,20,.88);
+        position:absolute;inset:0;background:rgba(15,23,42,.65);
         z-index:30;display:flex;align-items:center;justify-content:center;padding:2vw;
       }
       .tv-overlay-card {
-        background:#0C1220;border:0.15vw solid #F59E0B;border-radius:.8vw;
+        background:#FFFFFF;border:0.2vw solid #F59E0B;border-radius:.8vw;
         width:26vw;overflow:hidden;animation:overlay-in .3s ease;
+        box-shadow:0 2vw 4vw rgba(0,0,0,.25);
       }
       .tv-overlay-card.green-border { border-color:#22C55E; }
       .tv-overlay-badge {
-        background:#F59E0B;color:#060B14;
+        background:#F59E0B;color:#FFFFFF;
         font-family:'DM Mono',monospace;font-size:.7vw;font-weight:700;
         letter-spacing:.18em;text-transform:uppercase;
         padding:.6vh 1.5vw;text-align:center;
       }
       .tv-overlay-badge.green-bg { background:#22C55E; }
       .tv-overlay-head {
-        padding:1.2vh 1.5vw .8vh;border-bottom:1px solid rgba(255,255,255,.08);
+        padding:1.2vh 1.5vw .8vh;border-bottom:1px solid rgba(0,0,0,.08);
       }
       .tv-overlay-placa {
         font-family:'DM Mono',monospace;font-size:2.5vw;font-weight:700;
-        color:#FFFFFF;letter-spacing:.04em;line-height:1;
+        color:#111827;letter-spacing:.04em;line-height:1;
       }
-      .tv-overlay-veh { font-size:.8vw;color:rgba(255,255,255,.35);margin-top:.3vh; }
+      .tv-overlay-veh { font-size:.8vw;color:#9CA3AF;margin-top:.3vh; }
       .tv-overlay-body { padding:.8vh 1.5vw; }
       .tv-overlay-row {
         display:flex;align-items:center;gap:.7vw;padding:.5vh 0;
-        border-bottom:1px solid rgba(255,255,255,.05);
+        border-bottom:1px solid rgba(0,0,0,.06);
       }
       .tv-overlay-row:last-child { border-bottom:none; }
       .tv-odot        { width:.7vw;height:.7vw;border-radius:50%;flex-shrink:0; }
       .tv-odot.approved{ background:#22C55E; }
-      .tv-odot.done   { background:rgba(34,197,94,.4);border:1px solid rgba(34,197,94,.5); }
+      .tv-odot.done   { background:#BBF7D0;border:1px solid #4ADE80; }
       .tv-odot.active { background:#F59E0B; }
-      .tv-odot.pending{ background:transparent;border:1px solid rgba(255,255,255,.15); }
+      .tv-odot.pending{ background:transparent;border:1px solid #D1D5DB; }
       .tv-oname       { font-size:.9vw;flex:1; }
-      .tv-oname.approved{ color:rgba(74,222,128,.85); }
-      .tv-oname.done  { color:rgba(255,255,255,.48); }
-      .tv-oname.active{ color:#FCD34D;font-weight:700; }
-      .tv-oname.pending{ color:rgba(255,255,255,.2); }
+      .tv-oname.approved{ color:#15803D; }
+      .tv-oname.done  { color:#9CA3AF; }
+      .tv-oname.active{ color:#B45309;font-weight:700; }
+      .tv-oname.pending{ color:#D1D5DB; }
       .tv-otime       { font-family:'DM Mono',monospace;font-size:.8vw;font-weight:700; }
-      .tv-otime.approved{ color:rgba(74,222,128,.7); }
-      .tv-otime.active{ color:#FCD34D; }
-      .tv-otime.done  { color:rgba(255,255,255,.28); }
+      .tv-otime.approved{ color:#16A34A; }
+      .tv-otime.active{ color:#B45309; }
+      .tv-otime.done  { color:#9CA3AF; }
       .tv-overlay-foot {
-        padding:.8vh 1.5vw;border-top:1px solid rgba(255,255,255,.08);
+        padding:.8vh 1.5vw;border-top:1px solid rgba(0,0,0,.07);
         display:flex;justify-content:space-between;align-items:center;
       }
-      .tv-overlay-tec { font-size:.8vw;color:rgba(255,255,255,.45); }
+      .tv-overlay-tec { font-size:.8vw;color:#6B7280; }
       .tv-overlay-entrega { font-size:.8vw;font-weight:700; }
       .tv-overlay-countdown {
         font-family:'DM Mono',monospace;font-size:.6vw;
-        color:rgba(255,255,255,.22);text-align:center;
-        padding:.5vh;border-top:1px solid rgba(255,255,255,.05);
+        color:#9CA3AF;text-align:center;
+        padding:.5vh;border-top:1px solid rgba(0,0,0,.06);
       }
       .tv-watermark {
         position:fixed;top:50%;left:50%;
         transform:translate(-50%,-50%);
-        width:36vw;height:36vw;pointer-events:none;z-index:0;
+        width:34vw;height:34vw;pointer-events:none;z-index:0;
       }
 
       /* ── MÓVIL ── */
       @media (max-width: 768px) {
-        /* Pantalla de activación */
         .tv-activate-logo { width:40vw !important; }
         .tv-activate-title { font-size:4.5vw !important; letter-spacing:.08em !important; }
         .tv-activate-btn { font-size:4.5vw !important; padding:2.5vh 8vw !important; border-radius:2vw !important; }
         .tv-activate-sub { font-size:3vw !important; }
-        /* Header */
         .tv-header { height:auto !important; padding:1.5vh 4vw !important; }
         .tv-clock { font-size:9vw !important; }
         .tv-date { font-size:3vw !important; }
         .tv-brand-name { font-size:2.8vw !important; letter-spacing:.1em !important; }
         .tv-brand-dot { width:2vw !important; height:2vw !important; }
-        /* KPI strip: 2x2 en lugar de 1x4 */
         .tv-kpi-strip { grid-template-columns:repeat(2,1fr) !important; }
-        .tv-kpi { padding:1.5vh 4vw !important; gap:2.5vw !important; border-right:none !important; border-bottom:1px solid rgba(255,255,255,.08); }
-        .tv-kpi:nth-child(1),.tv-kpi:nth-child(3) { border-right:1px solid rgba(255,255,255,.08) !important; }
+        .tv-kpi { padding:1.5vh 4vw !important; gap:2.5vw !important; border-right:none !important; border-bottom:1px solid rgba(0,0,0,.07); }
+        .tv-kpi:nth-child(1),.tv-kpi:nth-child(3) { border-right:1px solid rgba(0,0,0,.07) !important; }
         .tv-kpi-num { font-size:10vw !important; }
         .tv-kpi-label { font-size:2.8vw !important; }
-        /* Ocultar panel derecho */
         .tv-panel-right { display:none !important; }
-        /* Tabla: ocultar columnas Técnico y Tiempo */
-        .tv-thead th:nth-child(3),
-        .tv-thead th:nth-child(4),
-        .tv-tbody tr td:nth-child(3),
-        .tv-tbody tr td:nth-child(4) { display:none !important; }
+        .tv-thead th:nth-child(3),.tv-thead th:nth-child(4),
+        .tv-tbody tr td:nth-child(3),.tv-tbody tr td:nth-child(4) { display:none !important; }
         .tv-col-placa  { width:22% !important; }
         .tv-col-etapas { width:52% !important; }
         .tv-col-entrega{ width:12% !important; }
         .tv-col-estado { width:14% !important; }
-        /* Tamaños de texto tabla */
         .tv-thead th { font-size:2.5vw !important; padding:.5vh 1.5vw !important; }
         .tv-tbody td  { padding:1vh 1.5vw !important; }
         .tv-placa  { font-size:3.8vw !important; letter-spacing:.02em !important; }
@@ -381,14 +377,14 @@ function montarTaller() {
         .chip-dot { width:1.5vw !important; height:1.5vw !important; }
         .tv-entrega-chip { font-size:2.8vw !important; }
         .tv-badge { font-size:2.5vw !important; padding:.3vh 1vw !important; border-radius:.5vw !important; }
-        .tv-watermark { width:80vw !important; height:80vw !important; }
+        .tv-watermark { width:70vw !important; height:70vw !important; }
       }
     `;
     document.head.appendChild(st);
   }
 
   const pagTaller = document.getElementById('pag-taller');
-  if (pagTaller) pagTaller.style.cssText = 'display:flex;flex-direction:column;height:100vh;overflow:hidden;background:#060B14';
+  if (pagTaller) pagTaller.style.cssText = 'display:flex;flex-direction:column;height:100vh;overflow:hidden;background:#FFFFFF';
 
   mostrarPagina('pag-taller');
   _mostrarPantallaActivacion();
@@ -401,7 +397,7 @@ function _mostrarPantallaActivacion() {
 
   cont.innerHTML = `
     <div class="tv-activate-screen" id="tv-activate-screen">
-      <img src="icons/Logo_Fondo_Taller.png" class="tv-activate-logo" alt="">
+      <img src="icons/Icono_Redondo_Fondo_Taller.png" class="tv-activate-logo" alt="">
       <div class="tv-activate-title">Freimanautos · Sistema Operativo</div>
       <button class="tv-activate-btn" onclick="_activarPantallaTaller()">
         ▶ &nbsp; Iniciar pantalla del taller
@@ -486,17 +482,17 @@ function _tvHoraStr(isoStr) {
 }
 
 function _tvEntregaInfo(orden) {
-  if (!orden.fecha_entrega_1) return { color:'rgba(255,255,255,.3)', label:'Sin fecha', hora:null };
+  if (!orden.fecha_entrega_1) return { color:'#9CA3AF', label:'Sin fecha', hora:null };
   const f    = new Date(orden.fecha_entrega_1);
   const fDia = new Date(f); fDia.setHours(0,0,0,0);
   const hoy  = new Date(); hoy.setHours(0,0,0,0);
   const dias = Math.round((fDia - hoy) / 86400000);
   const tieneHora = f.getHours() !== 0 || f.getMinutes() !== 0;
   const hora = tieneHora ? f.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',hour12:false}) : null;
-  if (dias < 0)   return { color:'#F87171', label:`${Math.abs(dias)}d vencida`, hora };
-  if (dias === 0) return { color:'#FCD34D', label:'Hoy', hora };
-  if (dias <= 2)  return { color:'#FCD34D', label:`${dias}d`, hora };
-  return { color:'#4ADE80', label:`${dias}d`, hora };
+  if (dias < 0)   return { color:'#DC2626', label:`${Math.abs(dias)}d vencida`, hora };
+  if (dias === 0) return { color:'#D97706', label:'Hoy', hora };
+  if (dias <= 2)  return { color:'#D97706', label:`${dias}d`, hora };
+  return { color:'#16A34A', label:`${dias}d`, hora };
 }
 
 function _tvMostrarOverlay(orden, etapasOrden, badge, esVerde, aprobadas) {
@@ -522,7 +518,7 @@ function _tvMostrarOverlay(orden, etapasOrden, badge, esVerde, aprobadas) {
         <div class="tv-overlay-badge${esVerde?' green-bg':''}">${badge}</div>
         <div class="tv-overlay-head">
           <div class="tv-overlay-placa">${orden.placa}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:.7vw;font-weight:600;color:rgba(255,255,255,.35);letter-spacing:.08em;margin-top:.2vh">${formatOT(orden.id)}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.7vw;font-weight:600;color:#9CA3AF;letter-spacing:.08em;margin-top:.2vh">${formatOT(orden.id)}</div>
           <div class="tv-overlay-veh">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
         </div>
         <div class="tv-overlay-body">${etapasHtml}</div>
@@ -668,20 +664,20 @@ async function cargarPantallaTaller() {
       const tecnicos = [...new Set(etapasActOrden.map(e => e.tecnico).filter(Boolean))];
       const tecHtml  = tecnicos.length
         ? tecnicos.map(t => `<div class="tv-tec">${t}</div>`).join('')
-        : `<div class="tv-tec" style="color:rgba(255,255,255,.18)">—</div>`;
+        : `<div class="tv-tec" style="color:#D1D5DB">—</div>`;
 
       // Timer(es)
       const timerHtml = etapasActOrden.length
         ? etapasActOrden.map(e =>
-            `<div class="tv-timer-val" id="tv-et-${e.id}" ${e.pausado ? 'style="color:rgba(252,211,77,.35)"' : ''}>${e.pausado ? '⏸ ' : ''}${_tvTimerStr(e)}</div>`
+            `<div class="tv-timer-val" id="tv-et-${e.id}" ${e.pausado ? 'style="color:rgba(180,83,9,.4)"' : ''}>${e.pausado ? '⏸ ' : ''}${_tvTimerStr(e)}</div>`
           ).join('')
-        : `<div style="font-size:.7vw;color:rgba(255,255,255,.18)">—</div>`;
+        : `<div style="font-size:.7vw;color:#D1D5DB">—</div>`;
 
       return `<tr id="tv-row-${orden.id}" onclick="_tvVerDetalle(${orden.id})" style="cursor:pointer">
         <td>
           <div style="display:flex;align-items:baseline;gap:.5vw;white-space:nowrap">
             <div class="tv-placa">${orden.placa}</div>
-            <div style="font-family:'DM Mono',monospace;font-size:.8vw;font-weight:700;color:rgba(255,255,255,.8);letter-spacing:.04em;white-space:nowrap">${formatOT(orden.id)}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:.8vw;font-weight:700;color:#6B7280;letter-spacing:.04em;white-space:nowrap">${formatOT(orden.id)}</div>
           </div>
           ${orden.propietario ? `<div class="tv-propietario">${orden.propietario}</div>` : ''}
           <div class="tv-vehiculo">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
@@ -752,23 +748,23 @@ async function cargarPantallaTaller() {
 
         <div class="tv-kpi-strip" style="grid-template-columns:repeat(5,1fr)">
           <div class="tv-kpi">
-            <div class="tv-kpi-num" style="color:#93C5FD">${ordenesActivas.length}</div>
+            <div class="tv-kpi-num" style="color:#1E40AF">${ordenesActivas.length}</div>
             <div class="tv-kpi-label">Órdenes<br>activas</div>
           </div>
           <div class="tv-kpi">
-            <div class="tv-kpi-num" style="color:#4ADE80">${entregadasHoy.length}</div>
+            <div class="tv-kpi-num" style="color:#15803D">${entregadasHoy.length}</div>
             <div class="tv-kpi-label">Entregadas<br>hoy</div>
           </div>
           <div class="tv-kpi">
-            <div class="tv-kpi-num" style="color:#93C5FD">${creadasHoy.length}</div>
+            <div class="tv-kpi-num" style="color:#1E40AF">${creadasHoy.length}</div>
             <div class="tv-kpi-label">Ingresaron<br>hoy</div>
           </div>
           <div class="tv-kpi">
-            <div class="tv-kpi-num" style="color:#FCD34D">${enProceso.length}</div>
+            <div class="tv-kpi-num" style="color:#B45309">${enProceso.length}</div>
             <div class="tv-kpi-label">En proceso<br>ahora</div>
           </div>
           <div class="tv-kpi">
-            <div class="tv-kpi-num" style="color:#818CF8">${ordenesProgramadas.length}</div>
+            <div class="tv-kpi-num" style="color:#4338CA">${ordenesProgramadas.length}</div>
             <div class="tv-kpi-label">Programadas</div>
           </div>
         </div>
@@ -788,7 +784,7 @@ async function cargarPantallaTaller() {
                   </tr>
                 </thead>
                 <tbody class="tv-tbody">
-                  ${filasHtml || `<tr><td colspan="6" style="text-align:center;padding:3vh;color:rgba(255,255,255,.15);font-size:.8vw;letter-spacing:.1em">SIN ÓRDENES ACTIVAS</td></tr>`}
+                  ${filasHtml || `<tr><td colspan="6" style="text-align:center;padding:3vh;color:#D1D5DB;font-size:.8vw;letter-spacing:.1em">SIN ÓRDENES ACTIVAS</td></tr>`}
                 </tbody>
               </table>
             </div>
@@ -801,7 +797,7 @@ async function cargarPantallaTaller() {
             </div>
             <div class="tv-panel-divider"></div>
             <div class="tv-panel-section">
-              <div class="tv-panel-title" style="color:rgba(199,210,254,.45)">Programadas · ${ordenesProgramadas.length}</div>
+              <div class="tv-panel-title" style="color:#6366F1">Programadas · ${ordenesProgramadas.length}</div>
               <div class="tv-panel-list" style="gap:.3vh">${progHtml}</div>
             </div>
           </div>
@@ -809,8 +805,8 @@ async function cargarPantallaTaller() {
       </div>
 
       <div class="tv-watermark">
-        <img src="icons/Logo_Fondo_Taller.png"
-          style="width:100%;height:100%;object-fit:contain;opacity:0.04;filter:grayscale(1) brightness(3)" alt="">
+        <img src="icons/Icono_Redondo_Fondo_Taller.png"
+          style="width:100%;height:100%;object-fit:contain;opacity:0.06" alt="">
       </div>
     `;
 
@@ -841,7 +837,7 @@ async function cargarPantallaTaller() {
 
   } catch(e) {
     if (!document.getElementById('tv-activate-screen'))
-      cont.innerHTML = `<div style="color:#F87171;padding:4vh 3vw;font-family:'DM Mono',monospace;font-size:1.2vw">ERROR: ${e.message}</div>`;
+      cont.innerHTML = `<div style="color:#DC2626;padding:4vh 3vw;font-family:'DM Mono',monospace;font-size:1.2vw">ERROR: ${e.message}</div>`;
   }
 }
 
