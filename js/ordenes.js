@@ -587,6 +587,8 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
     }
   }
 
+  const fueRechazada = ultimaAprob?.estado === 'rechazado';
+
   let acc = '';
   if (!e.inicio)
     acc = `<button class="btn btn-success btn-sm" data-eid="${eid}" data-nombre="${escapeHtml(nombre)}" onclick="iniciarEtapa(+this.dataset.eid,this.dataset.nombre)">▶ Iniciar</button>`;
@@ -595,12 +597,25 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
       <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
       Esperando repuesto...
     </span>`;
-  else if (e.inicio && !e.fin)
-    acc = `<button class="btn btn-danger btn-sm" data-eid="${eid}" data-nombre="${escapeHtml(nombre)}" data-srv="${escapeHtml(e.servicio||'')}" onclick="finalizarEtapa(+this.dataset.eid,this.dataset.nombre,this.dataset.srv)">■ Finalizar</button>`;
-  else if (e.fin) {
-    const aprobBtn = ultimaAprob
-      ? `<button class="btn btn-ghost btn-sm" data-eid="${eid}" data-nombre="${escapeHtml(nombre)}" onclick="abrirModalAprobacion(+this.dataset.eid,this.dataset.nombre)">↻ Revisar calidad</button>`
-      : `<button class="btn btn-primary btn-sm" data-eid="${eid}" data-nombre="${escapeHtml(nombre)}" onclick="abrirModalAprobacion(+this.dataset.eid,this.dataset.nombre)">✓ Aprobar calidad</button>`;
+  else if (e.inicio && !e.fin) {
+    // Si fue reabierta por rechazo, mostrar aviso
+    const avisoRechazo = fueRechazada
+      ? `<div style="background:#FEE2E2;border:1px solid #FECACA;border-radius:6px;padding:6px 10px;font-size:12px;color:#DC2626;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:5px">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Etapa rechazada — corrígela y finaliza de nuevo
+          ${ultimaAprob?.observacion ? `<span style="font-weight:400;color:#B91C1C;display:block;margin-top:3px">"${escapeHtml(ultimaAprob.observacion)}"</span>` : ''}
+        </div>` : '';
+    acc = avisoRechazo + `<button class="btn btn-danger btn-sm" data-eid="${eid}" data-nombre="${escapeHtml(nombre)}" data-srv="${escapeHtml(e.servicio||'')}" onclick="finalizarEtapa(+this.dataset.eid,this.dataset.nombre,this.dataset.srv)">${fueRechazada ? '■ Reenviar a calidad' : '■ Finalizar'}</button>`;
+  } else if (e.fin) {
+    const esRechazada = fueRechazada;
+    const aprobBtn = esRechazada
+      ? `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-sm" style="background:#FEF3C7;color:#D97706;border:1px solid #FCD34D" data-eid="${eid}" onclick="reabrirEtapa(+this.dataset.eid)">↩ Reabrir para corrección</button>
+          <button class="btn btn-ghost btn-sm" data-eid="${eid}" data-nombre="${escapeHtml(nombre)}" onclick="abrirModalAprobacion(+this.dataset.eid,this.dataset.nombre)">↻ Revisar calidad</button>
+        </div>`
+      : ultimaAprob?.estado === 'aprobado'
+        ? `<button class="btn btn-ghost btn-sm" data-eid="${eid}" data-nombre="${escapeHtml(nombre)}" onclick="abrirModalAprobacion(+this.dataset.eid,this.dataset.nombre)">↻ Revisar calidad</button>`
+        : `<button class="btn btn-primary btn-sm" data-eid="${eid}" data-nombre="${escapeHtml(nombre)}" onclick="abrirModalAprobacion(+this.dataset.eid,this.dataset.nombre)">✓ Aprobar calidad</button>`;
     acc = aprobBtn;
   } else {
     acc = `<span style="font-size:12px;color:var(--gris-mid);font-style:italic">Esperando turno</span>`;
@@ -633,6 +648,9 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
         </div>
         <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
           ${ultimaAprob ? `<span class="badge badge-${ultimaAprob.estado}">${ultimaAprob.estado==='aprobado'?'✓ Aprobada':'✗ Rechazada'}</span>` : ''}
+          ${esJefe() && !e.inicio ? `<button class="btn btn-ghost btn-xs" style="color:var(--rojo);padding:2px 7px" title="Eliminar etapa" onclick="event.stopPropagation();eliminarEtapa(${eid},'${escapeHtml(nombre)}')">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          </button>` : ''}
           ${esPausado ? `<span class="badge" style="background:#FEF3C7;color:#92400E;border:1px solid #F59E0B">⏸ Pausado</span>` : ''}
           <span class="badge badge-${bCls}">${badge}</span>
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="opacity:0.4"><path d="M6 9l6 6 6-6"/></svg>
@@ -732,6 +750,24 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
 function togglePanel(id) {
   const el = document.getElementById(id);
   if (el) el.classList.toggle('open');
+}
+
+async function eliminarEtapa(eid, nombre) {
+  if (!confirm(`¿Eliminar la etapa "${nombre}"?\nEsta acción no se puede deshacer.`)) return;
+  try {
+    await api(`/etapas?id=eq.${eid}`, 'DELETE');
+    toast('Etapa eliminada ✓');
+    if (ordenActual) abrirOrden(ordenActual.id);
+  } catch(e) { toast('Error al eliminar: ' + e.message, 'err'); }
+}
+
+async function reabrirEtapa(eid) {
+  if (!confirm('¿Reabrir esta etapa para que el técnico realice las correcciones?')) return;
+  try {
+    await api(`/etapas?id=eq.${eid}`, 'PATCH', { fin: null });
+    toast('Etapa reabierta — el técnico puede corregir ✓');
+    if (ordenActual) abrirOrden(ordenActual.id);
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
 function toggleEtapa(id) {
   const el = document.getElementById(id);

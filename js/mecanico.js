@@ -80,10 +80,15 @@ async function cargarEtapasMecanico() {
     }
 
     const ids = [...new Set(etapas.map(e => e.orden_id))];
-    const [ordenes, solicitudes] = await Promise.all([
+    const etapaIds = etapas.map(e => e.id).join(',');
+    const [ordenes, solicitudes, aprobaciones] = await Promise.all([
       api(`/ordenes?id=in.(${ids.join(',')})`).catch(() => []),
-      api(`/solicitudes_repuesto?orden_id=in.(${ids.join(',')})&order=creado_en.desc&select=*`).catch(() => [])
+      api(`/solicitudes_repuesto?orden_id=in.(${ids.join(',')})&order=creado_en.desc&select=*`).catch(() => []),
+      etapaIds ? api(`/aprobaciones_etapa?etapa_id=in.(${etapaIds})&order=creado_en.desc&select=etapa_id,estado,observacion`).catch(() => []) : []
     ]);
+    // Mapa: etapa_id → última aprobación
+    const aprobMap = {};
+    (aprobaciones || []).forEach(a => { if (!aprobMap[a.etapa_id]) aprobMap[a.etapa_id] = a; });
 
     const porOrden = {};
     etapas.forEach(e => {
@@ -96,16 +101,20 @@ async function cargarEtapasMecanico() {
       const orden = ordenes.find(o => o.id == oid) || {};
       const etapsHtml = ets.map(e => {
         const esPausado = e.pausado && !e.fin;
-        const badge = !e.inicio ? 'Pendiente' : (e.fin ? 'Completada' : esPausado ? 'Pausado ⏸' : 'En proceso');
-        const bCls  = !e.inicio ? 'pendiente'  : (e.fin ? 'completada' : esPausado ? 'pendiente' : 'iniciada');
+        const ultimaAprob = aprobMap[e.id] || null;
+        const fueRechazada = ultimaAprob?.estado === 'rechazado';
+        const badge = !e.inicio ? 'Pendiente'
+          : e.fin ? (fueRechazada ? '✗ Rechazada' : 'Completada')
+          : esPausado ? 'Pausado ⏸' : 'En proceso';
+        const bCls  = !e.inicio ? 'pendiente'
+          : e.fin ? (fueRechazada ? 'rechazado' : 'completada')
+          : esPausado ? 'pendiente' : 'iniciada';
         const hayActiva = ets.some(x => x.inicio && !x.fin);
         let acc = '';
         const placa = escapeHtml(orden.placa || '');
         if (!e.inicio && !hayActiva)
           acc = `<button class="btn btn-success btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa || '')}" data-oid="${oid}" onclick="event.stopPropagation();mecIniciarEtapa(+this.dataset.eid,this.dataset.etapa,+this.dataset.oid)">▶ Iniciar</button>`;
         else if (e.inicio && !e.fin && esPausado) {
-          // Pausa por repuesto → no puede hacer nada, solo esperar
-          // Pausa por otro motivo → puede reanudar
           const hayRepuestoPendiente = solicitudes.some(s => s.orden_id == oid && s.etapa_id == e.id && ['pendiente_jefe','enviado_repuestos','cotizado','pedido','recibido_taller'].includes(s.estado));
           acc = hayRepuestoPendiente
             ? `<span style="font-size:12px;color:#D97706;font-weight:600;display:flex;align-items:center;gap:4px">
@@ -113,9 +122,14 @@ async function cargarEtapasMecanico() {
                 Esperando repuesto
               </span>`
             : `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();mecReanudarEtapa(${e.id},${oid})">▶ Reanudar</button>`;
-        } else if (e.inicio && !e.fin)
-          acc = `<button class="btn btn-danger btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa || '')}" data-srv="${escapeHtml(e.servicio || '')}" data-oid="${oid}" onclick="event.stopPropagation();mecFinalizarEtapa(+this.dataset.eid,this.dataset.etapa,this.dataset.srv,+this.dataset.oid)">■ Finalizar</button>`;
-        else if (e.fin)
+        } else if (e.inicio && !e.fin) {
+          const avisoRechazo = fueRechazada
+            ? `<div style="background:#FEE2E2;border:1px solid #FECACA;border-radius:6px;padding:6px 10px;font-size:12px;color:#DC2626;font-weight:600;margin-bottom:6px;width:100%">
+                ✗ El jefe rechazó esta etapa — corrígela y finaliza de nuevo
+                ${ultimaAprob?.observacion ? `<div style="font-weight:400;margin-top:2px;color:#B91C1C">"${escapeHtml(ultimaAprob.observacion)}"</div>` : ''}
+               </div>` : '';
+          acc = avisoRechazo + `<button class="btn btn-danger btn-sm" data-eid="${e.id}" data-etapa="${escapeHtml(e.etapa || '')}" data-srv="${escapeHtml(e.servicio || '')}" data-oid="${oid}" onclick="event.stopPropagation();mecFinalizarEtapa(+this.dataset.eid,this.dataset.etapa,this.dataset.srv,+this.dataset.oid)">${fueRechazada ? '■ Reenviar a calidad' : '■ Finalizar'}</button>`;
+        } else if (e.fin)
           acc = `<span class="badge badge-completada">Completada ✓</span>`;
         else
           acc = `<span style="font-size:12px;color:var(--gris-mid)">Esperando turno</span>`;
