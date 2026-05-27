@@ -167,39 +167,34 @@ async function cargarDashboardMes() {
       const pctOrd  = metaMes?.meta_ordenes  ? Math.min(Math.round((ordenesMes.length / metaMes.meta_ordenes) * 100), 100) : null;
 
       const chip = (num, label, sub, color, bg, onclick) =>
-        `<div onclick="${onclick}" style="background:${bg};border:1px solid ${bg === 'white' ? 'var(--gris-borde)' : 'transparent'};border-radius:8px;padding:6px 11px;cursor:${onclick ? 'pointer' : 'default'};text-align:center;min-width:62px;transition:opacity .15s" onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">
-          <div style="font-size:17px;font-weight:800;color:${color};line-height:1;font-family:'DM Mono',monospace">${num}</div>
-          <div style="font-size:9px;font-weight:600;color:${color};opacity:.75;margin-top:2px;white-space:nowrap">${label}</div>
+        `<div onclick="${onclick}" style="background:${bg};border:1px solid ${bg === 'white' ? 'var(--gris-borde)' : 'transparent'};border-radius:9px;padding:8px 14px;cursor:${onclick ? 'pointer' : 'default'};text-align:center;min-width:72px;transition:opacity .15s" onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">
+          <div style="font-size:22px;font-weight:800;color:${color};line-height:1;font-family:'DM Mono',monospace">${num}</div>
+          <div style="font-size:10px;font-weight:600;color:${color};opacity:.75;margin-top:3px;white-space:nowrap">${label}</div>
           ${sub ? `<div style="font-size:9px;color:${color};opacity:.5;white-space:nowrap">${sub}</div>` : ''}
         </div>`;
 
       chipsEl.innerHTML =
         // Facturación
-        `<div style="background:#1E3A5F;border-radius:8px;padding:6px 12px;color:white;min-width:120px">
-          <div style="font-size:16px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1;white-space:nowrap">${fmt(valorMes)}</div>
+        `<div style="background:#1E3A5F;border-radius:9px;padding:8px 14px;color:white;min-width:130px">
+          <div style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1;white-space:nowrap">${fmt(valorMes)}</div>
           <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
-            <span style="font-size:9px;opacity:.55;white-space:nowrap">Facturación${pctFact !== null ? ' · ' + pctFact + '%' : ''}</span>
+            <span style="font-size:10px;opacity:.55;white-space:nowrap">Facturación${pctFact !== null ? ' · ' + pctFact + '%' : ''}</span>
           </div>
-          ${barColor ? `<div style="height:2px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;margin-top:4px"><div style="height:100%;width:${pctFact}%;background:${barColor};border-radius:99px"></div></div>` : ''}
+          ${barColor ? `<div style="height:2px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;margin-top:5px"><div style="height:100%;width:${pctFact}%;background:${barColor};border-radius:99px"></div></div>` : ''}
         </div>` +
         chip(activasNormales, 'Activas', 'En proceso', '#2563EB', 'white', "navJefe('ordenes')") +
-        chip(ordenesMes.length + (pctOrd !== null ? `<span style='font-size:11px;opacity:.6'>/${metaMes.meta_ordenes}</span>` : ''), 'Creadas', 'Este mes', '#7C3AED', 'white', "dashFiltrarOrdenes('creadas')") +
+        chip(ordenesMes.length + (pctOrd !== null ? `<span style='font-size:12px;opacity:.6'>/${metaMes.meta_ordenes}</span>` : ''), 'Creadas', 'Este mes', '#7C3AED', 'white', "dashFiltrarOrdenes('creadas')") +
         chip(entregadasMes, 'Entregadas', 'Este mes', '#059669', 'white', "dashFiltrarOrdenes('entregadas')") +
         chip(pulmonInterno + pulmonExterno, 'En pulmón', pulmonInterno + ' int · ' + pulmonExterno + ' ext', '#D97706', 'white', "dashFiltrarOrdenes('pulmon')");
     }
 
     // — Retrasos —
     const retrasosHtml = ordenesRetraso.length ? `
-      <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;flex-wrap:wrap;gap:8px">
-        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
-          <svg width="13" height="13" fill="none" stroke="#DC2626" stroke-width="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span style="font-size:11px;font-weight:700;color:#DC2626">${ordenesRetraso.length} con retraso:</span>
-        </div>
+      <div style="display:inline-flex;align-items:center;gap:6px;background:#FEF2F2;border:1px solid #FECACA;border-radius:99px;padding:4px 10px;margin-bottom:10px;flex-wrap:wrap">
+        <svg width="11" height="11" fill="none" stroke="#DC2626" stroke-width="2.5" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span style="font-size:11px;font-weight:700;color:#DC2626;white-space:nowrap">${ordenesRetraso.length} con retraso:</span>
         ${ordenesRetraso.map(o => `
-          <div style="display:inline-flex;align-items:center;gap:5px;background:white;border:1px solid #FECACA;border-radius:6px;padding:3px 8px;cursor:pointer" onclick="abrirOrden(${o.id})">
-            <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:11px;letter-spacing:.5px">${escapeHtml(o.placa)}</span>
-            <span style="font-size:10px;color:#DC2626;font-weight:600">+${o.diasRetraso}d</span>
-          </div>`).join('')}
+          <span style="font-family:'DM Mono',monospace;font-weight:700;font-size:10px;color:#DC2626;background:white;border:1px solid #FECACA;border-radius:99px;padding:1px 7px;cursor:pointer;letter-spacing:.3px" onclick="abrirOrden(${o.id})">${escapeHtml(o.placa)} <span style="opacity:.7">+${o.diasRetraso}d</span></span>`).join('')}
       </div>` : '';
 
     // — Pipeline —
