@@ -175,12 +175,13 @@ async function cargarDashboardMes() {
 
       chipsEl.innerHTML =
         // Facturación
-        `<div style="background:#1E3A5F;border-radius:9px;padding:8px 14px;color:white;min-width:130px">
-          <div style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1;white-space:nowrap">${fmt(valorMes)}</div>
-          <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
-            <span style="font-size:10px;opacity:.55;white-space:nowrap">Facturación${pctFact !== null ? ' · ' + pctFact + '%' : ''}</span>
+        `<div style="background:#1E3A5F;border-radius:9px;padding:8px 14px;color:white;min-width:130px;display:flex;flex-direction:column;justify-content:space-between">
+          <div style="font-size:10px;font-weight:600;opacity:.5;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap">Facturación del mes</div>
+          <div style="font-size:20px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1;white-space:nowrap;margin-top:4px">${fmt(valorMes)}</div>
+          <div style="margin-top:6px">
+            ${barColor ? `<div style="height:3px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;margin-bottom:3px"><div style="height:100%;width:${pctFact}%;background:${barColor};border-radius:99px"></div></div>` : ''}
+            <span style="font-size:9px;opacity:.55;white-space:nowrap">${pctFact !== null ? `Meta: ${pctFact}%` : 'Sin meta configurada'}</span>
           </div>
-          ${barColor ? `<div style="height:2px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;margin-top:5px"><div style="height:100%;width:${pctFact}%;background:${barColor};border-radius:99px"></div></div>` : ''}
         </div>` +
         chip(activasNormales, 'Activas', 'En proceso', '#2563EB', 'white', "navJefe('ordenes')") +
         chip(ordenesMes.length + (pctOrd !== null ? `<span style='font-size:12px;opacity:.6'>/${metaMes.meta_ordenes}</span>` : ''), 'Creadas', 'Este mes', '#7C3AED', 'white', "dashFiltrarOrdenes('creadas')") +
@@ -316,7 +317,7 @@ async function cargarDashboardMes() {
       ${retrasosHtml}
 
       <!-- Layout principal: izquierda (tabla) | derecha (próximas + tiempo + repuestos) -->
-      <div style="display:grid;grid-template-columns:1fr 220px;gap:10px;align-items:start">
+      <div class="dash-mes-grid" style="display:grid;grid-template-columns:1fr 220px;gap:10px;align-items:start">
 
         <!-- Columna izquierda -->
         <div style="display:flex;flex-direction:column;gap:10px">

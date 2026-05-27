@@ -1561,6 +1561,303 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .cot-res-total { font-weight:700; font-size:16px; color:var(--azul); }
 .cot-res-total span:last-child { font-family:'DM Mono',monospace; }
 
+/* ══════════════════════════════════════════════════════════
+   ÓRDENES — TABLA
+══════════════════════════════════════════════════════════ */
+.ordenes-tabla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ordenes-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.ordenes-tabla thead th {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--gris-mid);
+  padding: 0 14px 10px;
+  text-align: left;
+  border-bottom: 2px solid var(--gris-borde);
+  white-space: nowrap;
+}
+.ordenes-tabla thead th:first-child { padding-left: 0; }
+.ord-row {
+  cursor: pointer;
+  border-bottom: 1px solid var(--gris-borde);
+  transition: background .1s;
+}
+.ord-row:last-child { border-bottom: none; }
+.ord-row:hover { background: #F8FAFC; }
+.ord-row td { padding: 11px 14px; vertical-align: middle; }
+.ord-row td:first-child { padding-left: 0; }
+.ord-placa {
+  font-family: 'DM Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--texto);
+  letter-spacing: .5px;
+}
+.ord-ot {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--gris-mid);
+  margin-top: 2px;
+  letter-spacing: .3px;
+}
+.ord-veh-nombre { font-size: 13px; font-weight: 600; color: var(--texto); }
+.ord-veh-ano    { font-size: 11px; color: var(--gris-mid); margin-top: 2px; }
+.ord-etapa-nombre {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--texto);
+  margin-bottom: 5px;
+}
+.ord-prog-wrap  { display: flex; align-items: center; gap: 6px; min-width: 90px; }
+.ord-prog-track { flex: 1; height: 3px; background: #E2E8F0; border-radius: 99px; overflow: hidden; }
+.ord-prog-fill  { height: 100%; background: var(--azul); border-radius: 99px; transition: width .3s; }
+.ord-prog-lbl   { font-size: 10px; color: var(--gris-mid); white-space: nowrap; flex-shrink: 0; }
+.ord-sin-etapas { font-size: 11px; color: var(--gris-mid); font-style: italic; }
+.ord-resp       { font-size: 13px; font-weight: 500; white-space: nowrap; }
+.ord-fecha-ent  { font-size: 12px; color: var(--texto); white-space: nowrap; }
+.ord-dias       { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+/* Órdenes status pills */
+.ord-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.pill-atrasada   { background: #FEE2E2; color: #DC2626; }
+.pill-a-tiempo   { background: #D1FAE5; color: #059669; }
+.pill-pulmon     { background: #FEF3C7; color: #D97706; }
+.pill-entregada  { background: #F3F4F6; color: #6B7280; }
+.pill-programada { background: #DBEAFE; color: #2563EB; }
+
+/* ══════════════════════════════════════════════════════════
+   NUEVA ORDEN — WIZARD
+══════════════════════════════════════════════════════════ */
+.wizard-header {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding: 0 2px;
+}
+.wizard-step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.wizard-step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--gris-borde);
+  background: white;
+  color: var(--gris-mid);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .2s, border-color .2s, color .2s;
+}
+.wizard-step-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gris-mid);
+  white-space: nowrap;
+  transition: color .2s;
+}
+.wizard-step-item.active .wizard-step-circle {
+  background: var(--azul);
+  border-color: var(--azul);
+  color: white;
+}
+.wizard-step-item.active .wizard-step-text { color: var(--azul); font-weight: 700; }
+.wizard-step-item.done .wizard-step-circle {
+  background: var(--verde, #10B981);
+  border-color: var(--verde, #10B981);
+  color: white;
+}
+.wizard-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--gris-borde);
+  margin: 15px 10px 0;
+  min-width: 20px;
+}
+
+/* Móvil: wizard más compacto */
+@media (max-width: 480px) {
+  .wizard-step-text { font-size: 10px; }
+  .wizard-step-circle { width: 28px; height: 28px; font-size: 12px; }
+  .wizard-connector { margin-top: 13px; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   NUEVA ORDEN — LAYOUT .no-*
+══════════════════════════════════════════════════════════ */
+
+/* Tarjeta contenedor principal */
+.no-card {
+  background: white;
+  border: 1px solid var(--gris-borde);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/* Cada bloque/sección dentro de la tarjeta */
+.no-seccion {
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--gris-borde);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.no-seccion:last-of-type {
+  border-bottom: none;
+}
+/* El footer no hereda border-bottom, lo maneja .no-footer */
+
+/* Título de sección con icono */
+.no-sec-titulo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gris-texto);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.no-sec-titulo svg {
+  color: var(--azul-mid);
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+/* Grid superior: placa | tipo-cliente | km */
+.no-top-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+/* Fila de 4 botones tipo cliente */
+.no-tipo-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+/* Grid de campos 3 columnas */
+.no-campos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+.no-campos-grid .no-span-2 {
+  grid-column: span 2;
+}
+.no-campos-grid .no-span-3 {
+  grid-column: span 3;
+}
+
+/* Footer de la tarjeta */
+.no-footer {
+  padding: 16px 22px;
+  border-top: 1px solid var(--gris-borde);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--gris-bg);
+}
+
+/* Tipo-cliente-btn adaptado a fila horizontal */
+.no-tipo-row .tipo-cliente-btn {
+  flex-direction: row;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Responsive nueva orden */
+@media (max-width: 700px) {
+  .no-top-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .no-top-grid > div:nth-child(2) {
+    grid-column: 1 / -1;
+  }
+  .no-campos-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .no-campos-grid .no-span-2,
+  .no-campos-grid .no-span-3 {
+    grid-column: 1 / -1;
+  }
+  .no-tipo-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .no-tipo-row .tipo-cliente-btn {
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+  }
+}
+@media (max-width: 480px) {
+  .no-top-grid {
+    grid-template-columns: 1fr;
+  }
+  .no-top-grid > div:nth-child(2) {
+    grid-column: auto;
+  }
+  .no-seccion {
+    padding: 16px;
+  }
+  .no-footer {
+    padding: 14px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .no-footer > div {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .no-campos-grid {
+    grid-template-columns: 1fr;
+  }
+  .no-campos-grid .no-span-2,
+  .no-campos-grid .no-span-3 {
+    grid-column: auto;
+  }
+}
+
+/* Tabla de órdenes en móvil: ocultar columnas menos importantes */
+@media (max-width: 768px) {
+  .ordenes-tabla thead th:nth-child(4),
+  .ordenes-tabla .ord-row td:nth-child(4) { display: none; } /* Responsable */
+}
+@media (max-width: 560px) {
+  .ordenes-tabla thead th:nth-child(5),
+  .ordenes-tabla .ord-row td:nth-child(5) { display: none; } /* Entrega */
+  .ordenes-tabla thead th:nth-child(3),
+  .ordenes-tabla .ord-row td:nth-child(3) { display: none; } /* Etapa */
+}
+
 
 
 
@@ -2215,3 +2512,171 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .input-icon-wrap { position: relative; }
 .input-icon-wrap input { padding-left: 32px; }
 .input-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--gris-mid); pointer-events:none; flex-shrink:0; }
+
+/* ══════════════════════════════════════════════════════════
+   DASHBOARD RESPONSIVE
+══════════════════════════════════════════════════════════ */
+
+/* Chips KPI — scroll horizontal en móvil */
+#dash-kpi-chips {
+  scrollbar-width: none;
+}
+#dash-kpi-chips::-webkit-scrollbar { display: none; }
+
+@media (max-width: 768px) {
+  /* Fila de tabs + chips: apila en columna, chips con scroll horizontal */
+  #pag-dashboard > div:first-child {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  #dash-kpi-chips {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    align-items: stretch;
+    padding-bottom: 2px;
+  }
+  /* Grid principal: una sola columna */
+  .dash-mes-grid {
+    grid-template-columns: 1fr !important;
+  }
+  /* Fechas en nueva orden: 1 columna */
+  .n-fechas-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Chips un poco más compactos en pantallas muy pequeñas */
+  #dash-kpi-chips > div {
+    padding: 7px 11px !important;
+    min-width: 64px !important;
+  }
+  #dash-kpi-chips > div > div:first-child {
+    font-size: 19px !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   ÓRDENES — alertas de contacto faltante
+══════════════════════════════════════════════════════════ */
+.ord-alert-contact {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 5px;
+  background: #FEE2E2;
+  color: #DC2626;
+  vertical-align: middle;
+  letter-spacing: .02em;
+}
+.ord-alert-contact.ord-alert-soft {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ÓRDENES — buscador mejorado
+══════════════════════════════════════════════════════════ */
+.ord-search-wrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+.ord-search-wrap svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gris-mid);
+  pointer-events: none;
+}
+.ord-search-wrap input {
+  padding-left: 36px;
+  width: 100%;
+  box-sizing: border-box;
+  background: white;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 8px;
+  height: 38px;
+  font-size: 13px;
+  color: var(--texto);
+  transition: border-color .15s, box-shadow .15s;
+}
+.ord-search-wrap input:focus {
+  outline: none;
+  border-color: var(--azul-mid);
+  box-shadow: 0 0 0 3px rgba(42,82,152,.1);
+}
+.ord-search-wrap input::placeholder { color: var(--gris-mid); }
+
+/* ══════════════════════════════════════════════════════════
+   REPORTES — tarjeta unificada
+══════════════════════════════════════════════════════════ */
+.rep-form-card {
+  background: white;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.rep-bloque {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--gris-borde);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rep-bloque-titulo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--gris-mid);
+}
+.rep-bloque-titulo svg { color: var(--azul-mid); opacity: .8; }
+
+.rep-opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rep-opcion {
+  padding: 7px 14px;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 8px;
+  background: white;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gris-texto);
+  cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.rep-opcion:hover {
+  border-color: var(--azul-mid);
+  color: var(--azul);
+  background: var(--azul-light);
+}
+.rep-opcion.active {
+  border-color: var(--azul);
+  background: var(--azul-light);
+  color: var(--azul);
+  font-weight: 700;
+}
+
+/* Nueva orden — limitar ancho */
+.no-card {
+  max-width: 860px;
+}
+
+@media (max-width: 560px) {
+  .rep-opciones { gap: 5px; }
+  .rep-opcion { font-size: 12px; padding: 6px 11px; }
+}

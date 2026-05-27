@@ -73,293 +73,222 @@ async function montarReportes() {
 
   cont.innerHTML = `
     <!-- CABECERA -->
-    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px">
       <div>
         <div style="font-size:20px;font-weight:800;color:var(--texto);letter-spacing:-.3px">Reportes operativos</div>
         <div style="font-size:13px;color:var(--gris-mid);margin-top:2px">Análisis de tiempos, operarios, aseguradoras y servicios</div>
       </div>
-      <div id="rep-loading" style="display:none;font-size:12px;color:var(--azul);font-weight:600;display:flex;align-items:center;gap:6px">
+      <div id="rep-loading" style="display:none;font-size:12px;color:var(--azul);font-weight:600;align-items:center;gap:6px">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6-8.485"/></svg>
         Generando...
       </div>
     </div>
 
-    <!-- TABS -->
-    <div class="rep-tabs">
-      <button class="rep-tab-btn active" id="rtab-general"     onclick="_repTab('general')">
-        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        General
-      </button>
-      <button class="rep-tab-btn" id="rtab-operarios"  onclick="_repTab('operarios')">
-        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-        Operarios
-      </button>
-      <button class="rep-tab-btn" id="rtab-aseguradoras" onclick="_repTab('aseguradoras')">
-        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Aseguradoras
-      </button>
-      <button class="rep-tab-btn" id="rtab-servicios" onclick="_repTab('servicios')">
-        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
-        Por servicio
-      </button>
-    </div>
+    <!-- ══ TARJETA UNIFICADA ══════════════════════════════════ -->
+    <div class="rep-form-card" style="max-width:700px">
 
-    <!-- ══ TAB GENERAL ═══════════════════════════════════════ -->
-    <div id="rep-tab-general">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
-
-        <div class="rep-card rep-card-accent">
-          <div class="rep-card-title">
-            <svg width="15" height="15" fill="none" stroke="var(--azul)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Mes actual
-            <span class="rep-badge">Rápido</span>
-          </div>
-          <div class="rep-card-desc">Tiempos, costos, tipo de cliente y rendimiento del mes en curso.</div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-outline btn-sm" onclick="generarReporte('mes',null,null,'pdf')" style="flex:1;font-size:12px">📄 PDF</button>
-            <button class="btn btn-primary btn-sm" onclick="generarReporte('mes',null,null,'excel')" style="flex:1;font-size:12px">📊 Excel</button>
-          </div>
+      <!-- BLOQUE 1: Período -->
+      <div class="rep-bloque">
+        <div class="rep-bloque-titulo">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Período
         </div>
-
-        <div class="rep-card">
-          <div class="rep-card-title">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            Año completo ${ahora.getFullYear()}
-          </div>
-          <div class="rep-card-desc">Consolidado anual: evolución mensual, costos acumulados y comparativos.</div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-outline btn-sm" onclick="generarReporte('anio',null,null,'pdf')" style="flex:1;font-size:12px">📄 PDF</button>
-            <button class="btn btn-primary btn-sm" onclick="generarReporte('anio',null,null,'excel')" style="flex:1;font-size:12px">📊 Excel</button>
-          </div>
+        <div class="rep-opciones" id="rep-periodo-btns">
+          <button class="rep-opcion active" onclick="_repSelPeriodo('mes',this)">Mes actual</button>
+          <button class="rep-opcion" onclick="_repSelPeriodo('anio',this)">Año ${ahora.getFullYear()}</button>
+          <button class="rep-opcion" onclick="_repSelPeriodo('rango',this)">Rango de fechas</button>
+          <button class="rep-opcion" onclick="_repSelPeriodo('dia',this)">Día específico</button>
         </div>
-
-        <div class="rep-card">
-          <div class="rep-card-title">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Por rango de fechas
-          </div>
-          <div class="rep-card-desc">Selecciona un período específico para el análisis completo.</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <!-- Campos condicionales -->
+        <div id="rep-campos-rango" style="display:none;margin-top:12px;display:none">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:380px">
             <div class="field" style="margin:0"><label style="font-size:11px">Desde</label><input type="date" id="rep-sem-ini" value="${lunesStr}" max="${hoy}"></div>
             <div class="field" style="margin:0"><label style="font-size:11px">Hasta</label><input type="date" id="rep-sem-fin" value="${hoy}" max="${hoy}"></div>
           </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-outline btn-sm" onclick="generarReporte('rango',document.getElementById('rep-sem-ini').value,document.getElementById('rep-sem-fin').value,'pdf')" style="flex:1;font-size:12px">📄 PDF</button>
-            <button class="btn btn-primary btn-sm" onclick="generarReporte('rango',document.getElementById('rep-sem-ini').value,document.getElementById('rep-sem-fin').value,'excel')" style="flex:1;font-size:12px">📊 Excel</button>
+        </div>
+        <div id="rep-campos-dia" style="display:none;margin-top:12px">
+          <div style="max-width:180px">
+            <div class="field" style="margin:0"><label style="font-size:11px">Día</label><input type="date" id="rep-dia" value="${hoy}" max="${hoy}"></div>
           </div>
         </div>
-
-        <div class="rep-card">
-          <div class="rep-card-title">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Por día específico
-          </div>
-          <div class="rep-card-desc">Snapshot de un día: órdenes ingresadas y etapas completadas.</div>
-          <div style="margin-bottom:12px">
-            <div class="field" style="margin:0"><label style="font-size:11px">Selecciona el día</label><input type="date" id="rep-dia" value="${hoy}" max="${hoy}"></div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-outline btn-sm" onclick="generarReporte('dia',document.getElementById('rep-dia').value,null,'pdf')" style="flex:1;font-size:12px">📄 PDF</button>
-            <button class="btn btn-primary btn-sm" onclick="generarReporte('dia',document.getElementById('rep-dia').value,null,'excel')" style="flex:1;font-size:12px">📊 Excel</button>
-          </div>
-        </div>
-
       </div>
-    </div>
 
-    <!-- ══ TAB OPERARIOS ═════════════════════════════════════ -->
-    <div id="rep-tab-operarios" style="display:none">
-      <div style="display:flex;flex-direction:column;gap:14px">
-
-        <div class="rep-card rep-card-accent">
-          <div class="rep-card-title">
-            <svg width="15" height="15" fill="none" stroke="var(--azul)" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-            Comparativo general de operarios
-            <span class="rep-badge">Todos</span>
-          </div>
-          <div class="rep-card-desc">
-            Tabla comparativa de todos los operarios activos: etapas completadas, tiempo neto trabajado,
-            ingresos generados, eficiencia vs estimado y novedades (reprocesos/garantías).
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;max-width:380px">
-            <div class="field" style="margin:0"><label style="font-size:11px">Desde</label><input type="date" id="rep-tec-ini" value="${inicioMes}" max="${hoy}"></div>
-            <div class="field" style="margin:0"><label style="font-size:11px">Hasta</label><input type="date" id="rep-tec-fin" value="${hoy}" max="${hoy}"></div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-outline btn-sm" onclick="_lanzarReporteTecnicos('pdf')" style="font-size:12px">📄 PDF</button>
-            <button class="btn btn-primary btn-sm" onclick="_lanzarReporteTecnicos('excel')" style="font-size:12px">📊 Excel</button>
+      <!-- BLOQUE 2: Alcance -->
+      <div class="rep-bloque">
+        <div class="rep-bloque-titulo">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          Alcance
+        </div>
+        <div class="rep-opciones" id="rep-alcance-btns">
+          <button class="rep-opcion active" onclick="_repSelAlcance('general',this)">General</button>
+          <button class="rep-opcion" onclick="_repSelAlcance('operarios',this)">Por operario</button>
+          <button class="rep-opcion" onclick="_repSelAlcance('aseguradora',this)">Por aseguradora</button>
+          <button class="rep-opcion" onclick="_repSelAlcance('servicio',this)">Por servicio</button>
+        </div>
+        <!-- Campos condicionales de alcance -->
+        <div id="rep-campos-operarios" style="display:none;margin-top:12px">
+          <div class="field" style="margin:0;max-width:320px">
+            <label style="font-size:11px">Operario <span style="color:var(--gris-mid);font-weight:400">(opcional — vacío = todos)</span></label>
+            <select id="rep-mec-sel" style="width:100%">
+              <option value="">— Todos los operarios —</option>
+              ${mecOpts}
+            </select>
           </div>
         </div>
-
-        <div class="rep-card rep-card-green">
-          <div class="rep-card-title">
-            <svg width="15" height="15" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            Reporte individual por operario
-            <span class="rep-badge" style="background:#E6F5EF;color:#059669">Detallado</span>
-          </div>
-          <div class="rep-card-desc">
-            Detalle completo de un operario: etapas realizadas, tiempo neto trabajado, pausas por
-            repuestos, ingresos generados y novedades en el período.
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
-            <div class="field" style="margin:0">
-              <label style="font-size:11px">Operario</label>
-              <select id="rep-mec-sel" style="width:100%">
-                <option value="">— Selecciona —</option>
-                ${mecOpts}
-              </select>
-            </div>
-            <div class="field" style="margin:0"><label style="font-size:11px">Desde</label><input type="date" id="rep-mec-ini" value="${inicioMes}" max="${hoy}"></div>
-            <div class="field" style="margin:0"><label style="font-size:11px">Hasta</label><input type="date" id="rep-mec-fin" value="${hoy}" max="${hoy}"></div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-outline btn-sm" onclick="_lanzarReporteOp('pdf')" style="font-size:12px">📄 PDF</button>
-            <button class="btn btn-primary btn-sm" onclick="_lanzarReporteOp('excel')" style="font-size:12px">📊 Excel</button>
+        <div id="rep-campos-aseguradora" style="display:none;margin-top:12px">
+          <div class="field" style="margin:0;max-width:320px">
+            <label style="font-size:11px">Aseguradora <span style="color:var(--gris-mid);font-weight:400">(opcional — vacío = todas)</span></label>
+            <select id="rep-aseg-sel" style="width:100%">
+              <option value="">— Todas las aseguradoras —</option>
+              ${asegOpts}
+            </select>
           </div>
         </div>
-
+        <div id="rep-campos-servicio" style="display:none;margin-top:12px">
+          <div class="field" style="margin:0;max-width:280px">
+            <label style="font-size:11px">Servicio</label>
+            <select id="rep-srv-sel" style="width:100%">
+              <option value="">— Selecciona un servicio —</option>
+              ${srvOpts}
+            </select>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- ══ TAB ASEGURADORAS ══════════════════════════════════ -->
-    <div id="rep-tab-aseguradoras" style="display:none">
-      <div style="display:flex;flex-direction:column;gap:14px">
-
-        <div class="rep-card rep-card-purple">
-          <div class="rep-card-title">
-            <svg width="15" height="15" fill="none" stroke="#7C3AED" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Ranking general de aseguradoras
-            <span class="rep-badge" style="background:#F5F3FF;color:#7C3AED">Comparativo</span>
-          </div>
-          <div class="rep-card-desc">
-            Comparativo de todas las aseguradoras: órdenes, valor de mano de obra, ciclo promedio
-            y tiempos de pulmón en el período seleccionado.
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;max-width:380px">
-            <div class="field" style="margin:0"><label style="font-size:11px">Desde</label><input type="date" id="rep-aseg-gen-ini" value="${inicioMes}" max="${hoy}"></div>
-            <div class="field" style="margin:0"><label style="font-size:11px">Hasta</label><input type="date" id="rep-aseg-gen-fin" value="${hoy}" max="${hoy}"></div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-outline btn-sm" onclick="_lanzarReporteAsegGen('pdf')" style="font-size:12px">📄 PDF</button>
-            <button class="btn btn-primary btn-sm" onclick="_lanzarReporteAsegGen('excel')" style="font-size:12px">📊 Excel</button>
-          </div>
+      <!-- FOOTER: botones de exportación -->
+      <div class="rep-bloque" style="border-bottom:none;padding-bottom:0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div id="rep-desc" style="font-size:12px;color:var(--gris-mid);line-height:1.5">
+          Reporte general del mes en curso: tiempos, costos y tipo de cliente.
         </div>
-
-        <div class="rep-card" style="border-left:4px solid #7C3AED">
-          <div class="rep-card-title">
-            <svg width="15" height="15" fill="none" stroke="#7C3AED" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
-            Reporte individual por aseguradora
-            <span class="rep-badge" style="background:#F5F3FF;color:#7C3AED">Detallado</span>
-          </div>
-          <div class="rep-card-desc">
-            Detalle completo de una aseguradora: listado de órdenes, estados, tiempos de aprobación,
-            pulmón, estadía y ciclo de reparación.
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
-            <div class="field" style="margin:0">
-              <label style="font-size:11px">Aseguradora</label>
-              <select id="rep-aseg-sel" style="width:100%">
-                <option value="">— Selecciona —</option>
-                ${asegOpts}
-              </select>
-            </div>
-            <div class="field" style="margin:0"><label style="font-size:11px">Desde</label><input type="date" id="rep-aseg-ini" value="${inicioMes}" max="${hoy}"></div>
-            <div class="field" style="margin:0"><label style="font-size:11px">Hasta</label><input type="date" id="rep-aseg-fin" value="${hoy}" max="${hoy}"></div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-outline btn-sm" onclick="_lanzarReporteAseg('pdf')" style="font-size:12px">📄 PDF</button>
-            <button class="btn btn-primary btn-sm" onclick="_lanzarReporteAseg('excel')" style="font-size:12px">📊 Excel</button>
-          </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <button class="btn btn-outline" onclick="_repGenerar('pdf')" style="font-size:13px;display:flex;align-items:center;gap:6px">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            PDF
+          </button>
+          <button class="btn btn-primary" onclick="_repGenerar('excel')" style="font-size:13px;display:flex;align-items:center;gap:6px">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12l4 4 4-4M12 8v8"/></svg>
+            Excel
+          </button>
         </div>
-
       </div>
-    </div>
 
-    <!-- ══ TAB SERVICIOS ═════════════════════════════════════ -->
-    <div id="rep-tab-servicios" style="display:none">
-      <div style="display:flex;flex-direction:column;gap:14px">
-
-        <div class="rep-card rep-card-orange">
-          <div class="rep-card-title">
-            <svg width="15" height="15" fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
-            Reporte por tipo de servicio
-            <span class="rep-badge" style="background:#FEF3C7;color:#92400E">Focalizado</span>
-          </div>
-          <div class="rep-card-desc">
-            Análisis de latonería, pintura, mecánica o adicionales: etapas, tiempos netos por operario,
-            cuellos de botella y órdenes del período.
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
-            <div class="field" style="margin:0">
-              <label style="font-size:11px">Servicio</label>
-              <select id="rep-srv-sel" style="width:100%">
-                <option value="">— Selecciona —</option>
-                ${srvOpts}
-              </select>
-            </div>
-            <div class="field" style="margin:0"><label style="font-size:11px">Desde</label><input type="date" id="rep-srv-ini" value="${inicioMes}" max="${hoy}"></div>
-            <div class="field" style="margin:0"><label style="font-size:11px">Hasta</label><input type="date" id="rep-srv-fin" value="${hoy}" max="${hoy}"></div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-outline btn-sm" onclick="_lanzarReporteSrv('pdf')" style="font-size:12px">📄 PDF</button>
-            <button class="btn btn-primary btn-sm" onclick="_lanzarReporteSrv('excel')" style="font-size:12px">📊 Excel</button>
-          </div>
-        </div>
-
-      </div>
-    </div>
+    </div><!-- /rep-form-card -->
   `;
 }
 
-// ─── Navegación de tabs ──────────────────────────────────────
-function _repTab(tab) {
-  ['general','operarios','aseguradoras','servicios'].forEach(t => {
-    const el  = document.getElementById('rep-tab-' + t);
-    const btn = document.getElementById('rtab-' + t);
-    if (el)  el.style.display  = t === tab ? '' : 'none';
-    if (btn) btn.classList.toggle('active', t === tab);
+// ─── Estado del selector unificado ──────────────────────────
+let _repPeriodo = 'mes';
+let _repAlcance = 'general';
+
+const _REP_DESC = {
+  mes:      'Reporte general del mes en curso: tiempos, costos y tipo de cliente.',
+  anio:     'Consolidado anual: evolución mensual, costos acumulados y comparativos.',
+  rango:    'Reporte del período seleccionado: análisis completo.',
+  dia:      'Snapshot de un día: órdenes ingresadas y etapas completadas.',
+};
+
+function _repSelPeriodo(p, btn) {
+  _repPeriodo = p;
+  document.querySelectorAll('#rep-periodo-btns .rep-opcion').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('rep-campos-rango').style.display = (p === 'rango') ? 'block' : 'none';
+  document.getElementById('rep-campos-dia').style.display   = (p === 'dia')   ? 'block' : 'none';
+  const desc = document.getElementById('rep-desc');
+  if (desc) desc.textContent = _REP_DESC[p] || '';
+}
+
+function _repSelAlcance(a, btn) {
+  _repAlcance = a;
+  document.querySelectorAll('#rep-alcance-btns .rep-opcion').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  ['operarios','aseguradora','servicio'].forEach(k => {
+    const el = document.getElementById('rep-campos-' + k);
+    if (el) el.style.display = (k === a) ? 'block' : 'none';
   });
 }
 
-// ─── Launchers ───────────────────────────────────────────────
+function _repGenerar(formato) {
+  const p = _repPeriodo;
+  const a = _repAlcance;
+
+  // Resolver fechas
+  const ahora = new Date();
+  let ini = null, fin = null;
+  if (p === 'rango') {
+    ini = document.getElementById('rep-sem-ini')?.value;
+    fin = document.getElementById('rep-sem-fin')?.value;
+    if (!ini || !fin) { toast('Define el rango de fechas', 'err'); return; }
+  } else if (p === 'dia') {
+    ini = document.getElementById('rep-dia')?.value;
+    if (!ini) { toast('Selecciona el día', 'err'); return; }
+    fin = null;
+  }
+
+  // Despachar según alcance
+  if (a === 'general') {
+    generarReporte(p, ini, fin, formato);
+  } else if (a === 'operarios') {
+    const mecId = document.getElementById('rep-mec-sel')?.value;
+    if (mecId) {
+      generarReporteMecanico(mecId, ini || new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString().split('T')[0],
+        fin || ahora.toISOString().split('T')[0], formato);
+    } else {
+      // Todos los operarios = reporte general con foco en operarios
+      generarReporte(p, ini, fin, formato);
+    }
+  } else if (a === 'aseguradora') {
+    const aseg = document.getElementById('rep-aseg-sel')?.value || null;
+    const iniA = ini || new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString().split('T')[0];
+    const finA = fin || ahora.toISOString().split('T')[0];
+    generarReporteAseguradoras(aseg, iniA, finA, formato);
+  } else if (a === 'servicio') {
+    const srv = document.getElementById('rep-srv-sel')?.value;
+    if (!srv) { toast('Selecciona un servicio', 'err'); return; }
+    const iniS = ini || new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString().split('T')[0];
+    const finS = fin || ahora.toISOString().split('T')[0];
+    generarReporteServicio(srv, iniS, finS, formato);
+  }
+}
+
+// ─── Launchers legacy (compatibilidad con código existente) ──
 function _lanzarReporteTecnicos(formato) {
-  const ini = document.getElementById('rep-tec-ini')?.value;
-  const fin = document.getElementById('rep-tec-fin')?.value;
-  if (!ini || !fin) { toast('Define el rango de fechas', 'err'); return; }
+  const ahora = new Date();
+  const ini = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString().split('T')[0];
+  const fin = ahora.toISOString().split('T')[0];
   generarReporte('rango', ini, fin, formato);
 }
 
 function _lanzarReporteOp(formato) {
   const mecId = document.getElementById('rep-mec-sel')?.value;
-  const ini   = document.getElementById('rep-mec-ini')?.value;
-  const fin   = document.getElementById('rep-mec-fin')?.value;
+  const ahora = new Date();
+  const ini   = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString().split('T')[0];
+  const fin   = ahora.toISOString().split('T')[0];
   if (!mecId) { toast('Selecciona un operario', 'err'); return; }
-  if (!ini || !fin) { toast('Define el rango de fechas', 'err'); return; }
   generarReporteMecanico(mecId, ini, fin, formato);
 }
 
 function _lanzarReporteAsegGen(formato) {
-  const ini = document.getElementById('rep-aseg-gen-ini')?.value;
-  const fin = document.getElementById('rep-aseg-gen-fin')?.value;
-  if (!ini || !fin) { toast('Define el rango de fechas', 'err'); return; }
+  const ahora = new Date();
+  const ini = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString().split('T')[0];
+  const fin = ahora.toISOString().split('T')[0];
   generarReporteAseguradoras(null, ini, fin, formato);
 }
 
 function _lanzarReporteAseg(formato) {
   const aseg = document.getElementById('rep-aseg-sel')?.value;
-  const ini  = document.getElementById('rep-aseg-ini')?.value;
-  const fin  = document.getElementById('rep-aseg-fin')?.value;
+  const ahora = new Date();
+  const ini  = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString().split('T')[0];
+  const fin  = ahora.toISOString().split('T')[0];
   if (!aseg) { toast('Selecciona una aseguradora', 'err'); return; }
-  if (!ini || !fin) { toast('Define el rango de fechas', 'err'); return; }
   generarReporteAseguradoras(aseg, ini, fin, formato);
 }
 
 function _lanzarReporteSrv(formato) {
   const srv = document.getElementById('rep-srv-sel')?.value;
-  const ini = document.getElementById('rep-srv-ini')?.value;
-  const fin = document.getElementById('rep-srv-fin')?.value;
+  const ahora = new Date();
+  const ini = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString().split('T')[0];
+  const fin = ahora.toISOString().split('T')[0];
   if (!srv) { toast('Selecciona un servicio', 'err'); return; }
-  if (!ini || !fin) { toast('Define el rango de fechas', 'err'); return; }
   generarReporteServicio(srv, ini, fin, formato);
 }
 
@@ -681,7 +610,7 @@ async function generarReporteServicio(servicio, fechaIni, fechaFin, formato) {
 // ─── Función principal de generación ────────────────────────
 async function generarReporte(tipo, fechaIni, fechaFin, formato) {
   const loading = document.getElementById('rep-loading');
-  if (loading) loading.style.display = 'block';
+  if (loading) loading.style.display = 'flex';
   try {
     const ahora = new Date();
     let desde, hasta, tituloReporte, subtitulo;
@@ -744,7 +673,7 @@ async function generarReporte(tipo, fechaIni, fechaFin, formato) {
 // ─── Reporte individual por mecánico ────────────────────────
 async function generarReporteMecanico(mecId, fechaIni, fechaFin, formato) {
   const loading = document.getElementById('rep-loading');
-  if (loading) loading.style.display = 'block';
+  if (loading) loading.style.display = 'flex';
   try {
     const desde    = new Date(fechaIni + 'T00:00:00');
     const hasta    = new Date(fechaFin  + 'T23:59:59');
