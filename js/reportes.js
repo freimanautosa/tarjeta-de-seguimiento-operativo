@@ -24,132 +24,304 @@ function _cargarSheetJS(cb) {
 async function montarReportes() {
   const cont = document.getElementById('reportes-contenido');
   if (!cont) return;
+  cont.innerHTML = '<div class="loading-state">Cargando...</div>';
 
-  const ahora    = new Date();
-  const hoy      = ahora.toISOString().split('T')[0];
-  const lunes    = new Date(ahora);
+  const ahora     = new Date();
+  const hoy       = ahora.toISOString().split('T')[0];
+  const lunes     = new Date(ahora);
   lunes.setDate(ahora.getDate() - ((ahora.getDay()+6)%7));
-  const lunesStr = lunes.toISOString().split('T')[0];
+  const lunesStr  = lunes.toISOString().split('T')[0];
   const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).toISOString().split('T')[0];
 
-  const mecanicos = await api('/mecanicos?activo=eq.true&order=nombre.asc').catch(()=>[]) || [];
-  const mecOpts   = mecanicos.map(m => `<option value="${m.id}">${escapeHtml(m.nombre)}</option>`).join('');
+  const [mecanicos, aseguradoras] = await Promise.all([
+    api('/mecanicos?activo=eq.true&order=nombre.asc').catch(()=>[]) || [],
+    api('/aseguradoras?activo=eq.true&order=nombre.asc').catch(()=>[]) || []
+  ]);
+  const mecOpts  = mecanicos.map(m =>
+    `<option value="${m.id}">${escapeHtml(m.nombre)}</option>`).join('');
+  const asegOpts = aseguradoras.map(a =>
+    `<option value="${escapeHtml(a.nombre)}">${escapeHtml(a.nombre)}</option>`).join('');
+
+  const SRVS = [
+    { val:'latoneria', label:'Latonería' },
+    { val:'pintura',   label:'Pintura' },
+    { val:'mecanica',  label:'Mecánica' },
+    { val:'adicionales', label:'Adicionales' }
+  ];
+  const srvOpts = SRVS.map(s => `<option value="${s.val}">${s.label}</option>`).join('');
+
+  // ── CSS de tabs (una sola vez) ──────────────────────────────
+  if (!document.getElementById('rep-tab-css')) {
+    const st = document.createElement('style');
+    st.id = 'rep-tab-css';
+    st.textContent = `
+      .rep-tabs{display:flex;gap:0;border-bottom:2px solid var(--gris-borde);margin-bottom:20px;overflow-x:auto;scrollbar-width:none}
+      .rep-tab-btn{padding:9px 18px;font-size:13px;font-weight:600;color:var(--gris-mid);background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:color .15s,border-color .15s}
+      .rep-tab-btn.active{color:var(--azul);border-bottom-color:var(--azul)}
+      .rep-tab-btn:hover:not(.active){color:var(--texto)}
+      .rep-card{background:white;border:1.5px solid var(--gris-borde);border-radius:12px;padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+      .rep-card-title{font-size:13px;font-weight:700;color:var(--texto);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+      .rep-card-desc{font-size:12px;color:var(--gris-mid);margin-bottom:14px;line-height:1.5}
+      .rep-card-accent{border-left:4px solid var(--azul)}
+      .rep-card-green{border-left:4px solid #059669}
+      .rep-card-purple{border-left:4px solid #7C3AED}
+      .rep-card-orange{border-left:4px solid #D97706}
+      .rep-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;background:var(--azul-light);color:var(--azul)}
+    `;
+    document.head.appendChild(st);
+  }
 
   cont.innerHTML = `
-    <div style="margin-bottom:20px">
-      <div style="font-size:18px;font-weight:700;color:var(--texto);margin-bottom:4px">Reportes operativos</div>
-      <div style="font-size:13px;color:var(--gris-mid)">Tiempos, costos, repuestos, eficiencia y rendimiento del taller</div>
+    <!-- CABECERA -->
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:20px;font-weight:800;color:var(--texto);letter-spacing:-.3px">Reportes operativos</div>
+        <div style="font-size:13px;color:var(--gris-mid);margin-top:2px">Análisis de tiempos, operarios, aseguradoras y servicios</div>
+      </div>
+      <div id="rep-loading" style="display:none;font-size:12px;color:var(--azul);font-weight:600;display:flex;align-items:center;gap:6px">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-6-8.485"/></svg>
+        Generando...
+      </div>
     </div>
 
-    <div class="grid-2-resp" style="margin-bottom:24px">
+    <!-- TABS -->
+    <div class="rep-tabs">
+      <button class="rep-tab-btn active" id="rtab-general"     onclick="_repTab('general')">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        General
+      </button>
+      <button class="rep-tab-btn" id="rtab-operarios"  onclick="_repTab('operarios')">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Operarios
+      </button>
+      <button class="rep-tab-btn" id="rtab-aseguradoras" onclick="_repTab('aseguradoras')">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Aseguradoras
+      </button>
+      <button class="rep-tab-btn" id="rtab-servicios" onclick="_repTab('servicios')">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+        Por servicio
+      </button>
+    </div>
 
-      <div class="dash-panel">
-        <div class="dash-panel-titulo">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Mes actual
-        </div>
-        <div style="font-size:12px;color:var(--gris-mid);margin:8px 0 14px">
-          Tiempos, costos de repuestos, tipo de cliente y rendimiento del mes en curso.
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="generarReporte('mes',null,null,'pdf')" style="flex:1;font-size:12px">${ico('file',13)} PDF</button>
-          <button class="btn btn-primary btn-sm" onclick="generarReporte('mes',null,null,'excel')" style="flex:1;font-size:12px">${ico('chart',13)} Excel</button>
-        </div>
-      </div>
+    <!-- ══ TAB GENERAL ═══════════════════════════════════════ -->
+    <div id="rep-tab-general">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
 
-      <div class="dash-panel">
-        <div class="dash-panel-titulo">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          Año completo
-        </div>
-        <div style="font-size:12px;color:var(--gris-mid);margin:8px 0 14px">
-          Consolidado anual: evolución mensual, costos acumulados y comparativos.
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="generarReporte('anio',null,null,'pdf')" style="flex:1;font-size:12px">${ico('file',13)} PDF</button>
-          <button class="btn btn-primary btn-sm" onclick="generarReporte('anio',null,null,'excel')" style="flex:1;font-size:12px">${ico('chart',13)} Excel</button>
-        </div>
-      </div>
-
-      <div class="dash-panel">
-        <div class="dash-panel-titulo">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Por rango de fechas
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 12px">
-          <div class="field"><label style="font-size:11px">Desde</label><input type="date" id="rep-sem-ini" value="${lunesStr}" max="${hoy}"></div>
-          <div class="field"><label style="font-size:11px">Hasta</label><input type="date" id="rep-sem-fin" value="${hoy}" max="${hoy}"></div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="generarReporte('rango',document.getElementById('rep-sem-ini').value,document.getElementById('rep-sem-fin').value,'pdf')" style="flex:1;font-size:12px">${ico('file',13)} PDF</button>
-          <button class="btn btn-primary btn-sm" onclick="generarReporte('rango',document.getElementById('rep-sem-ini').value,document.getElementById('rep-sem-fin').value,'excel')" style="flex:1;font-size:12px">${ico('chart',13)} Excel</button>
-        </div>
-      </div>
-
-      <div class="dash-panel">
-        <div class="dash-panel-titulo">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Por día específico
-        </div>
-        <div style="margin:10px 0 12px">
-          <div class="field"><label style="font-size:11px">Selecciona el día</label><input type="date" id="rep-dia" value="${hoy}" max="${hoy}"></div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="generarReporte('dia',document.getElementById('rep-dia').value,null,'pdf')" style="flex:1;font-size:12px">${ico('file',13)} PDF</button>
-          <button class="btn btn-primary btn-sm" onclick="generarReporte('dia',document.getElementById('rep-dia').value,null,'excel')" style="flex:1;font-size:12px">${ico('chart',13)} Excel</button>
-        </div>
-      </div>
-
-      <!-- COMPARATIVO DE TÉCNICOS -->
-      <div class="dash-panel" style="grid-column:1/-1">
-        <div class="dash-panel-titulo">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-          Comparativo general de técnicos
-        </div>
-        <div style="font-size:12px;color:var(--gris-mid);margin:6px 0 12px">
-          Tabla comparativa de todos los técnicos: etapas completadas, horas netas, ingresos generados, eficiencia y novedades (reprocesos/garantías) en el período seleccionado.
-        </div>
-        <div class="grid-2-resp" style="margin-bottom:12px;max-width:420px">
-          <div class="field"><label style="font-size:11px">Desde</label><input type="date" id="rep-tec-ini" value="${inicioMes}" max="${hoy}"></div>
-          <div class="field"><label style="font-size:11px">Hasta</label><input type="date" id="rep-tec-fin" value="${hoy}" max="${hoy}"></div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="_lanzarReporteTecnicos('pdf')" style="font-size:12px">${ico('file',13)} PDF</button>
-          <button class="btn btn-primary btn-sm" onclick="_lanzarReporteTecnicos('excel')" style="font-size:12px">${ico('chart',13)} Excel</button>
-        </div>
-      </div>
-
-      <!-- REPORTE POR MECÁNICO -->
-      <div class="dash-panel" style="grid-column:1/-1;border:1.5px solid var(--azul);background:var(--azul-light,#EBF2FF)">
-        <div class="dash-panel-titulo" style="color:var(--azul)">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          Reporte individual por mecánico
-        </div>
-        <div style="font-size:12px;color:var(--gris-mid);margin:6px 0 12px">
-          Detalle completo de un técnico: etapas realizadas, tiempo neto trabajado, pausas por repuestos, ingresos generados y novedades.
-        </div>
-        <div class="grid-3-resp" style="margin-bottom:12px">
-          <div class="field">
-            <label style="font-size:11px">Técnico</label>
-            <select id="rep-mec-sel" style="width:100%">
-              <option value="">— Selecciona —</option>
-              ${mecOpts}
-            </select>
+        <div class="rep-card rep-card-accent">
+          <div class="rep-card-title">
+            <svg width="15" height="15" fill="none" stroke="var(--azul)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Mes actual
+            <span class="rep-badge">Rápido</span>
           </div>
-          <div class="field"><label style="font-size:11px">Desde</label><input type="date" id="rep-mec-ini" value="${inicioMes}" max="${hoy}"></div>
-          <div class="field"><label style="font-size:11px">Hasta</label><input type="date" id="rep-mec-fin" value="${hoy}" max="${hoy}"></div>
+          <div class="rep-card-desc">Tiempos, costos, tipo de cliente y rendimiento del mes en curso.</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="generarReporte('mes',null,null,'pdf')" style="flex:1;font-size:12px">📄 PDF</button>
+            <button class="btn btn-primary btn-sm" onclick="generarReporte('mes',null,null,'excel')" style="flex:1;font-size:12px">📊 Excel</button>
+          </div>
         </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="_lanzarReporteMec('pdf')" style="font-size:12px">${ico('file',13)} PDF</button>
-          <button class="btn btn-primary btn-sm" onclick="_lanzarReporteMec('excel')" style="font-size:12px">${ico('chart',13)} Excel</button>
-        </div>
-      </div>
 
+        <div class="rep-card">
+          <div class="rep-card-title">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Año completo ${ahora.getFullYear()}
+          </div>
+          <div class="rep-card-desc">Consolidado anual: evolución mensual, costos acumulados y comparativos.</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="generarReporte('anio',null,null,'pdf')" style="flex:1;font-size:12px">📄 PDF</button>
+            <button class="btn btn-primary btn-sm" onclick="generarReporte('anio',null,null,'excel')" style="flex:1;font-size:12px">📊 Excel</button>
+          </div>
+        </div>
+
+        <div class="rep-card">
+          <div class="rep-card-title">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Por rango de fechas
+          </div>
+          <div class="rep-card-desc">Selecciona un período específico para el análisis completo.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+            <div class="field" style="margin:0"><label style="font-size:11px">Desde</label><input type="date" id="rep-sem-ini" value="${lunesStr}" max="${hoy}"></div>
+            <div class="field" style="margin:0"><label style="font-size:11px">Hasta</label><input type="date" id="rep-sem-fin" value="${hoy}" max="${hoy}"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="generarReporte('rango',document.getElementById('rep-sem-ini').value,document.getElementById('rep-sem-fin').value,'pdf')" style="flex:1;font-size:12px">📄 PDF</button>
+            <button class="btn btn-primary btn-sm" onclick="generarReporte('rango',document.getElementById('rep-sem-ini').value,document.getElementById('rep-sem-fin').value,'excel')" style="flex:1;font-size:12px">📊 Excel</button>
+          </div>
+        </div>
+
+        <div class="rep-card">
+          <div class="rep-card-title">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Por día específico
+          </div>
+          <div class="rep-card-desc">Snapshot de un día: órdenes ingresadas y etapas completadas.</div>
+          <div style="margin-bottom:12px">
+            <div class="field" style="margin:0"><label style="font-size:11px">Selecciona el día</label><input type="date" id="rep-dia" value="${hoy}" max="${hoy}"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="generarReporte('dia',document.getElementById('rep-dia').value,null,'pdf')" style="flex:1;font-size:12px">📄 PDF</button>
+            <button class="btn btn-primary btn-sm" onclick="generarReporte('dia',document.getElementById('rep-dia').value,null,'excel')" style="flex:1;font-size:12px">📊 Excel</button>
+          </div>
+        </div>
+
+      </div>
     </div>
-    <div id="rep-loading" style="display:none" class="loading-state">Generando reporte, por favor espera...</div>
+
+    <!-- ══ TAB OPERARIOS ═════════════════════════════════════ -->
+    <div id="rep-tab-operarios" style="display:none">
+      <div style="display:flex;flex-direction:column;gap:14px">
+
+        <div class="rep-card rep-card-accent">
+          <div class="rep-card-title">
+            <svg width="15" height="15" fill="none" stroke="var(--azul)" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            Comparativo general de operarios
+            <span class="rep-badge">Todos</span>
+          </div>
+          <div class="rep-card-desc">
+            Tabla comparativa de todos los operarios activos: etapas completadas, tiempo neto trabajado,
+            ingresos generados, eficiencia vs estimado y novedades (reprocesos/garantías).
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;max-width:380px">
+            <div class="field" style="margin:0"><label style="font-size:11px">Desde</label><input type="date" id="rep-tec-ini" value="${inicioMes}" max="${hoy}"></div>
+            <div class="field" style="margin:0"><label style="font-size:11px">Hasta</label><input type="date" id="rep-tec-fin" value="${hoy}" max="${hoy}"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="_lanzarReporteTecnicos('pdf')" style="font-size:12px">📄 PDF</button>
+            <button class="btn btn-primary btn-sm" onclick="_lanzarReporteTecnicos('excel')" style="font-size:12px">📊 Excel</button>
+          </div>
+        </div>
+
+        <div class="rep-card rep-card-green">
+          <div class="rep-card-title">
+            <svg width="15" height="15" fill="none" stroke="#059669" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Reporte individual por operario
+            <span class="rep-badge" style="background:#E6F5EF;color:#059669">Detallado</span>
+          </div>
+          <div class="rep-card-desc">
+            Detalle completo de un operario: etapas realizadas, tiempo neto trabajado, pausas por
+            repuestos, ingresos generados y novedades en el período.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+            <div class="field" style="margin:0">
+              <label style="font-size:11px">Operario</label>
+              <select id="rep-mec-sel" style="width:100%">
+                <option value="">— Selecciona —</option>
+                ${mecOpts}
+              </select>
+            </div>
+            <div class="field" style="margin:0"><label style="font-size:11px">Desde</label><input type="date" id="rep-mec-ini" value="${inicioMes}" max="${hoy}"></div>
+            <div class="field" style="margin:0"><label style="font-size:11px">Hasta</label><input type="date" id="rep-mec-fin" value="${hoy}" max="${hoy}"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="_lanzarReporteOp('pdf')" style="font-size:12px">📄 PDF</button>
+            <button class="btn btn-primary btn-sm" onclick="_lanzarReporteOp('excel')" style="font-size:12px">📊 Excel</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ TAB ASEGURADORAS ══════════════════════════════════ -->
+    <div id="rep-tab-aseguradoras" style="display:none">
+      <div style="display:flex;flex-direction:column;gap:14px">
+
+        <div class="rep-card rep-card-purple">
+          <div class="rep-card-title">
+            <svg width="15" height="15" fill="none" stroke="#7C3AED" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Ranking general de aseguradoras
+            <span class="rep-badge" style="background:#F5F3FF;color:#7C3AED">Comparativo</span>
+          </div>
+          <div class="rep-card-desc">
+            Comparativo de todas las aseguradoras: órdenes, valor de mano de obra, ciclo promedio
+            y tiempos de pulmón en el período seleccionado.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;max-width:380px">
+            <div class="field" style="margin:0"><label style="font-size:11px">Desde</label><input type="date" id="rep-aseg-gen-ini" value="${inicioMes}" max="${hoy}"></div>
+            <div class="field" style="margin:0"><label style="font-size:11px">Hasta</label><input type="date" id="rep-aseg-gen-fin" value="${hoy}" max="${hoy}"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="_lanzarReporteAsegGen('pdf')" style="font-size:12px">📄 PDF</button>
+            <button class="btn btn-primary btn-sm" onclick="_lanzarReporteAsegGen('excel')" style="font-size:12px">📊 Excel</button>
+          </div>
+        </div>
+
+        <div class="rep-card" style="border-left:4px solid #7C3AED">
+          <div class="rep-card-title">
+            <svg width="15" height="15" fill="none" stroke="#7C3AED" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+            Reporte individual por aseguradora
+            <span class="rep-badge" style="background:#F5F3FF;color:#7C3AED">Detallado</span>
+          </div>
+          <div class="rep-card-desc">
+            Detalle completo de una aseguradora: listado de órdenes, estados, tiempos de aprobación,
+            pulmón, estadía y ciclo de reparación.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+            <div class="field" style="margin:0">
+              <label style="font-size:11px">Aseguradora</label>
+              <select id="rep-aseg-sel" style="width:100%">
+                <option value="">— Selecciona —</option>
+                ${asegOpts}
+              </select>
+            </div>
+            <div class="field" style="margin:0"><label style="font-size:11px">Desde</label><input type="date" id="rep-aseg-ini" value="${inicioMes}" max="${hoy}"></div>
+            <div class="field" style="margin:0"><label style="font-size:11px">Hasta</label><input type="date" id="rep-aseg-fin" value="${hoy}" max="${hoy}"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="_lanzarReporteAseg('pdf')" style="font-size:12px">📄 PDF</button>
+            <button class="btn btn-primary btn-sm" onclick="_lanzarReporteAseg('excel')" style="font-size:12px">📊 Excel</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ TAB SERVICIOS ═════════════════════════════════════ -->
+    <div id="rep-tab-servicios" style="display:none">
+      <div style="display:flex;flex-direction:column;gap:14px">
+
+        <div class="rep-card rep-card-orange">
+          <div class="rep-card-title">
+            <svg width="15" height="15" fill="none" stroke="#D97706" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+            Reporte por tipo de servicio
+            <span class="rep-badge" style="background:#FEF3C7;color:#92400E">Focalizado</span>
+          </div>
+          <div class="rep-card-desc">
+            Análisis de latonería, pintura, mecánica o adicionales: etapas, tiempos netos por operario,
+            cuellos de botella y órdenes del período.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+            <div class="field" style="margin:0">
+              <label style="font-size:11px">Servicio</label>
+              <select id="rep-srv-sel" style="width:100%">
+                <option value="">— Selecciona —</option>
+                ${srvOpts}
+              </select>
+            </div>
+            <div class="field" style="margin:0"><label style="font-size:11px">Desde</label><input type="date" id="rep-srv-ini" value="${inicioMes}" max="${hoy}"></div>
+            <div class="field" style="margin:0"><label style="font-size:11px">Hasta</label><input type="date" id="rep-srv-fin" value="${hoy}" max="${hoy}"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="_lanzarReporteSrv('pdf')" style="font-size:12px">📄 PDF</button>
+            <button class="btn btn-primary btn-sm" onclick="_lanzarReporteSrv('excel')" style="font-size:12px">📊 Excel</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
   `;
 }
 
+// ─── Navegación de tabs ──────────────────────────────────────
+function _repTab(tab) {
+  ['general','operarios','aseguradoras','servicios'].forEach(t => {
+    const el  = document.getElementById('rep-tab-' + t);
+    const btn = document.getElementById('rtab-' + t);
+    if (el)  el.style.display  = t === tab ? '' : 'none';
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+}
+
+// ─── Launchers ───────────────────────────────────────────────
 function _lanzarReporteTecnicos(formato) {
   const ini = document.getElementById('rep-tec-ini')?.value;
   const fin = document.getElementById('rep-tec-fin')?.value;
@@ -157,13 +329,353 @@ function _lanzarReporteTecnicos(formato) {
   generarReporte('rango', ini, fin, formato);
 }
 
-function _lanzarReporteMec(formato) {
+function _lanzarReporteOp(formato) {
   const mecId = document.getElementById('rep-mec-sel')?.value;
   const ini   = document.getElementById('rep-mec-ini')?.value;
   const fin   = document.getElementById('rep-mec-fin')?.value;
-  if (!mecId) { toast('Selecciona un técnico', 'err'); return; }
+  if (!mecId) { toast('Selecciona un operario', 'err'); return; }
   if (!ini || !fin) { toast('Define el rango de fechas', 'err'); return; }
   generarReporteMecanico(mecId, ini, fin, formato);
+}
+
+function _lanzarReporteAsegGen(formato) {
+  const ini = document.getElementById('rep-aseg-gen-ini')?.value;
+  const fin = document.getElementById('rep-aseg-gen-fin')?.value;
+  if (!ini || !fin) { toast('Define el rango de fechas', 'err'); return; }
+  generarReporteAseguradoras(null, ini, fin, formato);
+}
+
+function _lanzarReporteAseg(formato) {
+  const aseg = document.getElementById('rep-aseg-sel')?.value;
+  const ini  = document.getElementById('rep-aseg-ini')?.value;
+  const fin  = document.getElementById('rep-aseg-fin')?.value;
+  if (!aseg) { toast('Selecciona una aseguradora', 'err'); return; }
+  if (!ini || !fin) { toast('Define el rango de fechas', 'err'); return; }
+  generarReporteAseguradoras(aseg, ini, fin, formato);
+}
+
+function _lanzarReporteSrv(formato) {
+  const srv = document.getElementById('rep-srv-sel')?.value;
+  const ini = document.getElementById('rep-srv-ini')?.value;
+  const fin = document.getElementById('rep-srv-fin')?.value;
+  if (!srv) { toast('Selecciona un servicio', 'err'); return; }
+  if (!ini || !fin) { toast('Define el rango de fechas', 'err'); return; }
+  generarReporteServicio(srv, ini, fin, formato);
+}
+
+// ─── Reporte de aseguradoras ─────────────────────────────────
+async function generarReporteAseguradoras(asegFiltro, fechaIni, fechaFin, formato) {
+  toast('Generando reporte de aseguradoras...');
+  try {
+    const desde    = new Date(fechaIni + 'T00:00:00');
+    const hasta    = new Date(fechaFin  + 'T23:59:59');
+    const desdeISO = desde.toISOString();
+    const hastaISO = hasta.toISOString();
+    const fd  = d => d.toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'});
+    const fmt = n => n != null ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : '$0';
+    const fmtF = iso => iso ? new Date(iso).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+
+    let query = `/ordenes?aseguradora=not.is.null&or=(creado_en.gte.${desdeISO},entregada_en.gte.${desdeISO})&creado_en=lte.${hastaISO}&select=*&order=creado_en.desc`;
+    if (asegFiltro) query += `&aseguradora=eq.${encodeURIComponent(asegFiltro)}`;
+
+    const ordenes = await api(query).catch(()=>[]) || [];
+    const titulo  = asegFiltro
+      ? `Reporte Aseguradora — ${asegFiltro}`
+      : 'Reporte General — Aseguradoras';
+    const subtitulo = `Período: ${fd(desde)} al ${fd(hasta)}`;
+
+    if (!ordenes.length) { toast('Sin órdenes en el período seleccionado', 'warn'); return; }
+
+    // Métricas por aseguradora
+    const asegMap = {};
+    const today = new Date();
+    ordenes.forEach(o => {
+      const k = o.aseguradora;
+      if (!asegMap[k]) asegMap[k] = { ordenes:[], totalEstadia:0 };
+      asegMap[k].ordenes.push(o);
+      if (o.pulmon_desde) {
+        const diasP  = Math.floor((today - new Date(o.pulmon_desde)) / 86400000);
+        const gracia = o.dias_gracia_estadia ?? 3;
+        const tarifa = o.valor_estadia_dia   ?? 0;
+        asegMap[k].totalEstadia += Math.max(0, diasP - gracia) * tarifa;
+      }
+    });
+
+    const aseguradoras = Object.entries(asegMap).map(([nombre, d]) => {
+      const ords = d.ordenes;
+      const entregadas = ords.filter(o => o.entregada_en && o.creado_en);
+      const cicloPromHrs = entregadas.length
+        ? Math.round(entregadas.reduce((s,o) => s + (new Date(o.entregada_en) - new Date(o.creado_en)) / 3600000, 0) / entregadas.length)
+        : null;
+      const enPulmon = ords.filter(o => o.pulmon).length;
+      const enRep    = ords.filter(o => o.estado_aseguradora === 'en_reparacion').length;
+      const pendRep  = ords.filter(o => o.estado_aseguradora === 'repuestos_incompletos').length;
+      return { nombre, total: ords.length, entregadas: entregadas.length, enPulmon, enRep, pendRep, cicloPromHrs, totalEstadia: d.totalEstadia, ordenes: ords };
+    }).sort((a,b) => b.total - a.total);
+
+    if (formato === 'excel') {
+      _cargarSheetJS(() => {
+        const wb = XLSX.utils.book_new();
+        const ws1 = XLSX.utils.aoa_to_sheet([
+          [titulo],[subtitulo],['Generado:', new Date().toLocaleString('es-CO')],[],
+          ['Aseguradora','Total órdenes','Entregadas','En pulmón','En reparación','Pend. repuestos','Ciclo prom. (hrs)','Estadía acum. (COP)'],
+          ...aseguradoras.map(a => [a.nombre,a.total,a.entregadas,a.enPulmon,a.enRep,a.pendRep,a.cicloPromHrs??'—',a.totalEstadia])
+        ]);
+        ws1['!cols'] = [{wch:24},{wch:14},{wch:12},{wch:12},{wch:14},{wch:16},{wch:16},{wch:20}];
+        XLSX.utils.book_append_sheet(wb, ws1, 'Resumen');
+
+        // Hoja detalle de órdenes
+        const hdr = ['Placa','Propietario','Aseguradora','Estado aseg.','Ingreso','Entrega','Peritaje enviado','Inicio reparación','Días en sistema','En pulmón'];
+        const rows = ordenes.map(o => [
+          o.placa||'—', o.propietario||'—', o.aseguradora||'—',
+          o.estado_aseguradora||'peritaje_pendiente',
+          fmtF(o.creado_en), fmtF(o.entregada_en),
+          fmtF(o.peritaje_enviado_en), fmtF(o.reparacion_iniciada_en),
+          o.creado_en ? Math.floor((today - new Date(o.creado_en)) / 86400000) : '—',
+          o.pulmon ? 'Sí' : 'No'
+        ]);
+        const ws2 = XLSX.utils.aoa_to_sheet([hdr,...rows]);
+        ws2['!cols'] = [{wch:10},{wch:20},{wch:18},{wch:20},{wch:12},{wch:12},{wch:16},{wch:16},{wch:14},{wch:10}];
+        XLSX.utils.book_append_sheet(wb, ws2, 'Detalle órdenes');
+
+        const nombre = (asegFiltro||'Aseguradoras').replace(/\s+/g,'_') + `_${fechaIni}_${fechaFin}.xlsx`;
+        XLSX.writeFile(wb, nombre);
+        toast('Excel generado ✓');
+      });
+      return;
+    }
+
+    // PDF
+    const ESTADOS_LABEL = {
+      peritaje_pendiente:'Peritaje pendiente', peritaje_enviado:'Peritaje enviado',
+      en_pulmon:'En pulmón', repuestos_incompletos:'Pend. repuestos',
+      repuestos_completos:'Repuestos listos', en_reparacion:'En reparación', terminado:'Terminado'
+    };
+    const tablaOrdenes = ordenes.slice(0,40).map(o => {
+      const diasSist = o.creado_en ? Math.floor((today - new Date(o.creado_en)) / 86400000) : '—';
+      const est = o.estado_aseguradora || 'peritaje_pendiente';
+      const estCol = {peritaje_pendiente:'#6B7280',peritaje_enviado:'#7C3AED',en_pulmon:'#D97706',repuestos_incompletos:'#DC2626',repuestos_completos:'#2563EB',en_reparacion:'#059669',terminado:'#16A34A'}[est]||'#6B7280';
+      return `<tr>
+        <td><strong style="font-family:monospace">${o.placa||'—'}</strong></td>
+        <td>${(o.propietario||'—').slice(0,18)}</td>
+        <td>${o.aseguradora||'—'}</td>
+        <td><span style="color:${estCol};font-weight:700;font-size:10px">${ESTADOS_LABEL[est]||est}</span></td>
+        <td>${fmtF(o.creado_en)}</td>
+        <td style="font-weight:700;color:${diasSist>30?'#DC2626':diasSist>15?'#D97706':'#374151'}">${diasSist}d</td>
+        <td>${o.pulmon?'<span style="color:#D97706;font-weight:700">Sí</span>':'—'}</td>
+      </tr>`;
+    }).join('');
+
+    const resumenHtml = aseguradoras.map((a,i) => `<tr>
+      <td><strong style="color:#7C3AED">${i+1}. ${a.nombre}</strong></td>
+      <td><strong>${a.total}</strong></td>
+      <td>${a.entregadas}</td>
+      <td>${a.enPulmon > 0 ? `<span style="color:#D97706;font-weight:700">${a.enPulmon}</span>` : '—'}</td>
+      <td>${a.pendRep > 0 ? `<span style="color:#DC2626;font-weight:700">${a.pendRep}</span>` : '—'}</td>
+      <td>${a.cicloPromHrs != null ? a.cicloPromHrs+'h' : '—'}</td>
+      <td style="font-family:monospace">${a.totalEstadia > 0 ? fmt(a.totalEstadia) : '—'}</td>
+    </tr>`).join('');
+
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${titulo}</title>
+    <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a2e;font-size:12px;line-height:1.5}
+    .page{max-width:960px;margin:0 auto;padding:32px 36px}
+    .rpt-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1E3A5F;padding-bottom:16px;margin-bottom:24px}
+    .rpt-brand{font-size:22px;font-weight:800;color:#1E3A5F;letter-spacing:1px}
+    .section{margin-bottom:26px;page-break-inside:avoid}
+    .section-title{font-size:11px;font-weight:800;color:#7C3AED;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #e5e7eb;padding-bottom:7px;margin-bottom:12px}
+    table{width:100%;border-collapse:collapse;font-size:11px}
+    th{background:#f5f3ff;padding:7px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:#5B21B6;font-weight:700;border-bottom:1px solid #e2e8f0}
+    td{padding:6px 10px;border-bottom:1px solid #f1f5f0;color:#374151}
+    .footer{margin-top:32px;border-top:1px solid #e2e8f0;padding-top:10px;font-size:9px;color:#aaa;text-align:center}
+    @media print{.page{padding:18px 22px}.section{page-break-inside:avoid}}</style></head><body><div class="page">
+    <div class="rpt-header">
+      <div><div class="rpt-brand">${_RPT_EMPRESA.nombre}</div>
+        <div style="font-size:10px;color:#888;margin-top:3px">${_RPT_EMPRESA.slogan} · NIT ${_RPT_EMPRESA.nit}</div>
+        <div style="font-size:10px;color:#aaa">${_RPT_EMPRESA.direccion} · Tel: ${_RPT_EMPRESA.telefono}</div></div>
+      <div style="text-align:right">
+        <div style="font-size:14px;font-weight:700;color:#7C3AED">${titulo}</div>
+        <div style="font-size:11px;color:#555;margin-top:3px">${subtitulo}</div>
+        <div style="font-size:10px;color:#999;margin-top:3px">Generado: ${new Date().toLocaleString('es-CO',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+    </div>
+    ${!asegFiltro ? `<div class="section"><div class="section-title">Resumen por aseguradora</div>
+    <table><thead><tr><th>Aseguradora</th><th>Total</th><th>Entregadas</th><th>En pulmón</th><th>Pend. rep.</th><th>Ciclo prom.</th><th>Estadía acum.</th></tr></thead>
+    <tbody>${resumenHtml}</tbody></table></div>` : ''}
+    <div class="section"><div class="section-title">Detalle de órdenes${ordenes.length>40?' (primeras 40)':''}</div>
+    <table><thead><tr><th>Placa</th><th>Propietario</th><th>Aseguradora</th><th>Estado</th><th>Ingreso</th><th>Días</th><th>Pulmón</th></tr></thead>
+    <tbody>${tablaOrdenes}</tbody></table></div>
+    <div class="footer">${_RPT_EMPRESA.nombre} · NIT ${_RPT_EMPRESA.nit} · Reporte generado el ${new Date().toLocaleString('es-CO')}</div>
+    </div></body></html>`;
+
+    const win = window.open('', '_blank');
+    if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 800); }
+    toast('PDF generado ✓');
+  } catch(e) { toast('Error: ' + e.message, 'err'); console.error(e); }
+}
+
+// ─── Reporte por tipo de servicio ────────────────────────────
+async function generarReporteServicio(servicio, fechaIni, fechaFin, formato) {
+  toast('Generando reporte de servicio...');
+  try {
+    const desde    = new Date(fechaIni + 'T00:00:00');
+    const hasta    = new Date(fechaFin  + 'T23:59:59');
+    const desdeISO = desde.toISOString();
+    const hastaISO = hasta.toISOString();
+    const fd  = d => d.toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'});
+    const fmt = n => n != null ? new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(n) : '$0';
+    const fmtF = iso => iso ? new Date(iso).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+    const hrStr = m => { const h=Math.floor(m/60); return h>0?`${h}h ${m%60}m`:`${m%60}m`; };
+
+    const SRVS_LABEL = {latoneria:'Latonería',pintura:'Pintura',mecanica:'Mecánica',adicionales:'Adicionales'};
+    const srvLabel  = SRVS_LABEL[servicio] || servicio;
+    const titulo    = `Reporte de ${srvLabel}`;
+    const subtitulo = `Período: ${fd(desde)} al ${fd(hasta)}`;
+
+    const etapas = await api(
+      `/etapas?servicio=eq.${servicio}&fin=gte.${desdeISO}&fin=lte.${hastaISO}&select=id,orden_id,etapa,tecnico,mecanico_id,inicio,fin,valor,horas_facturadas,tiempo_pausado_min&order=fin.asc`
+    ).catch(()=>[]) || [];
+
+    if (!etapas.length) { toast('Sin etapas en el período seleccionado', 'warn'); return; }
+
+    // Métricas por operario
+    const opMap = {};
+    let totalMin = 0, totalVal = 0, totalPausado = 0;
+    etapas.forEach(e => {
+      if (!e.inicio || !e.fin) return;
+      const bruto = Math.round((new Date(e.fin) - new Date(e.inicio)) / 60000);
+      const neto  = Math.max(0, bruto - (e.tiempo_pausado_min||0));
+      totalMin    += neto;
+      totalVal    += (e.valor||0);
+      totalPausado+= (e.tiempo_pausado_min||0);
+      const op = e.tecnico || `Operario #${e.mecanico_id||'?'}`;
+      if (!opMap[op]) opMap[op] = { etapas:0, neto:0, valor:0, pausado:0 };
+      opMap[op].etapas++;
+      opMap[op].neto  += neto;
+      opMap[op].valor += (e.valor||0);
+      opMap[op].pausado += (e.tiempo_pausado_min||0);
+    });
+    const operarios = Object.entries(opMap)
+      .map(([nombre, d]) => ({ nombre, ...d, promNeto: d.etapas ? Math.round(d.neto/d.etapas) : 0 }))
+      .sort((a,b) => b.etapas - a.etapas);
+
+    // Cuellos de botella
+    const etapaMap = {};
+    etapas.forEach(e => {
+      if (!e.inicio||!e.fin) return;
+      const k = e.etapa||'Sin nombre';
+      const neto = Math.max(0, Math.round((new Date(e.fin)-new Date(e.inicio))/60000) - (e.tiempo_pausado_min||0));
+      if (!etapaMap[k]) etapaMap[k] = { count:0, total:0 };
+      etapaMap[k].count++;
+      etapaMap[k].total += neto;
+    });
+    const cuellos = Object.entries(etapaMap)
+      .map(([etapa, d]) => ({ etapa, count:d.count, prom:Math.round(d.total/d.count) }))
+      .sort((a,b) => b.prom - a.prom).slice(0,8);
+
+    if (formato === 'excel') {
+      _cargarSheetJS(() => {
+        const wb = XLSX.utils.book_new();
+        const ws1 = XLSX.utils.aoa_to_sheet([
+          [titulo],[subtitulo],['Generado:',new Date().toLocaleString('es-CO')],[],
+          ['Etapas completadas', etapas.length],
+          ['Tiempo neto total', hrStr(totalMin)],
+          ['Tiempo pausado (repuestos)', hrStr(totalPausado)],
+          ['Ingresos generados (COP)', totalVal],
+        ]);
+        ws1['!cols'] = [{wch:32},{wch:20}];
+        XLSX.utils.book_append_sheet(wb, ws1, 'Resumen');
+
+        const ws2 = XLSX.utils.aoa_to_sheet([
+          ['Operario','Etapas','Tiempo neto total (min)','Prom/etapa (min)','Pausado (min)','Ingresos (COP)'],
+          ...operarios.map(o => [o.nombre,o.etapas,o.neto,o.promNeto,o.pausado,o.valor])
+        ]);
+        ws2['!cols'] = [{wch:22},{wch:10},{wch:22},{wch:18},{wch:14},{wch:18}];
+        XLSX.utils.book_append_sheet(wb, ws2, 'Por Operario');
+
+        const ws3 = XLSX.utils.aoa_to_sheet([
+          ['Etapa','Veces ejecutada','Tiempo promedio (min)'],
+          ...cuellos.map(c => [c.etapa,c.count,c.prom])
+        ]);
+        ws3['!cols'] = [{wch:28},{wch:16},{wch:20}];
+        XLSX.utils.book_append_sheet(wb, ws3, 'Cuellos de Botella');
+
+        const hdr = ['Etapa','Operario','Inicio','Fin','T. neto (min)','Pausado (min)','Valor (COP)'];
+        const ws4 = XLSX.utils.aoa_to_sheet([hdr,...etapas.map(e => {
+          const bruto = (e.inicio&&e.fin) ? Math.round((new Date(e.fin)-new Date(e.inicio))/60000) : 0;
+          return [e.etapa||'—',e.tecnico||'—',fmtF(e.inicio),fmtF(e.fin),Math.max(0,bruto-(e.tiempo_pausado_min||0)),e.tiempo_pausado_min||0,e.valor||0];
+        })]);
+        ws4['!cols'] = [{wch:24},{wch:20},{wch:14},{wch:14},{wch:14},{wch:14},{wch:16}];
+        XLSX.utils.book_append_sheet(wb, ws4, 'Detalle etapas');
+
+        XLSX.writeFile(wb, `${srvLabel}_${fechaIni}_${fechaFin}.xlsx`);
+        toast('Excel generado ✓');
+      });
+      return;
+    }
+
+    // PDF
+    const colSrv = {latoneria:'#DC2626',pintura:'#D97706',mecanica:'#2563EB',adicionales:'#059669'}[servicio]||'#1E3A5F';
+    const opHtml = operarios.map(o => `<tr>
+      <td><strong>${o.nombre}</strong></td>
+      <td>${o.etapas}</td>
+      <td style="color:#2563EB;font-weight:700">${hrStr(o.neto)}</td>
+      <td>${hrStr(o.promNeto)}</td>
+      <td>${o.pausado > 0 ? `<span style="background:#FEF3C7;color:#92400E;padding:1px 6px;border-radius:3px;font-size:10px">⏸ ${hrStr(o.pausado)}</span>` : '—'}</td>
+      <td style="font-family:monospace">${fmt(o.valor)}</td>
+    </tr>`).join('');
+
+    const cuelloHtml = cuellos.map((c,i) => {
+      const maxProm = cuellos[0].prom||1;
+      const pct = Math.round(c.prom/maxProm*100);
+      return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
+        <span style="width:140px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.etapa}</span>
+        <div style="flex:1;background:#f1f5f9;border-radius:4px;height:8px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${i===0?colSrv:'#94A3B8'};border-radius:4px"></div>
+        </div>
+        <span style="font-size:11px;font-weight:700;width:50px;text-align:right">${hrStr(c.prom)}</span>
+      </div>`;
+    }).join('');
+
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${titulo}</title>
+    <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a2e;font-size:12px;line-height:1.5}
+    .page{max-width:960px;margin:0 auto;padding:32px 36px}
+    .rpt-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid ${colSrv};padding-bottom:16px;margin-bottom:24px}
+    .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}
+    .kpi{border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;border-top:3px solid}
+    .kpi-val{font-size:20px;font-weight:800;margin-bottom:3px}.kpi-lbl{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px}
+    .section{margin-bottom:26px;page-break-inside:avoid}
+    .section-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #e5e7eb;padding-bottom:7px;margin-bottom:12px;color:${colSrv}}
+    table{width:100%;border-collapse:collapse;font-size:11px}
+    th{padding:7px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:#64748b;font-weight:700;border-bottom:1px solid #e2e8f0;background:#f8fafc}
+    td{padding:6px 10px;border-bottom:1px solid #f1f5f0}
+    .footer{margin-top:30px;border-top:1px solid #e2e8f0;padding-top:10px;font-size:9px;color:#aaa;text-align:center}
+    @media print{.page{padding:18px 22px}}</style></head><body><div class="page">
+    <div class="rpt-header">
+      <div><div style="font-size:22px;font-weight:800;color:${colSrv};letter-spacing:1px">${_RPT_EMPRESA.nombre}</div>
+        <div style="font-size:10px;color:#888;margin-top:3px">${_RPT_EMPRESA.slogan} · NIT ${_RPT_EMPRESA.nit}</div></div>
+      <div style="text-align:right">
+        <div style="font-size:16px;font-weight:800;color:${colSrv}">${titulo}</div>
+        <div style="font-size:11px;color:#555;margin-top:3px">${subtitulo}</div>
+        <div style="font-size:10px;color:#999;margin-top:3px">Generado: ${new Date().toLocaleString('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi" style="border-top-color:${colSrv}"><div class="kpi-val" style="color:${colSrv}">${etapas.length}</div><div class="kpi-lbl">Etapas completadas</div></div>
+      <div class="kpi" style="border-top-color:#2563EB"><div class="kpi-val" style="color:#2563EB">${hrStr(totalMin)}</div><div class="kpi-lbl">Tiempo neto total</div></div>
+      <div class="kpi" style="border-top-color:#F59E0B"><div class="kpi-val" style="color:#D97706">${totalPausado>0?hrStr(totalPausado):'—'}</div><div class="kpi-lbl">⏸ Pausado repuestos</div></div>
+      <div class="kpi" style="border-top-color:#059669"><div class="kpi-val" style="color:#059669;font-size:15px">${fmt(totalVal)}</div><div class="kpi-lbl">Ingresos generados</div></div>
+    </div>
+    <div class="section"><div class="section-title">Rendimiento por operario</div>
+    <table><thead><tr><th>Operario</th><th>Etapas</th><th>T. Neto total</th><th>Prom/etapa</th><th>Pausado</th><th>Ingresos</th></tr></thead>
+    <tbody>${opHtml}</tbody></table></div>
+    <div class="section"><div class="section-title">Etapas con mayor duración promedio (cuellos de botella)</div>${cuelloHtml}</div>
+    <div class="footer">${_RPT_EMPRESA.nombre} · NIT ${_RPT_EMPRESA.nit} · Reporte generado el ${new Date().toLocaleString('es-CO')}</div>
+    </div></body></html>`;
+
+    const win = window.open('', '_blank');
+    if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 800); }
+    toast('PDF generado ✓');
+  } catch(e) { toast('Error: ' + e.message, 'err'); console.error(e); }
 }
 
 // ─── Función principal de generación ────────────────────────
@@ -207,7 +719,7 @@ async function generarReporte(tipo, fechaIni, fechaFin, formato) {
       solicitudesRep, cotizaciones, flotillas
     ] = await Promise.all([
       api(`/etapas?fin=gte.${desdeISO}&fin=lte.${hastaISO}&select=id,orden_id,etapa,etapa_key,servicio,tecnico,mecanico_id,inicio,fin,valor,horas_facturadas,horas_adicionales,horas_estimadas,tiempo_pausado_min`).catch(()=>[]) || [],
-      api(`/ordenes?select=id,placa,marca,linea,propietario,aseguradora,tipo_cliente,flotilla_id,estado,creado_en,entregada_en,fecha_entrega_1,fecha_entrega_2`).catch(()=>[]) || [],
+      api(`/ordenes?or=(creado_en.gte.${desdeISO},entregada_en.gte.${desdeISO})&select=id,placa,marca,linea,propietario,aseguradora,tipo_cliente,flotilla_id,estado,creado_en,entregada_en,fecha_entrega_1,fecha_entrega_2`).catch(()=>[]) || [],
       api(`/novedades?creado_en=gte.${desdeISO}&creado_en=lte.${hastaISO}&select=id,orden_id,etapa_id,tipo,responsable,motivo,desde,creado_en`).catch(()=>[]) || [],
       api(`/ordenes?estado=eq.Entregada&entregada_en=gte.${desdeISO}&entregada_en=lte.${hastaISO}&select=id,placa,marca,linea,propietario,aseguradora,tipo_cliente,flotilla_id,creado_en,entregada_en,fecha_entrega_1,pulmon,pulmon_desde,pulmon_fin,pulmon_tipo`).catch(()=>[]) || [],
       api(`/ordenes?creado_en=gte.${desdeISO}&creado_en=lte.${hastaISO}&select=id,placa,marca,linea,propietario,aseguradora,tipo_cliente,flotilla_id,creado_en,estado,pulmon,pulmon_desde,pulmon_fin,pulmon_tipo`).catch(()=>[]) || [],
@@ -264,8 +776,8 @@ async function generarReporteMecanico(mecId, fechaIni, fechaFin, formato) {
       ? await api(`/solicitudes_repuesto?etapa_id=in.(${etapaIds.join(',')})&select=id,repuesto,estado,tiempo_espera_min,creado_en`).catch(()=>[]) || []
       : [];
 
-    const nombreMec = mecData?.nombre || `Mecánico #${mecId}`;
-    const titulo    = `Reporte Técnico — ${nombreMec}`;
+    const nombreMec = mecData?.nombre || `Operario #${mecId}`;
+    const titulo    = `Reporte de Operario — ${nombreMec}`;
     const subtitulo = `Período: ${fd(desde)} al ${fd(hasta)}`;
 
     // Calcular métricas
@@ -300,7 +812,7 @@ async function generarReporteMecanico(mecId, fechaIni, fechaFin, formato) {
         const wb = XLSX.utils.book_new();
         // Hoja resumen
         const ws1 = XLSX.utils.aoa_to_sheet([
-          [`REPORTE TÉCNICO — ${nombreMec.toUpperCase()}`],
+          [`REPORTE OPERARIO — ${nombreMec.toUpperCase()}`],
           [subtitulo],
           ['Generado:', new Date().toLocaleString('es-CO')],
           [],
