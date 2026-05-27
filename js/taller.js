@@ -94,7 +94,7 @@ function montarTaller() {
       }
       .tv-brand-name {
         font-family:'DM Mono',monospace;font-size:.65vw;
-        letter-spacing:.18em;color:#9CA3AF;text-transform:uppercase;
+        letter-spacing:.18em;color:#4B5563;text-transform:uppercase;
       }
       .tv-clock {
         font-family:'DM Mono',monospace;font-size:2vw;font-weight:700;
@@ -121,7 +121,7 @@ function montarTaller() {
       }
       .tv-kpi-label {
         font-size:.75vw;font-weight:600;text-transform:uppercase;
-        letter-spacing:.09em;color:#9CA3AF;line-height:1.4;
+        letter-spacing:.09em;color:#6B7280;line-height:1.4;
       }
 
       /* ── BODY ── */
@@ -140,7 +140,7 @@ function montarTaller() {
       .tv-thead th {
         padding:.6vh 1.4vw;font-size:.6vw;font-weight:700;
         letter-spacing:.15em;text-transform:uppercase;
-        color:#9CA3AF;text-align:left;
+        color:#6B7280;text-align:left;
         background:#F8FAFC;
         border-bottom:1px solid #E2E8F0;
         white-space:nowrap;
@@ -165,8 +165,8 @@ function montarTaller() {
         font-family:'DM Mono',monospace;font-size:1.35vw;font-weight:700;
         color:#111827;letter-spacing:.04em;line-height:1;
       }
-      .tv-vehiculo { font-size:.55vw;color:#6B7280;margin-top:.1vh; }
-      .tv-propietario { font-size:.62vw;font-weight:600;color:#374151;margin-top:.2vh;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:16vw; }
+      .tv-vehiculo { font-size:.55vw;color:#374151;margin-top:.1vh; }
+      .tv-propietario { font-size:.62vw;font-weight:600;color:#111827;margin-top:.2vh;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:16vw; }
 
       /* ── CHIPS DE ETAPA ── */
       .etapas-chips { display:flex;flex-wrap:wrap;gap:.3vw;align-items:center; }
@@ -187,7 +187,7 @@ function montarTaller() {
       .chip-dot.waiting  { background:transparent;border:.8px solid #F59E0B; }
       .chip-dot.pending  { background:transparent;border:.8px solid #D1D5DB; }
 
-      .tv-tec { font-size:.75vw;color:#6B7280; }
+      .tv-tec { font-size:.75vw;color:#374151; }
       .tv-timer-val {
         font-family:'DM Mono',monospace;font-size:.85vw;font-weight:700;color:#B45309;
       }
@@ -213,7 +213,7 @@ function montarTaller() {
       .tv-panel-title {
         font-family:'DM Mono',monospace;font-size:.6vw;font-weight:700;
         letter-spacing:.18em;text-transform:uppercase;
-        color:#9CA3AF;
+        color:#4B5563;
         padding:.7vh 1.2vw;border-bottom:1px solid rgba(0,0,0,.07);flex-shrink:0;
       }
       .tv-panel-list {
@@ -249,7 +249,7 @@ function montarTaller() {
         font-family:'DM Mono',monospace;font-size:.6vw;color:#9CA3AF;
       }
       .tv-panel-empty {
-        font-size:.7vw;color:#D1D5DB;
+        font-size:.7vw;color:#9CA3AF;
         font-style:italic;padding:1vh 0;text-align:center;
       }
 
@@ -664,20 +664,20 @@ async function cargarPantallaTaller() {
       const tecnicos = [...new Set(etapasActOrden.map(e => e.tecnico).filter(Boolean))];
       const tecHtml  = tecnicos.length
         ? tecnicos.map(t => `<div class="tv-tec">${t}</div>`).join('')
-        : `<div class="tv-tec" style="color:#D1D5DB">—</div>`;
+        : `<div class="tv-tec" style="color:#9CA3AF">—</div>`;
 
       // Timer(es)
       const timerHtml = etapasActOrden.length
         ? etapasActOrden.map(e =>
             `<div class="tv-timer-val" id="tv-et-${e.id}" ${e.pausado ? 'style="color:rgba(180,83,9,.4)"' : ''}>${e.pausado ? '⏸ ' : ''}${_tvTimerStr(e)}</div>`
           ).join('')
-        : `<div style="font-size:.7vw;color:#D1D5DB">—</div>`;
+        : `<div style="font-size:.7vw;color:#9CA3AF">—</div>`;
 
       return `<tr id="tv-row-${orden.id}" onclick="_tvVerDetalle(${orden.id})" style="cursor:pointer">
         <td>
           <div style="display:flex;align-items:baseline;gap:.5vw;white-space:nowrap">
             <div class="tv-placa">${orden.placa}</div>
-            <div style="font-family:'DM Mono',monospace;font-size:.8vw;font-weight:700;color:#6B7280;letter-spacing:.04em;white-space:nowrap">${formatOT(orden.id)}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:.8vw;font-weight:700;color:#374151;letter-spacing:.04em;white-space:nowrap">${formatOT(orden.id)}</div>
           </div>
           ${orden.propietario ? `<div class="tv-propietario">${orden.propietario}</div>` : ''}
           <div class="tv-vehiculo">${[orden.marca,orden.linea].filter(Boolean).join(' ')||'—'}</div>
