@@ -2801,6 +2801,11 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
     grid-template-columns: 1fr !important;
   }
 
+  /* Fila inferior (tiempo + repuestos): 1 columna en móvil */
+  .dash-mes-bottom {
+    grid-template-columns: 1fr !important;
+  }
+
   /* Fechas en nueva orden: 1 columna */
   .n-fechas-grid {
     grid-template-columns: 1fr !important;
