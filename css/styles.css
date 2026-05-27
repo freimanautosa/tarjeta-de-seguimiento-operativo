@@ -1061,9 +1061,6 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   color: #D97706;
   font-style: italic;
 }
-@media (max-width: 768px) {
-  .det-datos-grid { grid-template-columns: 1fr; }
-}
 
 /* DONUT (usado en det-progress-strip) */
 .donut-track { fill: none; stroke: var(--gris-borde); stroke-width: 6; }
@@ -1256,9 +1253,6 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .etapa-campos-row .field select {
   padding: 7px 10px;
   font-size: 13px;
-}
-@media (max-width: 768px) {
-  .etapa-campos-row { grid-template-columns: 1fr 1fr; }
 }
 .ts-chip {
   font-family: 'DM Mono', monospace;
@@ -1661,6 +1655,49 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   .btn-row { flex-wrap: wrap; }
   .btn-row .btn { flex: 1; min-width: 120px; }
 
+  /* ── Detalle de orden: header compacto ── */
+  .detalle-header-card { padding: 12px 14px; margin-bottom: 10px; }
+  .detalle-placa { font-size: 22px; letter-spacing: 1.5px; }
+  .detalle-vehiculo { font-size: 12px; }
+  .detalle-placa-row { margin-bottom: 10px; }
+
+  /* ── Progress strip: apila las celdas en móvil ── */
+  .det-progress-strip { flex-direction: column; gap: 0; }
+  .det-ps-cell { padding: 9px 14px; flex: unset; width: 100%; }
+  .det-ps-progress { flex: unset; }
+  .det-ps-divider { width: 100%; height: 1px; }
+
+  /* ── Grid datos vehículo/cliente: 1 col ── */
+  .det-datos-grid { grid-template-columns: 1fr; gap: 10px; margin-bottom: 12px; }
+
+  /* ── Banner datos faltantes ── */
+  .det-datos-faltantes-banner {
+    flex-wrap: wrap;
+    font-size: 12px;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .det-datos-faltantes-banner button { margin-left: 0 !important; width: 100%; justify-content: center; }
+
+  /* ── Filas de datos vehículo/cliente ── */
+  .det-dato-fila { padding: 7px 10px; font-size: 12px; }
+  .det-dato-lbl { font-size: 10px; }
+  .det-dato-val { font-size: 12px; }
+  .det-datos-card-titulo { padding: 7px 10px; font-size: 10px; }
+
+  /* ── Info chips: ya no se usan pero por si acaso ── */
+  .info-chips { grid-template-columns: 1fr 1fr; }
+  .info-chip { padding: 8px 10px; }
+  .info-chip-val { font-size: 12px; }
+
+  /* ── Etapa campos: 2 cols → 1 col en pantallas muy estrechas ── */
+  .etapa-campos-row { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .etapa-body { padding: 10px 12px; }
+
+  /* ── Header datos ── */
+  .det-datos-header { margin-bottom: 8px; }
+  .det-datos-header .seccion-titulo { font-size: 10px; }
+
   /* Pantallas muy estrechas (≤390px): dashboard 1 columna */
   @media (max-width: 390px) {
     .content { padding: 12px 10px; }
@@ -1668,9 +1705,10 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
     .bnav-item span { font-size: 9px; }
     .orden-placa { font-size: 16px; }
     .dash-card-val { font-size: 20px; }
-    /* Dashboard timing grid: drop last column (sample count) on very narrow screens */
     .dash-tiempo-row { grid-template-columns: 76px 1fr 52px; }
     .dash-tiempo-n   { display: none; }
+    .etapa-campos-row { grid-template-columns: 1fr; }
+    .det-datos-grid { gap: 8px; }
   }
 }
 
