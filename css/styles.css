@@ -981,6 +981,90 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   color: #B45309;
 }
 
+/* ── Banner datos faltantes ── */
+.det-datos-faltantes-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #FFFBEB;
+  border: 1.5px solid #FDE68A;
+  border-radius: 9px;
+  padding: 11px 14px;
+  margin-bottom: 12px;
+  color: #92400E;
+  font-size: 13px;
+}
+.det-datos-faltantes-list {
+  font-size: 12px;
+  color: #B45309;
+  margin-top: 2px;
+}
+.det-datos-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+/* Grid vehículo + cliente */
+.det-datos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.det-datos-card {
+  background: white;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 9px;
+  overflow: hidden;
+}
+.det-datos-card-titulo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--azul);
+  background: var(--azul-light);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gris-borde);
+}
+.det-datos-filas {
+  padding: 4px 0;
+}
+.det-dato-fila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--gris-bg);
+  font-size: 13px;
+}
+.det-dato-fila:last-child { border-bottom: none; }
+.det-dato-lbl {
+  font-size: 11px;
+  color: var(--gris-mid);
+  font-weight: 600;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.det-dato-val {
+  font-weight: 600;
+  color: var(--texto);
+  text-align: right;
+  word-break: break-word;
+}
+.det-dato-vacio {
+  color: #D97706;
+  font-style: italic;
+}
+@media (max-width: 768px) {
+  .det-datos-grid { grid-template-columns: 1fr; }
+}
+
 /* DONUT (usado en det-progress-strip) */
 .donut-track { fill: none; stroke: var(--gris-borde); stroke-width: 6; }
 .donut-fill  { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dasharray 0.5s; transform: rotate(-90deg); transform-origin: center; }

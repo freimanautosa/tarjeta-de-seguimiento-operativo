@@ -418,25 +418,66 @@ async function abrirOrden(id) {
             <!-- Timeline de etapas -->
             ${tlHtml ? `<div class="timeline-wrap" style="padding:10px 0 2px"><div class="etapas-timeline" id="d-timeline">${tlHtml}</div></div>` : ''}
           </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          ${(() => {
+            const faltantes = [];
+            if (!orden.propietario)    faltantes.push('Nombre del cliente');
+            if (!orden.telefono)       faltantes.push('Teléfono');
+            if (!orden.correo_cliente) faltantes.push('Correo');
+            if (!orden.cedula_cliente) faltantes.push('Cédula / NIT');
+            if (!orden.marca)          faltantes.push('Marca');
+            if (!orden.linea)          faltantes.push('Línea');
+            if (!faltantes.length) return '';
+            return `<div class="det-datos-faltantes-banner">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <div>
+                <strong>Faltan datos por completar</strong>
+                <div class="det-datos-faltantes-list">${faltantes.join(' · ')}</div>
+              </div>
+              ${esJefe() && orden.estado !== 'Entregada' ? `<button class="btn btn-sm" style="margin-left:auto;flex-shrink:0;background:#FEF3C7;color:#B45309;border:1px solid #FDE68A" onclick="abrirEditarOrden(${orden.id})">Completar datos</button>` : ''}
+            </div>`;
+          })()}
+          <div class="det-datos-header">
             <div class="seccion-titulo" style="margin-bottom:0">Datos del vehículo y cliente</div>
             ${esJefe() && orden.estado !== 'Entregada' ? `<button class="btn btn-ghost btn-sm" onclick="abrirEditarOrden(${orden.id})">
               <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               Editar datos
             </button>` : ''}
           </div>
-          <div class="info-chips" style="margin-bottom:16px">
-            <div class="info-chip${!orden.propietario?' info-chip-empty':''}"><div class="info-chip-label">Propietario</div><div class="info-chip-val">${escapeHtml(orden.propietario)||'—'}</div></div>
-            <div class="info-chip${!orden.telefono?' info-chip-empty':''}"><div class="info-chip-label">Teléfono</div><div class="info-chip-val">${orden.telefono?`<a href="tel:${escapeHtml(orden.telefono)}" style="color:var(--azul-mid);text-decoration:none">${escapeHtml(orden.telefono)}</a>`:'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Tipo cliente</div><div class="info-chip-val">${escapeHtml(orden.tipo_cliente)||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Aseguradora</div><div class="info-chip-val">${escapeHtml(orden.aseguradora)||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Nivel daño</div><div class="info-chip-val">${escapeHtml(orden.nivel_dano)||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Kilometraje</div><div class="info-chip-val">${orden.kilometraje?orden.kilometraje.toLocaleString('es-CO')+' km':'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">VIN</div><div class="info-chip-val" style="font-family:'DM Mono',monospace;font-size:11px">${escapeHtml(orden.vin)||'—'}</div></div>
-            <div class="info-chip${!orden.correo_cliente?' info-chip-empty':''}"><div class="info-chip-label">Correo</div><div class="info-chip-val">${orden.correo_cliente?`<a href="mailto:${escapeHtml(orden.correo_cliente)}" style="color:var(--azul-mid);text-decoration:none">${escapeHtml(orden.correo_cliente)}</a>`:'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Ingreso</div><div class="info-chip-val">${formatFecha(orden.creado_en)}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Fecha entrega 1</div><div class="info-chip-val">${formatFecha(orden.fecha_entrega_1)}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Fecha entrega 2</div><div class="info-chip-val">${formatFecha(orden.fecha_entrega_2)}</div></div>
+          <div class="det-datos-grid">
+            <!-- Vehículo -->
+            <div class="det-datos-card">
+              <div class="det-datos-card-titulo">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                Vehículo
+              </div>
+              <div class="det-datos-filas">
+                <div class="det-dato-fila"><span class="det-dato-lbl">Marca</span><span class="det-dato-val${!orden.marca?' det-dato-vacio':''}">${escapeHtml(orden.marca)||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Línea</span><span class="det-dato-val${!orden.linea?' det-dato-vacio':''}">${escapeHtml(orden.linea)||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Año</span><span class="det-dato-val">${escapeHtml(orden.modelo||'')||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Color</span><span class="det-dato-val">${escapeHtml(orden.color||'')||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Kilometraje</span><span class="det-dato-val">${orden.kilometraje?orden.kilometraje.toLocaleString('es-CO')+' km':'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">VIN</span><span class="det-dato-val" style="font-family:'DM Mono',monospace;font-size:11px">${escapeHtml(orden.vin||'')||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Ingreso</span><span class="det-dato-val">${formatFecha(orden.creado_en)}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Entrega 1</span><span class="det-dato-val">${formatFecha(orden.fecha_entrega_1)||'—'}</span></div>
+                ${orden.fecha_entrega_2 ? `<div class="det-dato-fila"><span class="det-dato-lbl">Entrega 2</span><span class="det-dato-val">${formatFecha(orden.fecha_entrega_2)}</span></div>` : ''}
+              </div>
+            </div>
+            <!-- Cliente -->
+            <div class="det-datos-card">
+              <div class="det-datos-card-titulo">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Cliente
+              </div>
+              <div class="det-datos-filas">
+                <div class="det-dato-fila"><span class="det-dato-lbl">Nombre</span><span class="det-dato-val${!orden.propietario?' det-dato-vacio':''}">${escapeHtml(orden.propietario||'')||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Teléfono</span><span class="det-dato-val${!orden.telefono?' det-dato-vacio':''}">${orden.telefono?`<a href="tel:${escapeHtml(orden.telefono)}" style="color:var(--azul-mid)">${escapeHtml(orden.telefono)}</a>`:'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Correo</span><span class="det-dato-val${!orden.correo_cliente?' det-dato-vacio':''}">${orden.correo_cliente?`<a href="mailto:${escapeHtml(orden.correo_cliente)}" style="color:var(--azul-mid)">${escapeHtml(orden.correo_cliente)}</a>`:'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Cédula / NIT</span><span class="det-dato-val${!orden.cedula_cliente?' det-dato-vacio':''}" style="font-family:'DM Mono',monospace;font-size:12px">${escapeHtml(orden.cedula_cliente||'')||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Tipo cliente</span><span class="det-dato-val">${escapeHtml(orden.tipo_cliente||'')||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Aseguradora</span><span class="det-dato-val">${escapeHtml(orden.aseguradora||'')||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Nivel daño</span><span class="det-dato-val">${escapeHtml(orden.nivel_dano||'')||'—'}</span></div>
+              </div>
+            </div>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <div class="seccion-titulo" style="margin-bottom:0">Servicios y Etapas</div>
