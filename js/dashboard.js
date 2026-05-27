@@ -1122,20 +1122,33 @@ function switchDashTab(tab) {
 
 // ── Chips KPI clickables ─────────────────────────────────
 function dashFiltrarOrdenes(tipo) {
-  navJefe('ordenes');
-  setTimeout(() => {
+  // Establecer filtroEstado ANTES de navegar: navJefe('ordenes') llama cargarOrdenes()
+  // que lee filtroEstado directamente, evitando un segundo fetch y el crash de setFiltro(null).
+  if (tipo === 'entregadas') {
+    filtroEstado = 'Entregada';
+  } else if (tipo === 'pulmon') {
+    filtroEstado = null; // cargarOrdenes() retorna temprano cuando es null
+  } else {
+    filtroEstado = 'Activa';
+  }
+
+  navJefe('ordenes'); // llama cargarOrdenes() (o retorna si pulmon)
+
+  // Pulmón: navJefe no carga el listado porque filtroEstado=null → cargar manualmente
+  if (tipo === 'pulmon') cargarOrdenesPulmon();
+
+  // Sincronizar estado visual del botón activo (filtros-bar es HTML estático, siempre en DOM)
+  requestAnimationFrame(() => {
     const btns = document.querySelectorAll('#filtros-bar .filtro-btn');
     btns.forEach(b => b.classList.remove('active'));
-    if (tipo === 'creadas') {
-      // Muestra todas (activas + entregadas del mes) — sin filtro especial
-      const btn = document.querySelector('#filtros-bar .filtro-btn');
-      if (btn) { btn.click(); }
+    if (tipo === 'pulmon') {
+      const btn = [...btns].find(b => b.textContent.toLowerCase().includes('pulm'));
+      if (btn) btn.classList.add('active');
     } else if (tipo === 'entregadas') {
       const btn = [...btns].find(b => b.textContent.includes('Entregada'));
-      if (btn) btn.click(); else setFiltro('Entregada', null);
-    } else if (tipo === 'pulmon') {
-      const btn = [...btns].find(b => b.textContent.toLowerCase().includes('pulm'));
-      if (btn) btn.click(); else setFiltro('pulmon', null);
+      if (btn) btn.classList.add('active');
+    } else {
+      if (btns[0]) btns[0].classList.add('active');
     }
-  }, 100);
+  });
 }

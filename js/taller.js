@@ -722,7 +722,7 @@ async function cargarPantallaTaller() {
       ? ordenesProgramadas.map(o => {
           const fp   = o.fecha_programada ? new Date(o.fecha_programada + 'T00:00:00') : null;
           const dias = fp ? Math.round((fp - hoy) / 86400000) : null;
-          const label = dias === 0 ? 'Hoy' : dias === 1 ? 'Mañana' : dias !== null ? `en ${dias}d` : '';
+          const label = dias === 0 ? 'Hoy' : dias === 1 ? 'Mañana' : dias !== null ? `en ${dias}d` : '—';
           return `<div class="tv-prog-item">
             <div class="tv-prog-dot"></div>
             <div style="flex:1;min-width:0">

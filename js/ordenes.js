@@ -1291,8 +1291,12 @@ async function crearOrden() {
     estado: (() => {
       const fp = document.getElementById('n-fecha-programada')?.value;
       if (fp) {
-        const hoy = new Date(); hoy.setHours(0,0,0,0);
-        if (new Date(fp) > hoy) return 'Programada';
+        // Comparar strings YYYY-MM-DD en hora local para evitar desfase UTC/local.
+        // new Date('YYYY-MM-DD') se parsea como UTC medianoche, lo que en UTC-5
+        // equivale a las 19:00 del día anterior — incorrecto para esta comparación.
+        const d = new Date();
+        const hoy = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        if (fp > hoy) return 'Programada';
       }
       return 'Activa';
     })(),

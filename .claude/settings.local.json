@@ -15,7 +15,18 @@
       "Bash(git pull *)",
       "Bash(git stash *)",
       "Bash(findstr /R /S /I \"INGRESOS Y ENTREGAS\" \"C:\\\\Users\\\\juanm\\\\OneDrive\\\\Documentos\\\\appProcesos\\\\js\\\\*.js\")",
-      "Bash(findstr /i \"INGRESOS\" js\\\\dashboard.js)"
+      "Bash(findstr /i \"INGRESOS\" js\\\\dashboard.js)",
+      "Bash(python -c ' *)",
+      "Bash(pip install *)",
+      "PowerShell(python --version)",
+      "PowerShell(python -m pip install pypdf --quiet)",
+      "Bash(Out-String)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\juanm\\\\OneDrive\\\\Documentos\\\\Proyecto-Experimento-IA\" -Recurse -Force | Select-Object @{Name=\"Type\";Expression={if \\($_.PSIsContainer\\) {\"DIR\"} else {\"FILE\"}}}, FullName | Sort-Object FullName | Format-Table -AutoSize)",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\juanm\\\\OneDrive\\\\Documentos\\\\Proyecto-Experimento-IA\\\\data\\\\heart.csv\" | Measure-Object -Line\\).Lines)",
+      "Bash(python proyecto/compare_results.py)",
+      "Bash(ls \"C:\\\\Users\\\\juanm\\\\AppData\\\\Roaming\\\\Claude\\\\local-agent-mode-sessions\\\\skills-plugin\\\\661ea51c-996c-425d-a573-29aa953fafb7\\\\0955ccd7-fff5-4b78-a363-aa7195690dc8\\\\skills\\\\\")",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }
