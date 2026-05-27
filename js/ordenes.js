@@ -394,18 +394,15 @@ async function abrirOrden(id) {
             </div>
             <!-- Strip de progreso compacto -->
             <div class="det-progress-strip">
-              <div class="det-ps-cell det-ps-donut">
-                <svg width="44" height="44" viewBox="0 0 56 56">
-                  <circle class="donut-track" cx="28" cy="28" r="22"/>
-                  <circle class="donut-fill ${pct===100?'completa':'proceso'}" cx="28" cy="28" r="22"
-                    style="stroke-dasharray:${(pct/100)*circ} ${circ}"/>
-                  <text class="donut-pct" x="28" y="32" text-anchor="middle">${pct}%</text>
-                </svg>
-              </div>
-              <div class="det-ps-divider"></div>
-              <div class="det-ps-cell">
-                <div class="det-ps-label">Progreso general</div>
-                <div class="det-ps-val">${comp} / ${total} etapas</div>
+              <div class="det-ps-cell det-ps-progress">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+                  <div class="det-ps-label">Progreso general</div>
+                  <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${pct===100?'var(--verde)':'var(--azul-mid)'}">${pct}%</div>
+                </div>
+                <div class="det-pbar-track">
+                  <div class="det-pbar-fill ${pct===100?'completa':''}" style="width:${pct}%"></div>
+                </div>
+                <div class="det-ps-val" style="margin-top:4px">${comp} / ${total} etapas</div>
               </div>
               <div class="det-ps-divider"></div>
               <div class="det-ps-cell">
