@@ -1834,6 +1834,26 @@ async function guardarAprobacion() {
     toast(`Etapa ${estado} ✓`);
     cerrarModalAprobacion();
 
+    // Si rechazó: notificar al mecánico que debe corregir
+    if (estado === 'rechazado') {
+      const etapaRech = await api(`/etapas?id=eq.${aprobEtapaId}&select=id,etapa,servicio,mecanico_id,tecnico`).then(r=>r?.[0]).catch(()=>null);
+      if (etapaRech?.mecanico_id) {
+        const mecRech = await api(`/mecanicos?id=eq.${etapaRech.mecanico_id}&select=nombre,telegram_chat_id`).then(r=>r?.[0]).catch(()=>null);
+        fetch(N8N_WEBHOOK, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            evento: 'etapa_rechazada',
+            telegram_chat_id: mecRech?.telegram_chat_id || null,
+            orden: { id: ordenActual.id, placa: ordenActual.placa, propietario: ordenActual.propietario, marca: ordenActual.marca, linea: ordenActual.linea },
+            etapa: { id: aprobEtapaId, nombre, servicio: etapaRech.servicio, tecnico: etapaRech.tecnico, mecanico_id: etapaRech.mecanico_id },
+            observacion: document.getElementById('aprob-obs')?.value.trim() || '',
+            rechazado_por: sesion?.nombre || 'Jefe',
+            link: `${window.location.origin}${window.location.pathname}`
+          })
+        }).catch(() => {});
+      }
+    }
+
     // Si aprobó, verificar si TODAS las etapas de la orden quedaron aprobadas
     if (estado === 'aprobado') {
       const [etapas, aprobaciones] = await Promise.all([
