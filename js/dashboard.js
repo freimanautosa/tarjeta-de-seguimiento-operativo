@@ -314,7 +314,11 @@ async function cargarDashboardMes() {
     // RENDER
     // ────────────────────────────────────────────────────────
     cont.innerHTML = `
-      ${retrasosHtml}
+      <!-- Indicador de período + alertas de retraso en la misma fila -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:700;text-transform:capitalize;color:var(--gris-mid);flex-shrink:0">${mesLabel}</span>
+        ${retrasosHtml.replace('margin-bottom:10px','margin-bottom:0')}
+      </div>
 
       <!-- Layout principal: izquierda (tabla) | derecha (próximas + tiempo + repuestos) -->
       <div class="dash-mes-grid" style="display:grid;grid-template-columns:1fr 220px;gap:10px;align-items:start">

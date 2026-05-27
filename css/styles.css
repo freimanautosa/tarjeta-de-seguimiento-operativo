@@ -861,16 +861,16 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .back-btn:hover { color: var(--azul); }
 .detalle-grid {
   display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 20px;
+  grid-template-columns: 1fr 280px;
+  gap: 16px;
   align-items: start;
 }
 .detalle-header-card {
   background: white;
   border: 1.5px solid var(--gris-borde);
   border-radius: var(--radio);
-  padding: 24px;
-  margin-bottom: 16px;
+  padding: 18px 20px;
+  margin-bottom: 12px;
 }
 .detalle-placa-row {
   display: flex;
@@ -978,7 +978,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .timeline-label.active { color: var(--azul-mid); font-weight: 700; }
 
 /* PANEL LATERAL DETALLE */
-.detalle-sidebar { display: flex; flex-direction: column; gap: 14px; }
+.detalle-sidebar { display: flex; flex-direction: column; gap: 10px; }
 .sidebar-card {
   background: white;
   border: 1.5px solid var(--gris-borde);
@@ -986,7 +986,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   overflow: hidden;
 }
 .sidebar-card-header {
-  padding: 13px 18px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--gris-borde);
   font-size: 11px;
   font-weight: 700;
@@ -999,7 +999,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   justify-content: space-between;
   background: var(--gris-bg);
 }
-.sidebar-card-body { padding: 16px 18px; }
+.sidebar-card-body { padding: 12px 14px; }
 
 /* FOTOS GRID */
 .fotos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px,1fr)); gap: 6px; }
@@ -1404,8 +1404,8 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   .topbar { padding: 0 20px; }
   .topbar-title { font-size: 14px; }
 
-  /* Detalle — sidebar más angosta */
-  .detalle-grid { grid-template-columns: 1fr 268px; }
+  /* Detalle — sidebar más angosta en tablet */
+  .detalle-grid { grid-template-columns: 1fr 240px; }
 
   /* Bottom nav oculto */
   .bottom-nav { display: none !important; }
@@ -1443,6 +1443,11 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   .detalle-grid  { grid-template-columns: 1fr; }
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
   .srv-grid-select { grid-template-columns: 1fr; }
+
+  /* Datos del vehículo: chips más pequeños en móvil para que quepan más por fila */
+  .info-chips { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  .info-chip { padding: 8px 10px; }
+  .info-chip-val { font-size: 12px; }
 
   /* Tablas: scroll horizontal */
   .tabla-scroll  { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -2524,12 +2529,13 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 #dash-kpi-chips::-webkit-scrollbar { display: none; }
 
 @media (max-width: 768px) {
-  /* Fila de tabs + chips: apila en columna, chips con scroll horizontal */
-  #pag-dashboard > div:first-child {
-    flex-direction: column;
-    align-items: flex-start;
+  /* Fila de tabs + chips: apila en columna para evitar overflow */
+  #dash-tabs-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
     gap: 10px;
   }
+  /* Chips: ancho completo, scroll horizontal, sin wrap para mantener en una sola fila */
   #dash-kpi-chips {
     width: 100%;
     overflow-x: auto;
@@ -2537,7 +2543,12 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
     align-items: stretch;
     padding-bottom: 2px;
   }
-  /* Grid principal: una sola columna */
+  /* Chip de facturación: fuente más pequeña para que entre bien */
+  #dash-kpi-chips > div:first-child > div:first-child {
+    font-size: 15px !important;
+    white-space: nowrap;
+  }
+  /* Grid principal dashboard: una sola columna */
   .dash-mes-grid {
     grid-template-columns: 1fr !important;
   }
