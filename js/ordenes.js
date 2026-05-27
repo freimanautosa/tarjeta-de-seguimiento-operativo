@@ -569,25 +569,18 @@ async function abrirOrden(id) {
                        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},true)">💰 Con precios</button>
                      </div>
                    </div>`
-                : todasCalidadAprobada
-                ? `<button class="btn btn-success" style="width:100%" onclick="cambiarEstado('Entregada')">
+                : (todasCalidadAprobada || (comp === total && total > 0))
+                ? `${todasCalidadAprobada
+                    ? `<div style="font-size:11px;color:var(--verde);font-weight:600;margin-bottom:8px;text-align:center">✓ Calidad aprobada en todas las etapas</div>`
+                    : `<div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400E;margin-bottom:8px">
+                         ⚠️ Calidad pendiente de aprobar en algunas etapas.
+                       </div>`
+                  }
+                   <button class="btn btn-success" style="width:100%" onclick="cambiarEstado('Entregada')">
                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
                      Marcar como Finalizada
                    </button>
                    <div style="display:flex;gap:6px;margin-top:6px">
-                     <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},false)">
-                       📋 Sin precios
-                     </button>
-                     <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},true)">
-                       💰 Con precios
-                     </button>
-                   </div>
-                   <div style="font-size:11px;color:var(--gris-mid);margin-top:8px;text-align:center">✓ Calidad aprobada en todas las etapas</div>`
-                : comp === total && total > 0
-                ? `<div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:8px">
-                     ⚠️ Todas las etapas completadas. Aprueba la calidad de cada etapa para poder finalizar la orden.
-                   </div>
-                   <div style="display:flex;gap:6px">
                      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},false)">📋 Sin precios</button>
                      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},true)">💰 Con precios</button>
                    </div>`
