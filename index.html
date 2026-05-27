@@ -135,12 +135,22 @@
   <div id="dash-metas-contenido" style="display:none"></div>
 </div>
       <div class="pagina" id="pag-ordenes">
-        <div class="filtros-bar" id="filtros-bar">
-          <button class="filtro-btn active" onclick="setFiltro('Activa',this)">Activas</button>
-          <button class="filtro-btn" onclick="setFiltro('Entregada',this)">Entregadas</button>
-<button class="filtro-btn" onclick="setFiltroPulmon(this)">En Pulmón</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+          <div class="filtros-bar" id="filtros-bar" style="margin-bottom:0;flex-shrink:0">
+            <button class="filtro-btn active" onclick="setFiltro('Activa',this)">Activas</button>
+            <button class="filtro-btn" onclick="setFiltro('Entregada',this)">Entregadas</button>
+            <button class="filtro-btn" onclick="setFiltroPulmon(this)">En pulmón</button>
+          </div>
+          <button class="btn btn-primary" onclick="navJefe('nueva')" style="white-space:nowrap;display:flex;align-items:center;gap:6px;flex-shrink:0;font-size:13px">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva orden
+          </button>
         </div>
-        <div class="ordenes-grid" id="lista-ordenes">
+        <div style="position:relative;margin-bottom:12px">
+          <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--gris-mid);pointer-events:none" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="ord-search" placeholder="Buscar por placa, cliente o responsable..." style="padding-left:34px;width:100%;box-sizing:border-box" oninput="filtrarTablaOrdenes(this.value)">
+        </div>
+        <div id="lista-ordenes">
           <div class="loading-state">Cargando órdenes...</div>
         </div>
       </div>
@@ -149,7 +159,23 @@
         <div id="detalle-contenido"></div>
       </div>
       <div class="pagina" id="pag-nueva">
+
+        <!-- ══ WIZARD STEPS ══ -->
+        <div class="wizard-header">
+          <div class="wizard-step-item active" id="ws-1">
+            <div class="wizard-step-circle">1</div>
+            <div class="wizard-step-text">Cliente y vehículo</div>
+          </div>
+          <div class="wizard-connector"></div>
+          <div class="wizard-step-item" id="ws-2">
+            <div class="wizard-step-circle">2</div>
+            <div class="wizard-step-text">Fechas y planificación</div>
+          </div>
+        </div>
+
         <div class="card" style="padding:16px 18px">
+        <!-- ══ PASO 1 ══ -->
+        <div id="wizard-s1">
 
           <!-- ══ FILA SUPERIOR: Placa + Tipo cliente + KM ══ -->
           <div style="display:grid;grid-template-columns:1fr 1fr 120px;gap:10px;margin-bottom:4px">
@@ -314,6 +340,11 @@
             <div class="field" style="margin:0"><label>Nivel de daño</label><select id="n-dano"><option value="">— Seleccionar —</option><option value="leve">Leve</option><option value="moderado">Moderado</option><option value="grave">Grave</option><option value="total">Total</option></select></div>
           </div>
 
+        </div><!-- /wizard-s1 -->
+
+        <!-- ══ PASO 2 ══ -->
+        <div id="wizard-s2" style="display:none">
+
           <!-- Fechas compactas -->
           <div class="n-fechas-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
             <div class="field" style="margin:0">
@@ -396,9 +427,15 @@
             </div>
           </details>
 
+        </div><!-- /wizard-s2 -->
+
           <div class="btn-row" style="padding-top:4px">
             <button class="btn btn-ghost" onclick="cancelarNuevaOrden()">Cancelar</button>
-            <button class="btn btn-primary" onclick="crearOrden()">Crear orden →</button>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost" id="wizard-btn-prev" onclick="irPasoWizard(1)" style="display:none">← Anterior</button>
+              <button class="btn btn-primary" id="wizard-btn-next" onclick="irPasoWizard(2)">Siguiente →</button>
+              <button class="btn btn-primary" id="wizard-btn-save" onclick="crearOrden()" style="display:none">Crear orden →</button>
+            </div>
           </div>
         </div>
       </div>

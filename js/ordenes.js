@@ -19,121 +19,111 @@ function setFiltroPulmon(btn) {
   cargarOrdenesPulmon();
 }
 
+let _ordenesTablaData  = [];
+let _etapasTablaData   = [];
+
 async function cargarOrdenes() {
-  if (filtroEstado === null) return; // tab pulmón activo, no aplica
+  if (filtroEstado === null) return; // tab pulmón activo
   const lista = document.getElementById('lista-ordenes');
   if (!lista) return;
   lista.innerHTML = '<div class="loading-state">Cargando órdenes...</div>';
   try {
-    // Para 'Activa': incluir filas con estado NULL (órdenes sin estado asignado)
-    // y pulmon NULL/false. Para otros estados (Entregada) filtrar exacto.
     let query;
     if (filtroEstado === 'Activa') {
-      query = `/ordenes?or=(estado.eq.Activa,estado.is.null)&or=(pulmon.eq.false,pulmon.is.null)&order=creado_en.desc&limit=60`;
+      query = `/ordenes?or=(estado.eq.Activa,estado.is.null,estado.eq.Programada)&or=(pulmon.eq.false,pulmon.is.null)&order=creado_en.desc&limit=100`;
     } else {
-      query = `/ordenes?estado=eq.${filtroEstado}&order=creado_en.desc&limit=60`;
+      query = `/ordenes?estado=eq.${filtroEstado}&order=creado_en.desc&limit=100`;
     }
     const data = await api(query);
     if (!data?.length) {
-      lista.innerHTML = `<div class="empty-state"><div class="empty-state-icon">${ico('clipboard', 32)}</div>No hay órdenes ${filtroEstado.toLowerCase()}s.</div>`;
+      lista.innerHTML = `<div class="empty-state"><div class="empty-state-icon">${ico('clipboard', 32)}</div>No hay órdenes.</div>`;
       return;
     }
     const ids = data.map(o => o.id).join(',');
-    const etapas = await api(`/etapas?orden_id=in.(${ids})&select=orden_id,servicio,fin`).catch(() => []) || [];
-
-    lista.innerHTML = data.map(o => {
-      const etapasO  = etapas.filter(e => e.orden_id === o.id);
-      const total    = etapasO.length;
-      const comp     = etapasO.filter(e => e.fin).length;
-      const pct      = total ? Math.round((comp / total) * 100) : 0;
-      const completa = total > 0 && comp === total;
-      const srvs     = [...new Set(etapasO.map(e => e.servicio).filter(Boolean))];
-      const chips    = srvs.map(s => `<span class="badge badge-${s}">${CATALOGO[s]?.nombre || s}</span>`).join('');
-      const estadoBadge = o.pulmon
-        ? `<span class="badge badge-pulmon">En Pulmón</span>`
-        : `<span class="badge badge-${o.estado?.toLowerCase() || 'activa'}">${o.estado || 'Activa'}</span>`;
-      const tcBadge = o.tipo_cliente ? `<span class="badge badge-${o.tipo_cliente}">${o.tipo_cliente}</span>` : '';
-      const ahora2 = new Date();
-      const primerDiaMes = new Date(ahora2.getFullYear(), ahora2.getMonth(), 1);
-      const esMesAnterior = o.creado_en && new Date(o.creado_en) < primerDiaMes && o.estado === 'Activa';
-
-      // ── Alerta de vencimiento ────────────────────────────────
-      let alertaVenc = '', borderStyle = '', cardClass = '';
-      if (o.fecha_entrega_1 && o.estado !== 'Entregada') {
-        const hoy    = new Date(); hoy.setHours(0,0,0,0);
-        const entrega = new Date(o.fecha_entrega_1); entrega.setHours(0,0,0,0);
-        const diasRestantes = Math.round((entrega - hoy) / 86400000);
-
-        if (diasRestantes < 0) {
-          // Vencida
-          const diasVencida = Math.abs(diasRestantes);
-          alertaVenc = `<div class="orden-alerta orden-alerta-roja">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            VENCIDA hace ${diasVencida === 1 ? '1 día' : diasVencida + ' días'}
-          </div>`;
-          borderStyle = 'border-left: 3px solid #C0392B;';
-          cardClass   = 'orden-card-vencida';
-        } else if (diasRestantes === 0) {
-          alertaVenc = `<div class="orden-alerta orden-alerta-naranja">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Entrega HOY
-          </div>`;
-          borderStyle = 'border-left: 3px solid #EA580C;';
-          cardClass   = 'orden-card-urgente';
-        } else if (diasRestantes === 1) {
-          alertaVenc = `<div class="orden-alerta orden-alerta-naranja">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Entrega MAÑANA
-          </div>`;
-          borderStyle = 'border-left: 3px solid #EA580C;';
-          cardClass   = 'orden-card-urgente';
-        } else if (diasRestantes <= 3) {
-          alertaVenc = `<div class="orden-alerta orden-alerta-amarilla">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            Entrega en ${diasRestantes} días
-          </div>`;
-          borderStyle = 'border-left: 3px solid #D97706;';
-        } else if (esMesAnterior) {
-          borderStyle = 'border-left: 3px solid #F59E0B;';
-        }
-      } else if (esMesAnterior) {
-        borderStyle = 'border-left: 3px solid #F59E0B;';
-      }
-
-      return `<div class="orden-card ${cardClass}" draggable="true" id="card-${o.id}"
-        ondragstart="dragStart(event,'${o.id}')"
-        ondragover="dragOver(event)"
-        ondragleave="dragLeave(event)"
-        ondrop="dragDrop(event,'${o.id}')"
-        ondragend="dragEnd(event)"
-        onclick="abrirOrden(${o.id})"
-        style="${borderStyle}">
-        ${alertaVenc}
-        <div class="orden-card-top">
-          <div>
-            <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
-              <div class="orden-placa">${escapeHtml(o.placa)}</div>
-              <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--gris-mid,#94A3B8);letter-spacing:.5px">${formatOT(o.id)}</div>
-            </div>
-            <div class="orden-vehiculo">${[o.marca,o.linea,o.modelo].filter(Boolean).map(escapeHtml).join(' · ')} ${o.propietario ? '— '+escapeHtml(o.propietario) : ''}</div>
-          </div>
-          <div class="orden-badges">${estadoBadge}${tcBadge}</div>
-        </div>
-        ${total > 0 ? `<div class="progreso-bar-wrap">
-          <div class="progreso-labels"><span>${comp} / ${total} etapas</span><span>${pct}%</span></div>
-          <div class="progreso-track"><div class="progreso-fill ${completa?'completa':''}" style="width:${pct}%"></div></div>
-        </div>` : ''}
-        <div class="orden-card-bottom">
-          <div class="srv-chips">${chips || '<span style="font-size:12px;color:var(--gris-mid)">Sin etapas</span>'}</div>
-          <div class="orden-fecha">${formatFecha(o.creado_en)}${o.fecha_entrega_1 ? '<br>Entrega: '+formatFecha(o.fecha_entrega_1) : ''}</div>
-        </div>
-        ${total === 0 ? `<div style="margin:6px 0 2px;padding:5px 10px;background:#FEF3C7;border-radius:5px;font-size:11px;font-weight:600;color:#92400E;display:flex;align-items:center;gap:5px">
-          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          Sin etapas asignadas — pendiente configurar servicios
-        </div>` : ''}
-      </div>`;
-    }).join('');
+    const etapas = await api(`/etapas?orden_id=in.(${ids})&select=orden_id,servicio,inicio,fin,tecnico`).catch(() => []) || [];
+    _ordenesTablaData = data;
+    _etapasTablaData  = etapas;
+    renderTablaOrdenes(data, etapas);
   } catch(e) { lista.innerHTML = `<div class="empty-state">Error cargando órdenes: ${e.message}</div>`; }
+}
+
+function _buildOrdenRow(o, etapas) {
+  const etapasO  = etapas.filter(e => e.orden_id === o.id);
+  const total    = etapasO.length;
+  const comp     = etapasO.filter(e => e.fin).length;
+  const pct      = total ? Math.round((comp / total) * 100) : 0;
+  const activa   = etapasO.find(e => e.inicio && !e.fin);
+  const srvNombre = activa
+    ? (CATALOGO[activa.servicio]?.nombre || activa.servicio)
+    : (comp === total && total > 0 ? 'Completada' : null);
+  const tecnico  = activa?.tecnico || '';
+
+  // Días en taller
+  const diasTaller = o.creado_en ? Math.floor((Date.now() - new Date(o.creado_en)) / 86400000) : 0;
+
+  // Pill estado
+  let pillCls, pillTxt;
+  if (o.pulmon) { pillCls = 'pill-pulmon'; pillTxt = 'En pulmón'; }
+  else if (o.estado === 'Entregada') { pillCls = 'pill-entregada'; pillTxt = 'Entregada'; }
+  else if (o.estado === 'Programada') { pillCls = 'pill-programada'; pillTxt = 'Programada'; }
+  else {
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const atrasada = o.fecha_entrega_1 && new Date(o.fecha_entrega_1) < hoy;
+    pillCls = atrasada ? 'pill-atrasada' : 'pill-a-tiempo';
+    pillTxt = atrasada ? 'Atrasada' : 'A tiempo';
+  }
+
+  const fechaEnt = o.fecha_entrega_1 ? formatFecha(o.fecha_entrega_1) : '—';
+  const searchStr = [(o.placa||''), (o.propietario||''), (tecnico||''), (o.marca||''), (o.linea||'')].join(' ').toLowerCase();
+
+  return `<tr class="ord-row" onclick="abrirOrden(${o.id})" data-search="${escapeHtml(searchStr)}">
+    <td>
+      <div class="ord-placa">${escapeHtml(o.placa)}</div>
+      <div class="ord-ot">${formatOT(o.id)}</div>
+    </td>
+    <td>
+      <div class="ord-veh-nombre">${[o.marca,o.linea].filter(Boolean).map(escapeHtml).join(' ') || '—'}</div>
+      <div class="ord-veh-ano">${escapeHtml(o.modelo||'')}</div>
+    </td>
+    <td>
+      ${total > 0 ? `
+        <div class="ord-etapa-nombre">${escapeHtml(srvNombre || '—')}</div>
+        <div class="ord-prog-wrap">
+          <div class="ord-prog-track"><div class="ord-prog-fill" style="width:${pct}%"></div></div>
+          <span class="ord-prog-lbl">${comp}/${total}</span>
+        </div>` : `<span class="ord-sin-etapas">Sin etapas</span>`}
+    </td>
+    <td class="ord-resp">${escapeHtml(tecnico) || '<span style="color:var(--gris-mid)">—</span>'}</td>
+    <td class="ord-fecha-ent">${fechaEnt}</td>
+    <td class="ord-dias">${diasTaller}d</td>
+    <td><span class="ord-pill ${pillCls}">${pillTxt}</span></td>
+  </tr>`;
+}
+
+function renderTablaOrdenes(data, etapas) {
+  const lista = document.getElementById('lista-ordenes');
+  if (!lista) return;
+  if (!data.length) {
+    lista.innerHTML = `<div class="empty-state"><div class="empty-state-icon">${ico('clipboard',32)}</div>No hay órdenes.</div>`;
+    return;
+  }
+  const rows = data.map(o => _buildOrdenRow(o, etapas)).join('');
+  lista.innerHTML = `<div class="ordenes-tabla-wrap"><table class="ordenes-tabla">
+    <thead><tr>
+      <th>Orden</th><th>Vehículo</th><th>Etapa actual</th>
+      <th>Responsable</th><th>Entrega est.</th><th>Días</th><th>Estado</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function filtrarTablaOrdenes(q) {
+  const tbody = document.querySelector('#lista-ordenes .ordenes-tabla tbody');
+  if (!tbody) return;
+  const term = q.toLowerCase().trim();
+  tbody.querySelectorAll('tr.ord-row').forEach(tr => {
+    tr.style.display = (!term || (tr.dataset.search||'').includes(term)) ? '' : 'none';
+  });
 }
 
 async function cargarOrdenesPulmon() {
@@ -141,55 +131,58 @@ async function cargarOrdenesPulmon() {
   if (!lista) return;
   lista.innerHTML = '<div class="loading-state">Cargando órdenes...</div>';
   try {
-    const data = await api(`/ordenes?pulmon=eq.true&order=pulmon_desde.asc&limit=60`);
+    const data = await api(`/ordenes?pulmon=eq.true&order=pulmon_desde.asc&limit=100`);
     if (!data?.length) {
       lista.innerHTML = `<div class="empty-state"><div class="empty-state-icon"></div>No hay órdenes en pulmón.</div>`;
       return;
     }
     const ids = data.map(o => o.id).join(',');
-    const etapas = await api(`/etapas?orden_id=in.(${ids})&select=orden_id,servicio,fin`).catch(() => []) || [];
+    const etapas = await api(`/etapas?orden_id=in.(${ids})&select=orden_id,servicio,inicio,fin,tecnico`).catch(() => []) || [];
+    _ordenesTablaData = data;
+    _etapasTablaData  = etapas;
 
-    lista.innerHTML = data.map(o => {
-      const etapasO  = etapas.filter(e => e.orden_id === o.id);
-      const total    = etapasO.length;
-      const comp     = etapasO.filter(e => e.fin).length;
-      const pct      = total ? Math.round((comp / total) * 100) : 0;
-      const completa = total > 0 && comp === total;
-      const srvs     = [...new Set(etapasO.map(e => e.servicio).filter(Boolean))];
-      const chips    = srvs.map(s => `<span class="badge badge-${s}">${CATALOGO[s]?.nombre || s}</span>`).join('');
-      const diasPulmon = o.pulmon_desde
-        ? Math.floor((new Date() - new Date(o.pulmon_desde)) / 86400000)
-        : null;
-      return `<div class="orden-card" draggable="true" id="card-${o.id}"
-        ondragstart="dragStart(event,'${o.id}')"
-        ondragover="dragOver(event)"
-        ondragleave="dragLeave(event)"
-        ondrop="dragDrop(event,'${o.id}')"
-        ondragend="dragEnd(event)"
-        onclick="abrirOrden(${o.id})">
-        <div class="orden-card-top">
-          <div>
-            <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
-              <div class="orden-placa">${escapeHtml(o.placa)}</div>
-              <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--gris-mid,#94A3B8);letter-spacing:.5px">${formatOT(o.id)}</div>
-            </div>
-            <div class="orden-vehiculo">${[o.marca,o.linea,o.modelo].filter(Boolean).map(escapeHtml).join(' · ')} ${o.propietario ? '— '+escapeHtml(o.propietario) : ''}</div>
-          </div>
-          <div class="orden-badges">
-            <span class="badge badge-pulmon">En Pulmón${diasPulmon !== null ? ` · ${diasPulmon}d` : ''}</span>
-            ${o.tipo_cliente ? `<span class="badge badge-${o.tipo_cliente}">${o.tipo_cliente}</span>` : ''}
-          </div>
-        </div>
-        ${total > 0 ? `<div class="progreso-bar-wrap">
-          <div class="progreso-labels"><span>${comp} / ${total} etapas</span><span>${pct}%</span></div>
-          <div class="progreso-track"><div class="progreso-fill ${completa?'completa':''}" style="width:${pct}%"></div></div>
-        </div>` : ''}
-        <div class="orden-card-bottom">
-          <div class="srv-chips">${chips || '<span style="font-size:12px;color:var(--gris-mid)">Sin etapas</span>'}</div>
-          <div class="orden-fecha">${diasPulmon !== null ? `${diasPulmon} días en pulmón` : ''}</div>
-        </div>
-      </div>`;
+    const rows = data.map(o => {
+      const etapasO   = etapas.filter(e => e.orden_id === o.id);
+      const total     = etapasO.length;
+      const comp      = etapasO.filter(e => e.fin).length;
+      const pct       = total ? Math.round((comp / total) * 100) : 0;
+      const activa    = etapasO.find(e => e.inicio && !e.fin);
+      const srvNombre = activa ? (CATALOGO[activa.servicio]?.nombre || activa.servicio) : (comp===total&&total>0?'Completada':null);
+      const tecnico   = activa?.tecnico || '';
+      const diasPulmon = o.pulmon_desde ? Math.floor((Date.now() - new Date(o.pulmon_desde)) / 86400000) : null;
+      const diasTaller = o.creado_en ? Math.floor((Date.now() - new Date(o.creado_en)) / 86400000) : 0;
+      const searchStr  = [(o.placa||''), (o.propietario||''), (tecnico||''), (o.marca||''), (o.linea||'')].join(' ').toLowerCase();
+      return `<tr class="ord-row" onclick="abrirOrden(${o.id})" data-search="${escapeHtml(searchStr)}">
+        <td>
+          <div class="ord-placa">${escapeHtml(o.placa)}</div>
+          <div class="ord-ot">${formatOT(o.id)}</div>
+        </td>
+        <td>
+          <div class="ord-veh-nombre">${[o.marca,o.linea].filter(Boolean).map(escapeHtml).join(' ') || '—'}</div>
+          <div class="ord-veh-ano">${escapeHtml(o.modelo||'')}</div>
+        </td>
+        <td>
+          ${total > 0 ? `
+            <div class="ord-etapa-nombre">${escapeHtml(srvNombre || '—')}</div>
+            <div class="ord-prog-wrap">
+              <div class="ord-prog-track"><div class="ord-prog-fill" style="width:${pct}%"></div></div>
+              <span class="ord-prog-lbl">${comp}/${total}</span>
+            </div>` : `<span class="ord-sin-etapas">En pulmón</span>`}
+        </td>
+        <td class="ord-resp">${escapeHtml(tecnico) || '<span style="color:var(--gris-mid)">—</span>'}</td>
+        <td class="ord-fecha-ent">${diasPulmon !== null ? `${diasPulmon}d en pulmón` : '—'}</td>
+        <td class="ord-dias">${diasTaller}d</td>
+        <td><span class="ord-pill pill-pulmon">En pulmón</span></td>
+      </tr>`;
     }).join('');
+
+    lista.innerHTML = `<div class="ordenes-tabla-wrap"><table class="ordenes-tabla">
+      <thead><tr>
+        <th>Orden</th><th>Vehículo</th><th>Etapa actual</th>
+        <th>Responsable</th><th>Tiempo pulmón</th><th>Días</th><th>Estado</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
   } catch(e) { lista.innerHTML = `<div class="empty-state">Error cargando órdenes: ${e.message}</div>`; }
 }
 
@@ -850,6 +843,62 @@ function cancelarNuevaOrden() {
   if (esJefe()) navJefe('ordenes');
 }
 
+// ── Wizard nueva orden ──────────────────────────────────────
+let _wizardPaso = 1;
+
+function irPasoWizard(paso) {
+  if (paso === 2 && !_validarPaso1()) return;
+  _wizardPaso = paso;
+  const s1 = document.getElementById('wizard-s1');
+  const s2 = document.getElementById('wizard-s2');
+  const ws1 = document.getElementById('ws-1');
+  const ws2 = document.getElementById('ws-2');
+  const btnPrev = document.getElementById('wizard-btn-prev');
+  const btnNext = document.getElementById('wizard-btn-next');
+  const btnSave = document.getElementById('wizard-btn-save');
+  if (s1) s1.style.display = paso === 1 ? '' : 'none';
+  if (s2) s2.style.display = paso === 2 ? '' : 'none';
+  if (ws1) { ws1.classList.toggle('active', paso === 1); ws1.classList.toggle('done', paso > 1); }
+  if (ws2) { ws2.classList.toggle('active', paso === 2); }
+  if (btnPrev) btnPrev.style.display = paso > 1 ? '' : 'none';
+  if (btnNext) btnNext.style.display = paso < 2 ? '' : 'none';
+  if (btnSave) btnSave.style.display = paso === 2 ? '' : 'none';
+  // Scroll al inicio del formulario
+  const pag = document.getElementById('pag-nueva');
+  if (pag) pag.scrollTop = 0;
+}
+
+function _validarPaso1() {
+  const placa = document.getElementById('n-placa')?.value.trim();
+  if (!placa) { toast('Ingresa la placa del vehículo', 'err'); return false; }
+  const tipo = document.getElementById('n-tipo-cliente')?.value;
+  if (!tipo) {
+    const errEl = document.getElementById('n-tipo-cliente-error');
+    if (errEl) errEl.style.display = 'block';
+    toast('Selecciona el tipo de cliente', 'err');
+    return false;
+  }
+  return true;
+}
+
+function _resetWizard() {
+  _wizardPaso = 1;
+  const s1 = document.getElementById('wizard-s1');
+  const s2 = document.getElementById('wizard-s2');
+  const ws1 = document.getElementById('ws-1');
+  const ws2 = document.getElementById('ws-2');
+  const btnPrev = document.getElementById('wizard-btn-prev');
+  const btnNext = document.getElementById('wizard-btn-next');
+  const btnSave = document.getElementById('wizard-btn-save');
+  if (s1) s1.style.display = '';
+  if (s2) s2.style.display = 'none';
+  if (ws1) { ws1.classList.add('active'); ws1.classList.remove('done'); }
+  if (ws2) { ws2.classList.remove('active'); }
+  if (btnPrev) btnPrev.style.display = 'none';
+  if (btnNext) btnNext.style.display = '';
+  if (btnSave) btnSave.style.display = 'none';
+}
+
 function toggleInv(el, key) {
   el.classList.toggle('checked');
   const chk = el.querySelector('input[type=checkbox]');
@@ -1154,6 +1203,9 @@ function toggleTipoClienteNueva(tipo) {
 function selTipoCliente(label, tipo) {
   document.querySelectorAll('.tipo-cliente-btn').forEach(b => b.classList.remove('selected'));
   label.classList.add('selected');
+  // Ocultar error de tipo si estaba visible
+  const errEl = document.getElementById('n-tipo-cliente-error');
+  if (errEl) errEl.style.display = 'none';
   toggleTipoClienteNueva(tipo);
 }
 
@@ -3187,9 +3239,13 @@ function resetNuevaOrden() {
   document.getElementById('placa-resultado') && (document.getElementById('placa-resultado').style.display = 'none');
   document.getElementById('historial-previo') && (document.getElementById('historial-previo').style.display = 'none');
   document.getElementById('ocr-estado') && (document.getElementById('ocr-estado').style.display = 'none');
+  const tipoErrEl = document.getElementById('n-tipo-cliente-error');
+  if (tipoErrEl) tipoErrEl.style.display = 'none';
   cerrarSugerenciasPlaca();
   fotosIngresoPendientes = [];
   if (typeof renderPreviewIngreso === 'function') renderPreviewIngreso();
+  // Reset wizard al paso 1
+  _resetWizard();
 }
 
 async function recargarListasNuevaOrden() {
