@@ -2444,6 +2444,9 @@ async function cargarMecanicosVista() {
               <div style="flex:1;min-width:0">
                 <div style="font-weight:600;font-size:14px">${escapeHtml(m.nombre)}</div>
                 <div style="font-size:11px;color:var(--gris-mid)">${escapeHtml(ROL_LABEL[m.rol] || m.rol || 'Técnico')} · ${etapas.length} etapa${etapas.length!==1?'s':''} activa${etapas.length!==1?'s':''}</div>
+                ${m.telegram_chat_id
+                  ? `<div style="font-size:10px;color:#059669;font-family:'DM Mono',monospace;margin-top:1px">✓ Telegram configurado</div>`
+                  : `<div style="font-size:10px;color:#D97706;margin-top:1px">⚠ Sin Telegram</div>`}
               </div>
               <div style="display:flex;gap:4px;flex-shrink:0">
                 <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirCambiarPassMecanico(${m.id},'${escapeHtml(m.nombre)}')" title="Cambiar contraseña">
@@ -2512,6 +2515,17 @@ function abrirModalOperario(mec) {
             ${roles.map(r => `<option value="${r.val}" ${esEditar && mec.rol===r.val ? 'selected':''}>${r.label}</option>`).join('')}
           </select>
         </div>
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.63a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            Telegram Chat ID
+          </label>
+          <input id="op-telegram" type="text" placeholder="Ej: 123456789 (dejar vacío si no usa Telegram)"
+            value="${esEditar ? escapeHtml(mec.telegram_chat_id||'') : ''}">
+          <div style="font-size:11px;color:var(--gris-mid);margin-top:3px">
+            Para obtenerlo: que el operario escriba <strong>/start</strong> al bot <strong>@userinfobot</strong> en Telegram y te pase el ID.
+          </div>
+        </div>
         ${!esEditar ? `
         <div class="field">
           <label>Contraseña inicial</label>
@@ -2539,9 +2553,10 @@ function abrirModalOperario(mec) {
 
 async function guardarOperario(mecId, cedulaOriginal) {
   const nombre = document.getElementById('op-nombre')?.value.trim();
-  const cedula = mecId ? cedulaOriginal : document.getElementById('op-cedula')?.value.trim();
-  const rol    = document.getElementById('op-rol')?.value;
-  const pass   = document.getElementById('op-pass')?.value || '';
+  const cedula    = mecId ? cedulaOriginal : document.getElementById('op-cedula')?.value.trim();
+  const rol       = document.getElementById('op-rol')?.value;
+  const pass      = document.getElementById('op-pass')?.value || '';
+  const tgChatId  = document.getElementById('op-telegram')?.value.trim() || null;
   const errEl  = document.getElementById('op-error');
   const showErr = msg => { errEl.textContent = msg; errEl.style.display = 'block'; };
   errEl.style.display = 'none';
@@ -2555,8 +2570,8 @@ async function guardarOperario(mecId, cedulaOriginal) {
 
   try {
     if (mecId) {
-      // Editar: solo actualiza nombre y rol
-      await api(`/mecanicos?id=eq.${mecId}`, 'PATCH', { nombre, rol });
+      // Editar: actualiza nombre, rol y telegram_chat_id
+      await api(`/mecanicos?id=eq.${mecId}`, 'PATCH', { nombre, rol, telegram_chat_id: tgChatId });
       toast(`${nombre} actualizado ✓`);
     } else {
       // Crear: primero registrar en Supabase Auth
@@ -2572,7 +2587,7 @@ async function guardarOperario(mecId, cedulaOriginal) {
         // Continúa igual — puede que ya exista en auth pero no en mecanicos
       }
       // Insertar en tabla mecanicos
-      await api('/mecanicos', 'POST', { nombre, cedula, rol, activo: true }, { Prefer: 'return=minimal' });
+      await api('/mecanicos', 'POST', { nombre, cedula, rol, activo: true, telegram_chat_id: tgChatId }, { Prefer: 'return=minimal' });
       toast(`${nombre} creado ✓ — contraseña inicial: ${signupPass === cedula ? 'su cédula' : 'la que configuraste'}`);
     }
     document.getElementById('modal-operario')?.remove();
