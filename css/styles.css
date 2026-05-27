@@ -2718,22 +2718,25 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 
 /* ══════════════════════════════════════════════════════════
    DASHBOARD RESPONSIVE
+   Regla: mobile-first dentro de este bloque.
+   Chips en desktop: grandes con sub-label.
+   Chips en móvil: compactos, solo número + etiqueta principal.
 ══════════════════════════════════════════════════════════ */
 
-/* Chips KPI — scroll horizontal en móvil */
-#dash-kpi-chips {
-  scrollbar-width: none;
-}
+/* Global: ocultar scrollbar nativa en chips */
+#dash-kpi-chips { scrollbar-width: none; }
 #dash-kpi-chips::-webkit-scrollbar { display: none; }
 
 @media (max-width: 768px) {
-  /* Fila de tabs + chips: apila en columna para evitar overflow */
+
+  /* ── Fila tabs + chips: columna, chips abajo ── */
   #dash-tabs-row {
     flex-direction: column !important;
     align-items: flex-start !important;
-    gap: 10px;
+    gap: 8px;
   }
-  /* Chips: ancho completo, scroll horizontal, sin wrap para mantener en una sola fila */
+
+  /* ── Chips: fila horizontal scrolleable, sin wrap ── */
   #dash-kpi-chips {
     width: 100%;
     overflow-x: auto;
@@ -2741,29 +2744,45 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
     align-items: stretch;
     padding-bottom: 2px;
   }
-  /* Chip de facturación: fuente más pequeña para que entre bien */
+
+  /* ── Todos los chips: más compactos ── */
+  #dash-kpi-chips > div {
+    padding: 6px 10px !important;
+    min-width: 52px !important;
+  }
+
+  /* ── Número/valor principal: más pequeño ── */
+  #dash-kpi-chips > div > div:first-child {
+    font-size: 16px !important;
+  }
+
+  /* ── Chip facturación: valor monetario aún más pequeño ── */
+  #dash-kpi-chips > div:first-child {
+    min-width: 110px !important;
+  }
   #dash-kpi-chips > div:first-child > div:first-child {
-    font-size: 15px !important;
+    font-size: 13px !important;
     white-space: nowrap;
   }
-  /* Grid principal dashboard: una sola columna */
+
+  /* ── Etiqueta principal (Activas, Creadas…): más pequeña ── */
+  #dash-kpi-chips > div > div:nth-child(2) {
+    font-size: 9px !important;
+  }
+
+  /* ── Sub-etiqueta (En proceso / Este mes) + barra progreso: ocultos ── */
+  #dash-kpi-chips > div > div:nth-child(3) {
+    display: none !important;
+  }
+
+  /* ── Grid principal dashboard: una sola columna ── */
   .dash-mes-grid {
     grid-template-columns: 1fr !important;
   }
-  /* Fechas en nueva orden: 1 columna */
+
+  /* ── Fechas en nueva orden: 1 columna ── */
   .n-fechas-grid {
     grid-template-columns: 1fr !important;
-  }
-}
-
-@media (max-width: 480px) {
-  /* Chips un poco más compactos en pantallas muy pequeñas */
-  #dash-kpi-chips > div {
-    padding: 7px 11px !important;
-    min-width: 64px !important;
-  }
-  #dash-kpi-chips > div > div:first-child {
-    font-size: 19px !important;
   }
 }
 

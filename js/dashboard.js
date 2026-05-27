@@ -316,7 +316,7 @@ async function cargarDashboardMes() {
     cont.innerHTML = `
       <!-- Indicador de período + alertas de retraso en la misma fila -->
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-        <span style="font-size:11px;font-weight:700;text-transform:capitalize;color:var(--gris-mid);flex-shrink:0">${mesLabel}</span>
+        <span style="font-size:11px;font-weight:700;color:var(--gris-mid);flex-shrink:0">${mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1)}</span>
         ${retrasosHtml.replace('margin-bottom:10px','margin-bottom:0')}
       </div>
 
