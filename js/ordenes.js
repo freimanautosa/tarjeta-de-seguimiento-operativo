@@ -76,14 +76,15 @@ function _buildOrdenRow(o, etapas) {
   const fechaEnt = o.fecha_entrega_1 ? formatFecha(o.fecha_entrega_1) : '—';
   const searchStr = [(o.placa||''), (o.propietario||''), (tecnico||''), (o.marca||''), (o.linea||'')].join(' ').toLowerCase();
 
-  // Alerta de contacto faltante
-  const sinContacto = !o.telefono && !o.correo_cliente;
-  const sinTel      = !o.telefono && o.correo_cliente;
-  const contactAlert = sinContacto
-    ? `<span class="ord-alert-contact" title="Sin teléfono ni correo">⚠ Sin contacto</span>`
-    : sinTel
-      ? `<span class="ord-alert-contact ord-alert-soft" title="Sin teléfono">⚠ Sin tel.</span>`
-      : '';
+  // Alerta de contacto / datos faltantes
+  const camposFaltantes = [];
+  if (!o.propietario)   camposFaltantes.push('nombre');
+  if (!o.marca)         camposFaltantes.push('marca');
+  if (!o.linea)         camposFaltantes.push('línea');
+  if (!o.telefono)      camposFaltantes.push('teléfono');
+  const contactAlert = camposFaltantes.length
+    ? `<span class="ord-alert-contact" title="Faltan: ${camposFaltantes.join(', ')}">⚠ Faltan datos</span>`
+    : '';
 
   return `<tr class="ord-row" onclick="abrirOrden(${o.id})" data-search="${escapeHtml(searchStr)}">
     <td>
@@ -377,58 +378,106 @@ async function abrirOrden(id) {
       <div class="detalle-grid">
         <div>
           <div class="detalle-header-card">
+            <!-- Fila placa + badges -->
             <div class="detalle-placa-row">
               <div>
-                <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+                <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
                   <div class="detalle-placa">${escapeHtml(orden.placa)}</div>
-                  <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--gris-mid,#94A3B8);letter-spacing:.5px">${formatOT(orden.id)}</div>
+                  <div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--gris-mid);letter-spacing:.5px">${formatOT(orden.id)}</div>
                 </div>
                 <div class="detalle-vehiculo">${[orden.marca,orden.linea,orden.modelo,orden.color].filter(Boolean).map(escapeHtml).join(' · ')}</div>
               </div>
-              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:5px;justify-content:flex-end">
                 <span class="badge badge-${estadoClase}">${estadoTexto}</span>
                 ${orden.tipo_cliente ? `<span class="badge badge-${orden.tipo_cliente}">${orden.tipo_cliente}</span>` : ''}
               </div>
             </div>
-            <div class="donut-section">
-              <svg class="donut-svg" width="56" height="56" viewBox="0 0 56 56">
-                <circle class="donut-track" cx="28" cy="28" r="22"/>
-                <circle class="donut-fill ${pct===100?'completa':'proceso'}" cx="28" cy="28" r="22"
-                  style="stroke-dasharray:${(pct/100)*circ} ${circ}"/>
-                <text class="donut-pct" x="28" y="32" text-anchor="middle">${pct}%</text>
-              </svg>
-              <div class="donut-info">
-                <div class="donut-label">Progreso general</div>
-                <div class="donut-val">${comp} / ${total} etapas</div>
-                <div style="display:flex;gap:16px;flex-wrap:wrap">
-                  <div><div class="donut-label">Etapa activa</div><div style="font-size:13px;font-weight:600">${tiempoEtapa}</div></div>
-                  <div><div class="donut-label">Tiempo total</div><div style="font-size:13px;font-weight:600">${tiempoTotal}</div></div>
+            <!-- Strip de progreso compacto -->
+            <div class="det-progress-strip">
+              <div class="det-ps-cell det-ps-progress">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                  <div class="det-ps-label">Progreso general</div>
+                  <div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:800;color:${pct===100?'var(--verde)':'var(--azul-mid)'};background:${pct===100?'var(--verde-bg)':'var(--azul-light)'};padding:1px 7px;border-radius:20px">${pct}%</div>
                 </div>
+                <div class="det-pbar-track">
+                  <div class="det-pbar-fill ${pct===100?'completa':''}" style="width:${pct===0?'0':pct+'%'}"></div>
+                </div>
+                <div class="det-ps-val">${comp} / ${total} etapas</div>
+              </div>
+              <div class="det-ps-divider"></div>
+              <div class="det-ps-cell">
+                <div class="det-ps-label">Etapa activa</div>
+                <div class="det-ps-val">${tiempoEtapa}</div>
+              </div>
+              <div class="det-ps-divider"></div>
+              <div class="det-ps-cell">
+                <div class="det-ps-label">Tiempo total</div>
+                <div class="det-ps-val">${tiempoTotal}</div>
               </div>
             </div>
-            <div class="timeline-wrap">
-              <div class="etapas-timeline" id="d-timeline">${tlHtml}</div>
-            </div>
+            <!-- Timeline de etapas -->
+            ${tlHtml ? `<div class="timeline-wrap" style="padding:10px 0 2px"><div class="etapas-timeline" id="d-timeline">${tlHtml}</div></div>` : ''}
           </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          ${(() => {
+            const faltantes = [];
+            if (!orden.propietario)    faltantes.push('Nombre del cliente');
+            if (!orden.telefono)       faltantes.push('Teléfono');
+            if (!orden.correo_cliente) faltantes.push('Correo');
+            if (!orden.cedula_cliente) faltantes.push('Cédula / NIT');
+            if (!orden.marca)          faltantes.push('Marca');
+            if (!orden.linea)          faltantes.push('Línea');
+            if (!faltantes.length) return '';
+            return `<div class="det-datos-faltantes-banner">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <div>
+                <strong>Faltan datos por completar</strong>
+                <div class="det-datos-faltantes-list">${faltantes.join(' · ')}</div>
+              </div>
+              ${esJefe() && orden.estado !== 'Entregada' ? `<button class="btn btn-sm" style="margin-left:auto;flex-shrink:0;background:#FEF3C7;color:#B45309;border:1px solid #FDE68A" onclick="abrirEditarOrden(${orden.id})">Completar datos</button>` : ''}
+            </div>`;
+          })()}
+          <div class="det-datos-header">
             <div class="seccion-titulo" style="margin-bottom:0">Datos del vehículo y cliente</div>
             ${esJefe() && orden.estado !== 'Entregada' ? `<button class="btn btn-ghost btn-sm" onclick="abrirEditarOrden(${orden.id})">
               <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               Editar datos
             </button>` : ''}
           </div>
-          <div class="info-chips" style="margin-bottom:16px">
-            <div class="info-chip"><div class="info-chip-label">Propietario</div><div class="info-chip-val">${escapeHtml(orden.propietario)||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Teléfono</div><div class="info-chip-val">${escapeHtml(orden.telefono)||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Tipo cliente</div><div class="info-chip-val">${escapeHtml(orden.tipo_cliente)||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Aseguradora</div><div class="info-chip-val">${escapeHtml(orden.aseguradora)||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Nivel daño</div><div class="info-chip-val">${escapeHtml(orden.nivel_dano)||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Kilometraje</div><div class="info-chip-val">${orden.kilometraje?orden.kilometraje.toLocaleString('es-CO')+' km':'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">VIN</div><div class="info-chip-val" style="font-family:'DM Mono',monospace;font-size:11px">${escapeHtml(orden.vin)||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Correo</div><div class="info-chip-val">${escapeHtml(orden.correo_cliente)||'—'}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Ingreso</div><div class="info-chip-val">${formatFecha(orden.creado_en)}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Fecha entrega 1</div><div class="info-chip-val">${formatFecha(orden.fecha_entrega_1)}</div></div>
-            <div class="info-chip"><div class="info-chip-label">Fecha entrega 2</div><div class="info-chip-val">${formatFecha(orden.fecha_entrega_2)}</div></div>
+          <div class="det-datos-grid">
+            <!-- Vehículo -->
+            <div class="det-datos-card">
+              <div class="det-datos-card-titulo">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                Vehículo
+              </div>
+              <div class="det-datos-filas">
+                <div class="det-dato-fila"><span class="det-dato-lbl">Marca</span><span class="det-dato-val${!orden.marca?' det-dato-vacio':''}">${escapeHtml(orden.marca)||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Línea</span><span class="det-dato-val${!orden.linea?' det-dato-vacio':''}">${escapeHtml(orden.linea)||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Año</span><span class="det-dato-val">${escapeHtml(orden.modelo||'')||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Color</span><span class="det-dato-val">${escapeHtml(orden.color||'')||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Kilometraje</span><span class="det-dato-val">${orden.kilometraje?orden.kilometraje.toLocaleString('es-CO')+' km':'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">VIN</span><span class="det-dato-val" style="font-family:'DM Mono',monospace;font-size:11px">${escapeHtml(orden.vin||'')||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Ingreso</span><span class="det-dato-val">${formatFecha(orden.creado_en)}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Entrega 1</span><span class="det-dato-val">${formatFecha(orden.fecha_entrega_1)||'—'}</span></div>
+                ${orden.fecha_entrega_2 ? `<div class="det-dato-fila"><span class="det-dato-lbl">Entrega 2</span><span class="det-dato-val">${formatFecha(orden.fecha_entrega_2)}</span></div>` : ''}
+              </div>
+            </div>
+            <!-- Cliente -->
+            <div class="det-datos-card">
+              <div class="det-datos-card-titulo">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Cliente
+              </div>
+              <div class="det-datos-filas">
+                <div class="det-dato-fila"><span class="det-dato-lbl">Nombre</span><span class="det-dato-val${!orden.propietario?' det-dato-vacio':''}">${escapeHtml(orden.propietario||'')||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Teléfono</span><span class="det-dato-val${!orden.telefono?' det-dato-vacio':''}">${orden.telefono?`<a href="tel:${escapeHtml(orden.telefono)}" style="color:var(--azul-mid)">${escapeHtml(orden.telefono)}</a>`:'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Correo</span><span class="det-dato-val${!orden.correo_cliente?' det-dato-vacio':''}">${orden.correo_cliente?`<a href="mailto:${escapeHtml(orden.correo_cliente)}" style="color:var(--azul-mid)">${escapeHtml(orden.correo_cliente)}</a>`:'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Cédula / NIT</span><span class="det-dato-val${!orden.cedula_cliente?' det-dato-vacio':''}" style="font-family:'DM Mono',monospace;font-size:12px">${escapeHtml(orden.cedula_cliente||'')||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Tipo cliente</span><span class="det-dato-val">${escapeHtml(orden.tipo_cliente||'')||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Aseguradora</span><span class="det-dato-val">${escapeHtml(orden.aseguradora||'')||'—'}</span></div>
+                <div class="det-dato-fila"><span class="det-dato-lbl">Nivel daño</span><span class="det-dato-val">${escapeHtml(orden.nivel_dano||'')||'—'}</span></div>
+              </div>
+            </div>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <div class="seccion-titulo" style="margin-bottom:0">Servicios y Etapas</div>
@@ -520,25 +569,18 @@ async function abrirOrden(id) {
                        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},true)">💰 Con precios</button>
                      </div>
                    </div>`
-                : todasCalidadAprobada
-                ? `<button class="btn btn-success" style="width:100%" onclick="cambiarEstado('Entregada')">
+                : (todasCalidadAprobada || (comp === total && total > 0))
+                ? `${todasCalidadAprobada
+                    ? `<div style="font-size:11px;color:var(--verde);font-weight:600;margin-bottom:8px;text-align:center">✓ Calidad aprobada en todas las etapas</div>`
+                    : `<div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400E;margin-bottom:8px">
+                         ⚠️ Calidad pendiente de aprobar en algunas etapas.
+                       </div>`
+                  }
+                   <button class="btn btn-success" style="width:100%" onclick="cambiarEstado('Entregada')">
                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
                      Marcar como Finalizada
                    </button>
                    <div style="display:flex;gap:6px;margin-top:6px">
-                     <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},false)">
-                       📋 Sin precios
-                     </button>
-                     <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},true)">
-                       💰 Con precios
-                     </button>
-                   </div>
-                   <div style="font-size:11px;color:var(--gris-mid);margin-top:8px;text-align:center">✓ Calidad aprobada en todas las etapas</div>`
-                : comp === total && total > 0
-                ? `<div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:8px">
-                     ⚠️ Todas las etapas completadas. Aprueba la calidad de cada etapa para poder finalizar la orden.
-                   </div>
-                   <div style="display:flex;gap:6px">
                      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},false)">📋 Sin precios</button>
                      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},true)">💰 Con precios</button>
                    </div>`
@@ -674,30 +716,26 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
           <div class="ts-chip">Fin: <strong>${e.fin?formatTS(e.fin):'—'}</strong></div>
           ${dur}
         </div>
-        <div class="grid-2" style="margin-bottom:12px">
-          <div class="field"><label>Técnico asignado</label>
+        <div class="etapa-campos-row">
+          <div class="field etapa-campo-tec"><label>Técnico asignado</label>
             <select id="tec-${k}" onchange="asignarMecanico(${eid},'${k}')">
               <option value="">— Sin asignar —</option>
               ${mecanicos.filter(m=>!['taller','repuestos','Asesor Previsora'].includes(m.rol)).map(m=>`<option value="${m.id}" ${e.mecanico_id===m.id?'selected':''}>${escapeHtml(m.nombre)}</option>`).join('')}
             </select>
           </div>
-          <div style="display:flex;gap:8px">
-            <div class="field" style="flex:1"><label>H. Facturadas</label>
-              <input id="hf-${k}" type="number" step="0.5" value="${e.horas_facturadas||''}" placeholder="0" onblur="patchHoras(${eid},'${k}')">
-            </div>
-            <div class="field" style="flex:1"><label>H. Adicionales</label>
-              <input id="ha-${k}" type="number" step="0.5" value="${e.horas_adicionales||''}" placeholder="0" onblur="patchHoras(${eid},'${k}')">
-            </div>
+          <div class="field etapa-campo-sm"><label>H. Facturadas</label>
+            <input id="hf-${k}" type="number" step="0.5" value="${e.horas_facturadas||''}" placeholder="0" onblur="patchHoras(${eid},'${k}')">
+          </div>
+          <div class="field etapa-campo-sm"><label>H. Adicionales</label>
+            <input id="ha-${k}" type="number" step="0.5" value="${e.horas_adicionales||''}" placeholder="0" onblur="patchHoras(${eid},'${k}')">
+          </div>
+          <div class="field etapa-campo-sm"><label>Valor COP</label>
+            <input id="val-${k}" type="number" step="1000" value="${e.valor||''}" placeholder="0"
+              style="font-weight:600;color:var(--verde)"
+              onblur="patchValor(${eid},'${k}')">
           </div>
         </div>
-
-        <div class="field" style="margin-bottom:12px">
-          <label style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris-mid)"> Valor </label>
-          <input id="val-${k}" type="number" step="1000" value="${e.valor||''}" placeholder="0"
-            style="font-size:14px;font-weight:600;color:var(--verde)"
-            onblur="patchValor(${eid},'${k}')">
-          ${e.valor ? '<div style="font-size:11px;color:var(--gris-mid);margin-top:3px">' + new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(e.valor) + '</div>' : '' }
-        </div>
+        ${e.valor ? `<div style="font-size:11px;color:var(--gris-mid);margin-bottom:10px">${new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(e.valor)}</div>` : ''}
 
         <div class="fotos-section" style="margin-top:0">
           <label style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris-mid)">Fotos (${eFotos.length})</label>
@@ -2406,6 +2444,9 @@ async function cargarMecanicosVista() {
               <div style="flex:1;min-width:0">
                 <div style="font-weight:600;font-size:14px">${escapeHtml(m.nombre)}</div>
                 <div style="font-size:11px;color:var(--gris-mid)">${escapeHtml(ROL_LABEL[m.rol] || m.rol || 'Técnico')} · ${etapas.length} etapa${etapas.length!==1?'s':''} activa${etapas.length!==1?'s':''}</div>
+                ${m.telegram_chat_id
+                  ? `<div style="font-size:10px;color:#059669;font-family:'DM Mono',monospace;margin-top:1px">✓ Telegram configurado</div>`
+                  : `<div style="font-size:10px;color:#D97706;margin-top:1px">⚠ Sin Telegram</div>`}
               </div>
               <div style="display:flex;gap:4px;flex-shrink:0">
                 <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirCambiarPassMecanico(${m.id},'${escapeHtml(m.nombre)}')" title="Cambiar contraseña">
@@ -2474,6 +2515,17 @@ function abrirModalOperario(mec) {
             ${roles.map(r => `<option value="${r.val}" ${esEditar && mec.rol===r.val ? 'selected':''}>${r.label}</option>`).join('')}
           </select>
         </div>
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.63a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            Telegram Chat ID
+          </label>
+          <input id="op-telegram" type="text" placeholder="Ej: 123456789 (dejar vacío si no usa Telegram)"
+            value="${esEditar ? escapeHtml(mec.telegram_chat_id||'') : ''}">
+          <div style="font-size:11px;color:var(--gris-mid);margin-top:3px">
+            Para obtenerlo: que el operario escriba <strong>/start</strong> al bot <strong>@userinfobot</strong> en Telegram y te pase el ID.
+          </div>
+        </div>
         ${!esEditar ? `
         <div class="field">
           <label>Contraseña inicial</label>
@@ -2501,9 +2553,10 @@ function abrirModalOperario(mec) {
 
 async function guardarOperario(mecId, cedulaOriginal) {
   const nombre = document.getElementById('op-nombre')?.value.trim();
-  const cedula = mecId ? cedulaOriginal : document.getElementById('op-cedula')?.value.trim();
-  const rol    = document.getElementById('op-rol')?.value;
-  const pass   = document.getElementById('op-pass')?.value || '';
+  const cedula    = mecId ? cedulaOriginal : document.getElementById('op-cedula')?.value.trim();
+  const rol       = document.getElementById('op-rol')?.value;
+  const pass      = document.getElementById('op-pass')?.value || '';
+  const tgChatId  = document.getElementById('op-telegram')?.value.trim() || null;
   const errEl  = document.getElementById('op-error');
   const showErr = msg => { errEl.textContent = msg; errEl.style.display = 'block'; };
   errEl.style.display = 'none';
@@ -2517,8 +2570,8 @@ async function guardarOperario(mecId, cedulaOriginal) {
 
   try {
     if (mecId) {
-      // Editar: solo actualiza nombre y rol
-      await api(`/mecanicos?id=eq.${mecId}`, 'PATCH', { nombre, rol });
+      // Editar: actualiza nombre, rol y telegram_chat_id
+      await api(`/mecanicos?id=eq.${mecId}`, 'PATCH', { nombre, rol, telegram_chat_id: tgChatId });
       toast(`${nombre} actualizado ✓`);
     } else {
       // Crear: primero registrar en Supabase Auth
@@ -2534,7 +2587,7 @@ async function guardarOperario(mecId, cedulaOriginal) {
         // Continúa igual — puede que ya exista en auth pero no en mecanicos
       }
       // Insertar en tabla mecanicos
-      await api('/mecanicos', 'POST', { nombre, cedula, rol, activo: true }, { Prefer: 'return=minimal' });
+      await api('/mecanicos', 'POST', { nombre, cedula, rol, activo: true, telegram_chat_id: tgChatId }, { Prefer: 'return=minimal' });
       toast(`${nombre} creado ✓ — contraseña inicial: ${signupPass === cedula ? 'su cédula' : 'la que configuraste'}`);
     }
     document.getElementById('modal-operario')?.remove();
@@ -3179,6 +3232,43 @@ async function abrirEditarOrden(ordenId) {
   toggleTipoClienteEdit(tipoActual);
   if (esEmpresa) toggleTipoPersonaEdit('empresa');
 
+  // Banner + campos resaltados si hay datos faltantes
+  const _datosFaltantesEdit = [];
+  const _resaltarCampo = (id, label) => {
+    const el = document.getElementById(id);
+    if (el && !el.value.trim()) {
+      el.style.borderColor = '#EF4444';
+      el.style.boxShadow = '0 0 0 2px rgba(239,68,68,.15)';
+      el.addEventListener('input', function _clear() {
+        el.style.borderColor = '';
+        el.style.boxShadow = '';
+        el.removeEventListener('input', _clear);
+        // Quitar banner si ya no hay campos vacíos
+        const banner = document.getElementById('ed-datos-faltantes-banner');
+        if (banner) {
+          const aun = ['ed-propietario','ed-marca','ed-linea','ed-telefono'].some(i => {
+            const inp = document.getElementById(i);
+            return inp && !inp.value.trim();
+          });
+          if (!aun) banner.remove();
+        }
+      }, { once: true });
+      _datosFaltantesEdit.push(label);
+    }
+  };
+  _resaltarCampo('ed-propietario', 'Nombre del propietario');
+  _resaltarCampo('ed-marca',       'Marca del vehículo');
+  _resaltarCampo('ed-linea',       'Línea del vehículo');
+  _resaltarCampo('ed-telefono',    'Teléfono de contacto');
+
+  if (_datosFaltantesEdit.length) {
+    const banner = document.createElement('div');
+    banner.id = 'ed-datos-faltantes-banner';
+    banner.style.cssText = 'background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400E;display:flex;align-items:flex-start;gap:8px;margin-bottom:4px';
+    banner.innerHTML = `<span style="font-size:15px;flex-shrink:0">⚠</span><div><strong>Faltan datos por completar:</strong><div style="margin-top:3px;font-size:12px;color:#B45309">${_datosFaltantesEdit.join(' · ')}</div></div>`;
+    body.insertAdjacentElement('afterbegin', banner);
+  }
+
   modal.classList.add('show');
 }
 
@@ -3260,7 +3350,6 @@ async function guardarEdicionOrden() {
       vin:             vin,
       propietario:     document.getElementById('ed-propietario')?.value.trim() || null,
       telefono:        document.getElementById('ed-telefono')?.value.trim() || null,
-      cedula_cliente:  document.getElementById('ed-cedula')?.value.trim()   || null,
       correo_cliente:  document.getElementById('ed-correo')?.value.trim()   || null,
       tipo_cliente:    tipoPersona === 'empresa' ? 'empresa' : (tipoCliente || null),
       aseguradora:     aseguradora,

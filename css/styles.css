@@ -475,7 +475,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 }
 .field input, .field select, .field textarea {
   width: 100%;
-  padding: 10px 13px;
+  padding: 8px 11px;
   border: 1.5px solid var(--gris-borde);
   border-radius: 6px;
   font-size: 14px;
@@ -869,35 +869,101 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   background: white;
   border: 1.5px solid var(--gris-borde);
   border-radius: var(--radio);
-  padding: 18px 20px;
-  margin-bottom: 12px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
 }
 .detalle-placa-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 .detalle-placa {
   font-family: 'DM Mono', monospace;
-  font-size: 30px;
+  font-size: 22px;
   font-weight: 700;
-  letter-spacing: 3px;
+  letter-spacing: 1.5px;
   color: var(--texto);
   line-height: 1;
 }
-.detalle-vehiculo { font-size: 14px; color: var(--gris-mid); margin-top: 6px; }
+.detalle-vehiculo { font-size: 12px; color: var(--gris-mid); margin-top: 3px; }
+
+/* Progress strip compacto */
+.det-progress-strip {
+  display: flex;
+  align-items: stretch;
+  background: var(--gris-bg);
+  border: 1px solid var(--gris-borde);
+  border-radius: 7px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.det-ps-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px 14px;
+  flex: 1;
+  min-width: 0;
+}
+.det-ps-progress {
+  flex: 2;
+  min-width: 140px;
+}
+.det-pbar-track {
+  height: 8px;
+  background: #D1D5DB;
+  border-radius: 99px;
+  overflow: hidden;
+  margin: 4px 0;
+}
+.det-pbar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--azul-mid);
+  transition: width .4s cubic-bezier(.23,1,.32,1);
+  min-width: 4px;
+}
+.det-pbar-fill.completa { background: var(--verde); }
+.det-ps-divider {
+  width: 1px;
+  background: var(--gris-borde);
+  flex-shrink: 0;
+  align-self: stretch;
+}
+.det-ps-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--gris-mid);
+  margin-bottom: 1px;
+}
+.det-ps-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--texto);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Info chips */
 .info-chips {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 8px;
 }
 .info-chip {
-  background: var(--gris-bg);
+  background: white;
   border-radius: 7px;
   padding: 10px 13px;
-  border: 1px solid var(--gris-borde);
+  border: 1.5px solid var(--gris-borde);
+}
+.info-chip.info-chip-empty {
+  border-color: #FDE68A;
+  background: #FFFBEB;
 }
 .info-chip-label {
   font-size: 10px;
@@ -912,24 +978,96 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   font-weight: 600;
   color: var(--texto);
 }
+.info-chip.info-chip-empty .info-chip-val {
+  color: #B45309;
+}
 
-/* DONUT */
-.donut-section {
+/* ── Banner datos faltantes ── */
+.det-datos-faltantes-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #FFFBEB;
+  border: 1.5px solid #FDE68A;
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin-bottom: 10px;
+  color: #92400E;
+  font-size: 12px;
+}
+.det-datos-faltantes-list {
+  font-size: 11px;
+  color: #B45309;
+  margin-top: 2px;
+}
+.det-datos-header {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--gris-borde);
-  margin-bottom: 16px;
+  justify-content: space-between;
+  margin-bottom: 8px;
 }
-.donut-track { fill: none; stroke: var(--gris-bg); stroke-width: 6; }
+/* Grid vehículo + cliente */
+.det-datos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.det-datos-card {
+  background: white;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.det-datos-card-titulo {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--azul);
+  background: var(--azul-light);
+  padding: 6px 11px;
+  border-bottom: 1px solid var(--gris-borde);
+}
+.det-datos-filas { padding: 2px 0; }
+.det-dato-fila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 11px;
+  border-bottom: 1px solid var(--gris-bg);
+  font-size: 12px;
+}
+.det-dato-fila:last-child { border-bottom: none; }
+.det-dato-lbl {
+  font-size: 10px;
+  color: var(--gris-mid);
+  font-weight: 600;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.det-dato-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--texto);
+  text-align: right;
+  word-break: break-word;
+}
+.det-dato-vacio {
+  color: #D97706;
+  font-style: italic;
+}
+
+/* DONUT (usado en det-progress-strip) */
+.donut-track { fill: none; stroke: var(--gris-borde); stroke-width: 6; }
 .donut-fill  { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dasharray 0.5s; transform: rotate(-90deg); transform-origin: center; }
 .donut-fill.completa { stroke: var(--verde); }
 .donut-fill.proceso  { stroke: var(--azul-mid); }
-.donut-pct { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; fill: var(--texto); }
-.donut-info { flex: 1; }
-.donut-label { font-size: 10px; color: var(--gris-mid); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-.donut-val   { font-size: 15px; font-weight: 700; color: var(--texto); margin-bottom: 4px; }
+.donut-pct { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700; fill: var(--texto); }
 
 /* TIMELINE */
 .timeline-wrap { overflow-x: auto; padding: 12px 0; scrollbar-width: none; }
@@ -1096,10 +1234,26 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .etapa-header:hover { background: #ECEEF2; }
 .etapa-nombre { font-weight: 600; font-size: 13px; flex: 1; }
 .etapa-tecnico { font-size: 11px; color: var(--gris-mid); margin-top: 1px; }
-.etapa-body { padding: 16px; display: none; }
+.etapa-body { padding: 12px 14px; display: none; }
 .etapa-body.open { display: block; }
-.etapa-actions { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
-.timestamps { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.etapa-actions { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+.timestamps { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+
+/* Fila de campos compacta en etapa */
+.etapa-campos-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: end;
+}
+.etapa-campo-tec {}
+.etapa-campo-sm {}
+.etapa-campos-row .field input,
+.etapa-campos-row .field select {
+  padding: 7px 10px;
+  font-size: 13px;
+}
 .ts-chip {
   font-family: 'DM Mono', monospace;
   font-size: 11px;
@@ -1506,6 +1660,49 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   .btn-row { flex-wrap: wrap; }
   .btn-row .btn { flex: 1; min-width: 120px; }
 
+  /* ── Detalle de orden: header compacto ── */
+  .detalle-header-card { padding: 10px 12px; margin-bottom: 8px; }
+  .detalle-placa { font-size: 18px; letter-spacing: 1px; }
+  .detalle-vehiculo { font-size: 11px; }
+  .detalle-placa-row { margin-bottom: 7px; }
+
+  /* ── Progress strip: apila las celdas en móvil ── */
+  .det-progress-strip { flex-direction: column; gap: 0; }
+  .det-ps-cell { padding: 9px 14px; flex: unset; width: 100%; }
+  .det-ps-progress { flex: unset; }
+  .det-ps-divider { width: 100%; height: 1px; }
+
+  /* ── Grid datos vehículo/cliente: 1 col ── */
+  .det-datos-grid { grid-template-columns: 1fr; gap: 10px; margin-bottom: 12px; }
+
+  /* ── Banner datos faltantes ── */
+  .det-datos-faltantes-banner {
+    flex-wrap: wrap;
+    font-size: 12px;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .det-datos-faltantes-banner button { margin-left: 0 !important; width: 100%; justify-content: center; }
+
+  /* ── Filas de datos vehículo/cliente ── */
+  .det-dato-fila { padding: 7px 10px; font-size: 12px; }
+  .det-dato-lbl { font-size: 10px; }
+  .det-dato-val { font-size: 12px; }
+  .det-datos-card-titulo { padding: 7px 10px; font-size: 10px; }
+
+  /* ── Info chips: ya no se usan pero por si acaso ── */
+  .info-chips { grid-template-columns: 1fr 1fr; }
+  .info-chip { padding: 8px 10px; }
+  .info-chip-val { font-size: 12px; }
+
+  /* ── Etapa campos: 2 cols → 1 col en pantallas muy estrechas ── */
+  .etapa-campos-row { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .etapa-body { padding: 10px 12px; }
+
+  /* ── Header datos ── */
+  .det-datos-header { margin-bottom: 8px; }
+  .det-datos-header .seccion-titulo { font-size: 10px; }
+
   /* Pantallas muy estrechas (≤390px): dashboard 1 columna */
   @media (max-width: 390px) {
     .content { padding: 12px 10px; }
@@ -1513,9 +1710,10 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
     .bnav-item span { font-size: 9px; }
     .orden-placa { font-size: 16px; }
     .dash-card-val { font-size: 20px; }
-    /* Dashboard timing grid: drop last column (sample count) on very narrow screens */
     .dash-tiempo-row { grid-template-columns: 76px 1fr 52px; }
     .dash-tiempo-n   { display: none; }
+    .etapa-campos-row { grid-template-columns: 1fr; }
+    .det-datos-grid { gap: 8px; }
   }
 }
 
@@ -2570,7 +2768,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 }
 
 /* ══════════════════════════════════════════════════════════
-   ÓRDENES — alertas de contacto faltante
+   ÓRDENES — alertas de datos faltantes
 ══════════════════════════════════════════════════════════ */
 .ord-alert-contact {
   display: inline-flex;
@@ -2581,14 +2779,11 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   padding: 1px 6px;
   border-radius: 4px;
   margin-left: 5px;
-  background: #FEE2E2;
-  color: #DC2626;
+  background: #FEF3C7;
+  color: #B45309;
+  border: 1px solid #FDE68A;
   vertical-align: middle;
   letter-spacing: .02em;
-}
-.ord-alert-contact.ord-alert-soft {
-  background: #FEF3C7;
-  color: #92400E;
 }
 
 /* ══════════════════════════════════════════════════════════
