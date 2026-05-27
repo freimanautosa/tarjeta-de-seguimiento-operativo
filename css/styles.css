@@ -1700,6 +1700,152 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   .wizard-connector { margin-top: 13px; }
 }
 
+/* ══════════════════════════════════════════════════════════
+   NUEVA ORDEN — LAYOUT .no-*
+══════════════════════════════════════════════════════════ */
+
+/* Tarjeta contenedor principal */
+.no-card {
+  background: white;
+  border: 1px solid var(--gris-borde);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/* Cada bloque/sección dentro de la tarjeta */
+.no-seccion {
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--gris-borde);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.no-seccion:last-of-type {
+  border-bottom: none;
+}
+/* El footer no hereda border-bottom, lo maneja .no-footer */
+
+/* Título de sección con icono */
+.no-sec-titulo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gris-texto);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.no-sec-titulo svg {
+  color: var(--azul-mid);
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+/* Grid superior: placa | tipo-cliente | km */
+.no-top-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+/* Fila de 4 botones tipo cliente */
+.no-tipo-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+/* Grid de campos 3 columnas */
+.no-campos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+.no-campos-grid .no-span-2 {
+  grid-column: span 2;
+}
+.no-campos-grid .no-span-3 {
+  grid-column: span 3;
+}
+
+/* Footer de la tarjeta */
+.no-footer {
+  padding: 16px 22px;
+  border-top: 1px solid var(--gris-borde);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--gris-bg);
+}
+
+/* Tipo-cliente-btn adaptado a fila horizontal */
+.no-tipo-row .tipo-cliente-btn {
+  flex-direction: row;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Responsive nueva orden */
+@media (max-width: 700px) {
+  .no-top-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .no-top-grid > div:nth-child(2) {
+    grid-column: 1 / -1;
+  }
+  .no-campos-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .no-campos-grid .no-span-2,
+  .no-campos-grid .no-span-3 {
+    grid-column: 1 / -1;
+  }
+  .no-tipo-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .no-tipo-row .tipo-cliente-btn {
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+  }
+}
+@media (max-width: 480px) {
+  .no-top-grid {
+    grid-template-columns: 1fr;
+  }
+  .no-top-grid > div:nth-child(2) {
+    grid-column: auto;
+  }
+  .no-seccion {
+    padding: 16px;
+  }
+  .no-footer {
+    padding: 14px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .no-footer > div {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .no-campos-grid {
+    grid-template-columns: 1fr;
+  }
+  .no-campos-grid .no-span-2,
+  .no-campos-grid .no-span-3 {
+    grid-column: auto;
+  }
+}
+
 /* Tabla de órdenes en móvil: ocultar columnas menos importantes */
 @media (max-width: 768px) {
   .ordenes-tabla thead th:nth-child(4),
