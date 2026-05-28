@@ -1,4 +1,4 @@
-const CACHE_NAME = 'freimanautos-pwa-v84';
+const CACHE_NAME = 'freimanautos-pwa-v85';
 
 const STATIC_ASSETS = [
   '/',
