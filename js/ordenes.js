@@ -475,7 +475,6 @@ async function abrirOrden(id) {
                 <div class="det-dato-fila"><span class="det-dato-lbl">Cédula / NIT</span><span class="det-dato-val${!orden.cedula_cliente?' det-dato-vacio':''}" style="font-family:'DM Mono',monospace;font-size:12px">${escapeHtml(orden.cedula_cliente||'')||'—'}</span></div>
                 <div class="det-dato-fila"><span class="det-dato-lbl">Tipo cliente</span><span class="det-dato-val">${escapeHtml(orden.tipo_cliente||'')||'—'}</span></div>
                 <div class="det-dato-fila"><span class="det-dato-lbl">Aseguradora</span><span class="det-dato-val">${escapeHtml(orden.aseguradora||'')||'—'}</span></div>
-                <div class="det-dato-fila"><span class="det-dato-lbl">Nivel daño</span><span class="det-dato-val">${escapeHtml(orden.nivel_dano||'')||'—'}</span></div>
               </div>
             </div>
           </div>
