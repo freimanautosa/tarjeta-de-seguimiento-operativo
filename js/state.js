@@ -52,13 +52,13 @@ const CATALOGO = {
   latoneria: {
     nombre: 'Latonería', clase: 'latoneria',
     etapas: [
-      { key: 'lat_armado',    nombre: 'Armado', esArmado: true },
+      { key: 'lat_desarmado', nombre: 'Desarmado', esDesarmado: true },
       { key: 'lat_tapiceria', nombre: 'Tapicería' },
       { key: 'lat_latoneria', nombre: 'Latonería' },
       { key: 'lat_blindaje',  nombre: 'Blindaje' },
       { key: 'lat_vidrieria', nombre: 'Vidriería' },
       { key: 'lat_alistador', nombre: 'Alistador' },
-      { key: 'lat_desarmado', nombre: 'Desarmado', esDesarmado: true },
+      { key: 'lat_armado',    nombre: 'Armado', esArmado: true },
       { key: 'lat_tot',       nombre: 'T.O.T', tot: true },
     ]
   },

@@ -1605,9 +1605,9 @@ function buildChecklist(containerId, servicios, existentes) {
         <input type="text" placeholder="${et.tot ? '¿Quién es el tercero?' : 'Especifica cuál...'}" style="font-size:13px;margin-top:4px">
       </div>` : '';
       const mecsFiltrados = mecElegibles;
-      // Para "Armado": al cambiar técnico, auto-rellena "Desarmado" si existe
-      const onChangeArmado = et.esArmado
-        ? `onchange="_autoFillDesarmado(this.value,'${containerId}')"`
+      // Para "Desarmado": al cambiar técnico, auto-rellena "Armado" con el mismo
+      const onChangeArmado = et.esDesarmado
+        ? `onchange="_autoFillArmado(this.value,'${containerId}')"`
         : '';
       const mecHtml = !iniciada ? `<div class="mec-select-wrap" id="mec-${et.key}" style="margin-top:6px;display:${checked ? 'block' : 'none'}">
         <select id="mec-sel-${et.key}" style="font-size:13px" ${onChangeArmado}>
@@ -1654,26 +1654,25 @@ function onChkChange(key, checked) {
   const camposDiv = document.getElementById('campos-' + key);
   if (camposDiv) camposDiv.style.display = checked ? 'block' : 'none';
 
-  // Si se selecciona "Armado", marcar "Desarmado" automáticamente y mostrar sus campos
-  if (key === 'lat_armado' && checked) {
-    const chkDes = document.getElementById('chk-lat_desarmado');
-    if (chkDes && !chkDes.checked && !chkDes.disabled) {
-      chkDes.checked = true;
-      onChkChange('lat_desarmado', true);
+  // Si se selecciona "Desarmado", marcar "Armado" automáticamente al final
+  if (key === 'lat_desarmado' && checked) {
+    const chkArm = document.getElementById('chk-lat_armado');
+    if (chkArm && !chkArm.checked && !chkArm.disabled) {
+      chkArm.checked = true;
+      onChkChange('lat_armado', true);
     }
   }
 }
 
-// Auto-rellena el técnico de "Desarmado" con el mismo de "Armado"
-function _autoFillDesarmado(mecId, containerId) {
-  const desSelId = 'mec-sel-lat_desarmado';
-  const desSel = document.getElementById(desSelId);
-  if (!desSel) return;
-  // Solo pre-llena si Desarmado está visible/checked y no tiene técnico asignado aún
-  const chkDes = document.getElementById('chk-lat_desarmado');
-  if (!chkDes?.checked) return;
-  if (!desSel.value || desSel.value === mecId) {
-    desSel.value = mecId;
+// Auto-rellena el técnico de "Armado" con el mismo de "Desarmado"
+function _autoFillArmado(mecId, containerId) {
+  const armSel = document.getElementById('mec-sel-lat_armado');
+  if (!armSel) return;
+  const chkArm = document.getElementById('chk-lat_armado');
+  if (!chkArm?.checked) return;
+  // Pre-llena si Armado no tiene técnico asignado aún
+  if (!armSel.value || armSel.value === '') {
+    armSel.value = mecId;
   }
 }
 
