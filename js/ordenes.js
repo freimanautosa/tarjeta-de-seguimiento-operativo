@@ -2169,7 +2169,7 @@ function montarJefe() {
       </button>
       <button class="nav-item" id="nav-vehiculos" onclick="navJefe('vehiculos')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-        <span class="nav-label">Vehículos</span>
+        <span class="nav-label">Ingresos</span>
       </button>
     `;
   }
@@ -2291,7 +2291,7 @@ function navJefe(pag) {
       break;
     case 'vehiculos':
       pagId = 'pag-vehiculos';
-      titulo = 'Vehículos registrados';
+      titulo = 'Ingresos';
       cargarVehiculos();
       break;
     default:
@@ -2943,7 +2943,7 @@ async function cargarVehiculos() {
             style="width:100%;padding:9px 12px 9px 34px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;outline:none;box-sizing:border-box"
             oninput="_vehiculosFiltrar(this.value)" value="${escapeHtml(_vehiculosBusqueda)}">
         </div>
-        <div style="font-size:13px;color:var(--gris-mid);flex-shrink:0">${vehiculos.length} vehículo${vehiculos.length!==1?'s':''} registrado${vehiculos.length!==1?'s':''}</div>
+        <div style="font-size:13px;color:var(--gris-mid);flex-shrink:0">${vehiculos.length} vehículo${vehiculos.length!==1?'s':''} en el registro</div>
       </div>
       <div id="veh-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px">
         ${_renderVehiculos(vehiculos)}
