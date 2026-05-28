@@ -1342,25 +1342,25 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 }
 .inv-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 4px 8px;
   margin-bottom: 14px;
 }
 .inv-item {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 10px 13px;
-  border: 1.5px solid var(--gris-borde);
-  border-radius: 6px;
+  gap: 8px;
+  padding: 6px 4px;
   cursor: pointer;
   font-size: 13px;
-  transition: border-color 0.15s;
+  color: var(--texto);
   user-select: none;
+  border-radius: 4px;
+  transition: background .1s;
 }
-.inv-item:hover { border-color: var(--azul); }
-.inv-item.checked { background: var(--azul-light); border-color: var(--azul); color: var(--azul); }
-.inv-item input { pointer-events: none; accent-color: var(--azul); }
+.inv-item:hover { background: var(--gris-bg); }
+.inv-item.checked { color: var(--texto); }
+.inv-item input { pointer-events: none; accent-color: var(--azul); width:15px; height:15px; flex-shrink:0; }
 
 /* CHECKLIST SERVICIOS MODAL */
 .srv-grid-select { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
