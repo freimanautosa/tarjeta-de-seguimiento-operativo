@@ -122,9 +122,16 @@ async function detectarPerfil(cedula) {
 
   const mecs = await api(`/mecanicos?cedula=eq.${cedula}&activo=eq.true`);
   if (mecs?.length) {
-    const rol = mecs[0].rol || '';
+    const m   = mecs[0];
+    const rol = m.rol || '';
     const perfil = rol === 'taller' ? 'taller' : rol === 'repuestos' ? 'repuestos' : 'mecanico';
-    return { perfil, nombre: mecs[0].nombre, id: mecs[0].id, datos: mecs[0] };
+    // Cargar permisos del rol personalizado si existe en roles_config
+    let permisos = null;
+    if (perfil === 'mecanico' && rol) {
+      const rolCfg = await api(`/roles_config?nombre=eq.${encodeURIComponent(rol)}`).catch(() => null);
+      if (rolCfg?.length) permisos = rolCfg[0].permisos || null;
+    }
+    return { perfil, nombre: m.nombre, id: m.id, datos: m, permisos };
   }
 
   const clientes = await api(`/clientes?cedula_nit=eq.${cedula}`);

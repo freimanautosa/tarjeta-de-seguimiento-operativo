@@ -11,6 +11,33 @@ const MODO_ESTRICTO_AUTH = true;
 // Helper: true si el usuario logueado tiene permisos de administración del taller
 function esJefe() { return sesion?.perfil === 'jefe' || sesion?.perfil === 'gerente'; }
 
+// Helper: verifica si el usuario tiene un permiso específico.
+// Jefe/Gerente siempre tienen todo. Roles personalizados usan sesion.permisos.
+function tienePermiso(p) {
+  if (esJefe()) return true;
+  return !!(sesion?.permisos?.[p]);
+}
+
+// Catálogo de permisos disponibles para roles personalizados
+const PERMISOS_CATALOGO = [
+  { key:'ver_dashboard',       label:'Ver dashboard general',              grupo:'Dashboard' },
+  { key:'ver_ordenes',         label:'Ver órdenes de trabajo',             grupo:'Órdenes' },
+  { key:'crear_ordenes',       label:'Crear nuevas órdenes',               grupo:'Órdenes' },
+  { key:'editar_ordenes',      label:'Editar datos de órdenes',            grupo:'Órdenes' },
+  { key:'aprobar_calidad',     label:'Aprobar calidad de etapas',          grupo:'Órdenes' },
+  { key:'agregar_etapas',      label:'Agregar etapas a órdenes',           grupo:'Órdenes' },
+  { key:'ver_precios',         label:'Ver precios e importes',             grupo:'Órdenes' },
+  { key:'ver_cotizaciones',    label:'Ver cotizaciones',                   grupo:'Cotizaciones' },
+  { key:'crear_cotizaciones',  label:'Crear y editar cotizaciones',        grupo:'Cotizaciones' },
+  { key:'ver_calendario',      label:'Ver calendario de programación',     grupo:'Herramientas' },
+  { key:'ver_mecanicos',       label:'Ver operarios activos',              grupo:'Herramientas' },
+  { key:'ver_repuestos',       label:'Ver inventario de repuestos',        grupo:'Repuestos' },
+  { key:'gestionar_repuestos', label:'Agregar y editar repuestos',         grupo:'Repuestos' },
+  { key:'ver_reportes',        label:'Ver reportes y estadísticas',        grupo:'Reportes' },
+  { key:'ver_flotillas',       label:'Ver flotillas',                      grupo:'Más' },
+  { key:'ver_aseguradoras',    label:'Ver aseguradoras',                   grupo:'Más' },
+];
+
 let mecanicos = [];
 let ordenActual = null;
 let filtroEstado = 'Activa';

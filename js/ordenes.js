@@ -2459,6 +2459,10 @@ async function cargarMecanicosVista() {
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nuevo Operario
         </button>
+        <button class="btn btn-ghost btn-sm" onclick="abrirGestionRoles()" style="color:#7C3AED;display:flex;align-items:center;gap:6px;border-color:#DDD6FE">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+          Gestionar Roles
+        </button>
         <button class="btn btn-ghost btn-sm" onclick="abrirCambiarPassJefe()" style="color:var(--azul);display:flex;align-items:center;gap:6px">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           Contraseña del Jefe
@@ -2519,17 +2523,25 @@ async function cargarMecanicosVista() {
 
 // ─── CRUD OPERARIOS (solo gerente) ───────────────────────
 
-function abrirModalOperario(mec) {
+async function abrirModalOperario(mec) {
   // mec = null → crear nuevo, mec = objeto → editar
   document.getElementById('modal-operario')?.remove();
   const esEditar = mec !== null && mec !== undefined;
-  const roles = [
+
+  // Roles base + roles personalizados de la DB
+  const rolesBase = [
     { val:'mecanico',  label:'Mecánico'  },
     { val:'pintor',    label:'Pintor'    },
     { val:'latonero',  label:'Latonero'  },
     { val:'detailing', label:'Detailing' },
     { val:'tot',       label:'T.O.T.'   },
     { val:'repuestos', label:'Repuestos' }
+  ];
+  const rolesCustom = await api('/roles_config?order=nombre.asc&select=nombre,color').catch(() => []) || [];
+  const roles = [
+    ...rolesBase,
+    ...(rolesCustom.length ? [{ val:'_sep', label:'── Roles personalizados ──', disabled:true }] : []),
+    ...rolesCustom.map(r => ({ val: r.nombre, label: r.nombre, color: r.color }))
   ];
   const m = document.createElement('div');
   m.id = 'modal-operario';
@@ -2558,7 +2570,10 @@ function abrirModalOperario(mec) {
         <div class="field">
           <label>Perfil / Rol</label>
           <select id="op-rol">
-            ${roles.map(r => `<option value="${r.val}" ${esEditar && mec.rol===r.val ? 'selected':''}>${r.label}</option>`).join('')}
+            ${roles.map(r => r.disabled
+              ? `<option value="" disabled>${r.label}</option>`
+              : `<option value="${r.val}" ${esEditar && mec.rol===r.val ? 'selected':''}>${r.label}</option>`
+            ).join('')}
           </select>
         </div>
         <div class="field">
@@ -2652,6 +2667,189 @@ async function eliminarOperario(mecId, nombre) {
     cargarMecanicosVista();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
+// ═══════════════════════════════════════════════════════════
+// GESTIÓN DE ROLES PERSONALIZADOS (solo gerente)
+// ═══════════════════════════════════════════════════════════
+
+async function abrirGestionRoles() {
+  document.getElementById('modal-roles')?.remove();
+  const roles = await api('/roles_config?order=nombre.asc').catch(() => []) || [];
+
+  const m = document.createElement('div');
+  m.id = 'modal-roles';
+  m.className = 'modal-overlay show';
+  m.innerHTML = `
+    <div class="modal" style="max-width:680px;max-height:90vh;display:flex;flex-direction:column">
+      <div class="modal-header">
+        <div class="modal-titulo">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+          Roles y permisos
+        </div>
+        <button class="modal-cerrar" onclick="document.getElementById('modal-roles').remove()">✕</button>
+      </div>
+      <div style="padding:20px;overflow-y:auto;flex:1">
+        <p style="font-size:13px;color:var(--gris-mid);margin-bottom:16px">
+          Los roles personalizados permiten dar acceso limitado a ciertas secciones de la app a operarios que no son jefe ni mecánico tradicional.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px" id="roles-lista">
+          ${roles.length ? roles.map(r => _rolFila(r)).join('') : '<div style="font-size:13px;color:var(--gris-mid);text-align:center;padding:20px 0">Sin roles personalizados aún.</div>'}
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="abrirModalRol(null)" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Crear nuevo rol
+        </button>
+      </div>
+    </div>`;
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
+}
+
+function _rolFila(r) {
+  const perms = r.permisos || {};
+  const cant  = Object.values(perms).filter(Boolean).length;
+  return `<div style="background:white;border:1.5px solid var(--gris-borde);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px">
+    <div style="width:10px;height:10px;border-radius:50%;background:${r.color||'#6B7280'};flex-shrink:0"></div>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:13px">${escapeHtml(r.nombre)}</div>
+      <div style="font-size:11px;color:var(--gris-mid);margin-top:2px">${cant} permiso${cant!==1?'s':''} activado${cant!==1?'s':''}</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-ghost btn-xs" onclick="abrirModalRol(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-xs" style="color:var(--rojo)" onclick="eliminarRol(${r.id},'${escapeHtml(r.nombre)}')">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+    </div>
+  </div>`;
+}
+
+const _COLORES_ROL = ['#7C3AED','#2563EB','#059669','#D97706','#DC2626','#0891B2','#BE185D','#6B7280'];
+
+function abrirModalRol(rol) {
+  document.getElementById('modal-rol-edit')?.remove();
+  const esEditar = rol !== null && rol !== undefined;
+  const perms    = rol?.permisos || {};
+
+  // Agrupar permisos por grupo
+  const grupos = {};
+  PERMISOS_CATALOGO.forEach(p => {
+    if (!grupos[p.grupo]) grupos[p.grupo] = [];
+    grupos[p.grupo].push(p);
+  });
+
+  const gruposHtml = Object.entries(grupos).map(([grupo, items]) => `
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gris-mid);margin-bottom:8px">${grupo}</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${items.map(p => `
+          <label style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--gris-bg);border-radius:6px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="perm-${p.key}" ${perms[p.key] ? 'checked' : ''} style="width:15px;height:15px;accent-color:#7C3AED">
+            <span>${p.label}</span>
+          </label>`).join('')}
+      </div>
+    </div>`).join('');
+
+  const colorPickerHtml = _COLORES_ROL.map(c =>
+    `<button type="button" onclick="document.getElementById('rol-color-val').value='${c}';document.querySelectorAll('.rol-color-dot').forEach(d=>d.classList.remove('sel'));this.querySelector('div').classList.add('sel')"
+      class="rol-color-dot" style="background:none;border:none;padding:2px;cursor:pointer">
+      <div style="width:22px;height:22px;border-radius:50%;background:${c};outline:${(rol?.color||'#7C3AED')===c?'3px solid '+c:'2px solid transparent'};outline-offset:2px" class="${(rol?.color||'#7C3AED')===c?'sel':''}"></div>
+    </button>`
+  ).join('');
+
+  const m = document.createElement('div');
+  m.id = 'modal-rol-edit';
+  m.className = 'modal-overlay show';
+  m.innerHTML = `
+    <div class="modal" style="max-width:500px;max-height:90vh;display:flex;flex-direction:column">
+      <div class="modal-header">
+        <div class="modal-titulo">${esEditar ? 'Editar rol' : 'Nuevo rol'}</div>
+        <button class="modal-cerrar" onclick="document.getElementById('modal-rol-edit').remove()">✕</button>
+      </div>
+      <div style="padding:20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px">
+        <div class="field">
+          <label>Nombre del rol</label>
+          <input id="rol-nombre" type="text" placeholder="Ej: Asesor comercial, Administración..." value="${esEditar ? escapeHtml(rol.nombre) : ''}" ${esEditar ? 'readonly style="background:var(--gris-bg);color:var(--gris-mid)"' : ''}>
+          ${esEditar ? '<div style="font-size:11px;color:var(--gris-mid);margin-top:3px">El nombre del rol no se puede cambiar (se usa como identificador).</div>' : ''}
+        </div>
+        <div class="field">
+          <label>Color identificador</label>
+          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">${colorPickerHtml}</div>
+          <input type="hidden" id="rol-color-val" value="${rol?.color||'#7C3AED'}">
+        </div>
+        <div>
+          <label style="font-size:13px;font-weight:600;color:var(--texto);display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            Permisos
+            <button type="button" onclick="_rolToggleTodos(true)" class="btn btn-ghost btn-xs">Marcar todos</button>
+          </label>
+          ${gruposHtml}
+        </div>
+        <div id="rol-error" style="display:none;background:var(--rojo-bg);color:var(--rojo);border-radius:6px;padding:10px 14px;font-size:13px"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-ghost" onclick="document.getElementById('modal-rol-edit').remove()">Cancelar</button>
+          <button class="btn btn-primary" id="rol-btn-save" onclick="guardarRol(${esEditar ? rol.id : 'null'})">
+            ${esEditar ? 'Guardar cambios' : 'Crear rol'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
+  setTimeout(() => document.getElementById('rol-nombre')?.focus(), 80);
+}
+
+function _rolToggleTodos(val) {
+  PERMISOS_CATALOGO.forEach(p => {
+    const el = document.getElementById('perm-' + p.key);
+    if (el) el.checked = val;
+  });
+}
+
+async function guardarRol(rolId) {
+  const nombre = document.getElementById('rol-nombre')?.value.trim();
+  const color  = document.getElementById('rol-color-val')?.value || '#6B7280';
+  const errEl  = document.getElementById('rol-error');
+  const showErr = msg => { errEl.textContent = msg; errEl.style.display = 'block'; };
+  errEl.style.display = 'none';
+
+  if (!nombre) { showErr('Ingresa un nombre para el rol.'); return; }
+
+  // Leer permisos marcados
+  const permisos = {};
+  PERMISOS_CATALOGO.forEach(p => {
+    permisos[p.key] = !!(document.getElementById('perm-' + p.key)?.checked);
+  });
+  const algunoActivo = Object.values(permisos).some(Boolean);
+  if (!algunoActivo) { showErr('Activa al menos un permiso para este rol.'); return; }
+
+  const btn = document.getElementById('rol-btn-save');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+
+  try {
+    if (rolId) {
+      await api(`/roles_config?id=eq.${rolId}`, 'PATCH', { color, permisos });
+      toast(`Rol "${nombre}" actualizado ✓`);
+    } else {
+      await api('/roles_config', 'POST', { nombre, color, permisos }, { Prefer: 'return=minimal' });
+      toast(`Rol "${nombre}" creado ✓`);
+    }
+    document.getElementById('modal-rol-edit')?.remove();
+    abrirGestionRoles(); // recargar lista
+  } catch(e) {
+    showErr('Error: ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = rolId ? 'Guardar cambios' : 'Crear rol'; }
+  }
+}
+
+async function eliminarRol(rolId, nombre) {
+  if (!confirm(`¿Eliminar el rol "${nombre}"?\n\nLos operarios con este rol quedarán sin permisos especiales hasta que se les asigne otro rol.`)) return;
+  try {
+    await api(`/roles_config?id=eq.${rolId}`, 'DELETE');
+    toast(`Rol "${nombre}" eliminado`);
+    abrirGestionRoles();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
 // ═══════════════════════════════════════════════════════════
 // GESTIÓN DE CONTRASEÑAS (jefe/gerente)
 // ═══════════════════════════════════════════════════════════
