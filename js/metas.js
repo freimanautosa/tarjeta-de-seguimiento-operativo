@@ -39,7 +39,7 @@ async function cargarDashboardMetas() {
 
     // ── KPIs del mes ─────────────────────────────────────
     const kpisHtml = metaMes ? `
-      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:8px;margin-bottom:10px">
+      <div class="dash-metas-kpi" style="display:grid;grid-template-columns:1.4fr 1fr;gap:8px;margin-bottom:10px">
         <!-- Ingresos — dark blue -->
         <div style="background:#1E3A5F;border-radius:12px;padding:14px 16px;color:white">
           <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;opacity:.55;margin-bottom:6px">Ingresos del mes</div>
@@ -88,7 +88,7 @@ async function cargarDashboardMetas() {
 
     // ── Historial ─────────────────────────────────────────
     const historialHtml = metas.length ? `
-      <div class="card" style="padding:12px 14px;margin-bottom:10px">
+      <div class="card" style="padding:12px 14px">
         <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:10px">Historial de metas</div>
         <div style="overflow-x:auto">
           <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:400px">
@@ -124,10 +124,13 @@ async function cargarDashboardMetas() {
       </div>
 
       ${kpisHtml}
-      ${historialHtml}
 
-      <!-- Cargar meta -->
-      <div class="card" style="padding:12px 14px">
+      <!-- Historial + Cargar meta: 2 columnas en desktop -->
+      <div class="dash-metas-bottom" style="display:grid;grid-template-columns:2fr 1fr;gap:10px;align-items:start">
+        ${historialHtml}
+
+        <!-- Cargar meta -->
+        <div class="card" style="padding:12px 14px">
         <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Cargar meta mensual</div>
         <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">El contador descarga la plantilla, completa los valores y la sube aquí.</div>
 
@@ -146,6 +149,7 @@ async function cargarDashboardMetas() {
           <p style="margin:0;font-size:12px;color:var(--gris-mid)">Clic para subir CSV de metas</p>
         </div>
       </div>
+      </div><!-- /dash-metas-bottom -->
     `;
   } catch(e) {
     cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;

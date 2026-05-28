@@ -229,7 +229,7 @@ async function cargarDashboardMes() {
     const buildFila = o => {
       const ets         = etapasPorOrden[o.id] || [];
       const etapaActiva = ets.find(e => e.inicio && !e.fin);
-      const responsable = etapaActiva?.tecnico || '—';
+      const responsable = etapaActiva?.tecnico || null;
       const srv         = etapaActiva?.servicio || null;
       const srvLabel    = srv ? (srvNombre[srv]||srv) : (ets.length ? 'Sin iniciar' : 'Sin etapas');
       const srvC        = srv ? (srvColor[srv]||'#6B7280') : '#9CA3AF';
@@ -240,39 +240,33 @@ async function cargarDashboardMes() {
       const riesgo      = diasDelay === null ? null : diasDelay > 0 ? 'Alto' : diasDelay >= -2 ? 'Medio' : 'Bajo';
       const rC = { Alto:'#DC2626', Medio:'#D97706', Bajo:'#059669' };
       const rB = { Alto:'#FEE2E2', Medio:'#FEF3C7', Bajo:'#E6F5EF' };
-      return `<tr style="border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id})" onmouseenter="this.style.background='var(--gris-bg)'" onmouseleave="this.style.background=''">
-        <td style="padding:7px 10px;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:var(--gris-mid);white-space:nowrap">${formatOT(o.id)}</td>
-        <td style="padding:7px 10px">
-          <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:12px;letter-spacing:.8px">${escapeHtml(o.placa)}</div>
-          <div style="font-size:10px;color:var(--gris-mid)">${[o.marca,o.linea].filter(Boolean).map(escapeHtml).join(' ')||'—'}</div>
-        </td>
-        <td style="padding:7px 10px">
-          <span style="font-size:10px;font-weight:600;color:${srvC};background:${srvBg};padding:2px 7px;border-radius:5px;white-space:nowrap">${srvLabel}</span>
-        </td>
-        <td style="padding:7px 10px;font-size:11px;color:var(--texto)">${escapeHtml(responsable)}</td>
-        <td style="padding:7px 10px;text-align:center;font-weight:700;font-size:12px;color:${diasTaller>10?'#DC2626':diasTaller>5?'#D97706':'var(--texto)'}">${diasTaller}d</td>
-        <td style="padding:7px 10px;text-align:center">
-          ${riesgo ? `<span style="font-size:10px;font-weight:700;color:${rC[riesgo]};background:${rB[riesgo]};padding:2px 6px;border-radius:99px">${riesgo}</span>` : '<span style="font-size:10px;color:var(--gris-mid)">—</span>'}
-        </td>
-      </tr>`;
+      const barColor = riesgo === 'Alto' ? '#DC2626' : riesgo === 'Medio' ? '#D97706' : srvC;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id})" onmouseenter="this.style.background='var(--gris-bg)'" onmouseleave="this.style.background=''">
+        <div style="width:3px;align-self:stretch;border-radius:99px;background:${barColor};flex-shrink:0"></div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px">
+            <span style="font-family:'DM Mono',monospace;font-size:15px;font-weight:800;color:var(--texto);letter-spacing:.5px">${escapeHtml(o.placa)}</span>
+            <span style="font-size:11px;font-weight:700;color:${diasTaller>10?'#DC2626':diasTaller>5?'#D97706':'var(--gris-mid)'}">${diasTaller}d</span>
+          </div>
+          <div style="font-size:11px;color:var(--gris-mid)">${[o.marca,o.linea].filter(Boolean).map(escapeHtml).join(' ')||'—'}</div>
+          <div style="font-size:9px;color:var(--gris-mid);opacity:.65;margin-top:1px">${formatOT(o.id)}${responsable?' · '+responsable.split(' ')[0]:''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+          <span style="font-size:10px;font-weight:600;color:${srvC};background:${srvBg};padding:2px 8px;border-radius:5px">${srvLabel}</span>
+          ${riesgo==='Alto'
+            ? `<span style="font-size:10px;font-weight:800;color:#DC2626;letter-spacing:.3px">RETRASADA</span>`
+            : riesgo==='Medio'
+              ? `<span style="font-size:10px;font-weight:700;color:#D97706">En riesgo</span>`
+              : `<span style="font-size:9px;color:#9CA3AF">En tiempo</span>`
+          }
+        </div>
+      </div>`;
     };
     const filasOrdenes    = ordenesActivas.slice(0,3).map(buildFila).join('');
     const restanteOrdenes = ordenesActivas.length - 3;
 
     const tablaHtml = ordenesActivas.length ? `
-      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-        <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:520px">
-          <thead><tr style="background:var(--gris-bg)">
-            <th style="padding:6px 10px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:1px solid var(--gris-borde)">No. Orden</th>
-            <th style="padding:6px 10px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:1px solid var(--gris-borde)">Placa</th>
-            <th style="padding:6px 10px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:1px solid var(--gris-borde)">Estado</th>
-            <th style="padding:6px 10px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:1px solid var(--gris-borde)">Responsable</th>
-            <th style="padding:6px 10px;text-align:center;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:1px solid var(--gris-borde)">Días</th>
-            <th style="padding:6px 10px;text-align:center;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--gris-mid);border-bottom:1px solid var(--gris-borde)">Riesgo</th>
-          </tr></thead>
-          <tbody>${filasOrdenes}</tbody>
-        </table>
-      </div>
+      <div>${filasOrdenes}</div>
       ${restanteOrdenes > 0 ? `
         <div style="text-align:center;margin-top:10px">
           <button onclick="switchTab('ordenes')" style="background:none;border:1px solid var(--gris-borde);border-radius:8px;padding:6px 16px;font-size:11px;font-weight:600;color:var(--gris-mid);cursor:pointer">
@@ -497,40 +491,44 @@ async function cargarDashboard() {
       ? Object.entries(srvActivos).sort((a,b)=>b[1]-a[1]).map(([srv,n]) => {
           const pct = Math.round((n/totalActivos)*100);
           const color = srvColor[srv]||'#6B7280';
-          return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="switchTab('ordenes')">
-            <div style="width:10px;height:10px;border-radius:3px;background:${color};flex-shrink:0"></div>
-            <span style="font-size:12px;font-weight:600;color:${color};flex:1">${srvNombre[srv]||srv}</span>
-            <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${color}">${pct}%</span>
-            <span style="font-size:10px;color:var(--gris-mid)">${n}</span>
+          return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer" onclick="switchTab('ordenes')">
+            <div style="width:8px;height:8px;border-radius:2px;background:${color};flex-shrink:0"></div>
+            <span style="font-size:11px;font-weight:600;color:${color};flex:1">${srvNombre[srv]||srv}</span>
+            <span style="font-size:11px;font-weight:700;color:${color}">${n}</span>
+            <span style="font-size:10px;color:var(--gris-mid);width:28px;text-align:right">${pct}%</span>
           </div>`;
         }).join('')
       : '<div style="font-size:11px;color:var(--gris-mid);padding:8px 0">Sin procesos activos</div>';
 
     // — Procesos activos tabla HTML —
     const procesosTablaHtml = procesosTabla.length ? `
-      <table style="width:100%;border-collapse:collapse;font-size:11px">
-        <thead><tr style="background:var(--gris-bg)">
-          ${['OT','Vehículo','Etapa actual','Días','Estado'].map(h=>`<th style="padding:5px 8px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--gris-mid);border-bottom:1px solid var(--gris-borde)">${h}</th>`).join('')}
-        </tr></thead>
-        <tbody>
-          ${procesosTabla.map(({o,ea,diasTaller,vencida})=>{
-            const srv = ea?.servicio||null;
-            const etLabel = ea?.etapa || (srv ? srvNombre[srv]||srv : 'En proceso');
-            const sC = srv ? srvColor[srv]||'#6B7280' : '#9CA3AF';
-            const sB = srv ? srvBg[srv]||'#F3F4F6' : '#F3F4F6';
-            return `<tr style="border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id})" onmouseenter="this.style.background='var(--gris-bg)'" onmouseleave="this.style.background=''">
-              <td style="padding:6px 8px;font-family:'DM Mono',monospace;font-size:10px;color:var(--gris-mid)">${formatOT(o.id)}</td>
-              <td style="padding:6px 8px">
-                <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:12px">${escapeHtml(o.placa)}</div>
-                <div style="font-size:10px;color:var(--gris-mid)">${escapeHtml([o.marca,o.linea].filter(Boolean).join(' ')||'—')}</div>
-              </td>
-              <td style="padding:6px 8px"><span style="font-size:10px;font-weight:600;color:${sC};background:${sB};padding:2px 7px;border-radius:5px">${etLabel}</span></td>
-              <td style="padding:6px 8px;text-align:center;font-weight:700;font-size:12px;color:${diasTaller>10?'#DC2626':diasTaller>5?'#D97706':'var(--texto)'}">${diasTaller}d</td>
-              <td style="padding:6px 8px"><span style="font-size:10px;font-weight:700;color:${vencida?'#DC2626':'#059669'};background:${vencida?'#FEE2E2':'#E6F5EF'};padding:2px 6px;border-radius:99px">${vencida?'Retrasada':'En tiempo'}</span></td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
+      <div>
+        ${procesosTabla.map(({o,ea,diasTaller,vencida})=>{
+          const srv    = ea?.servicio||null;
+          const etLabel = ea?.etapa || (srv ? srvNombre[srv]||srv : 'En proceso');
+          const sC     = srv ? srvColor[srv]||'#6B7280' : '#9CA3AF';
+          const sB     = srv ? srvBg[srv]||'#F3F4F6'   : '#F3F4F6';
+          const tec    = ea?.tecnico || null;
+          return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id})" onmouseenter="this.style.background='var(--gris-bg)'" onmouseleave="this.style.background=''">
+            <div style="width:3px;align-self:stretch;border-radius:99px;background:${vencida?'#DC2626':sC};flex-shrink:0"></div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px">
+                <span style="font-family:'DM Mono',monospace;font-size:15px;font-weight:800;color:var(--texto);letter-spacing:.5px">${escapeHtml(o.placa)}</span>
+                <span style="font-size:11px;font-weight:700;color:${diasTaller>10?'#DC2626':diasTaller>5?'#D97706':'var(--gris-mid)'}">${diasTaller}d</span>
+              </div>
+              <div style="font-size:11px;color:var(--gris-mid)">${escapeHtml([o.marca,o.linea].filter(Boolean).join(' ')||'—')}</div>
+              <div style="font-size:9px;color:var(--gris-mid);opacity:.65;margin-top:1px">${formatOT(o.id)}${tec?' · '+tec.split(' ')[0]:''}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+              <span style="font-size:10px;font-weight:600;color:${sC};background:${sB};padding:2px 8px;border-radius:5px">${etLabel}</span>
+              ${vencida
+                ? `<span style="font-size:10px;font-weight:800;color:#DC2626;letter-spacing:.3px">RETRASADA</span>`
+                : `<span style="font-size:9px;color:#9CA3AF">En tiempo</span>`
+              }
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
       <div style="text-align:center;margin-top:10px">
         <button onclick="switchTab('ordenes')" style="background:none;border:1px solid var(--gris-borde);border-radius:7px;padding:5px 14px;font-size:11px;font-weight:600;color:var(--gris-mid);cursor:pointer">Ver todas las órdenes</button>
       </div>`
@@ -581,21 +579,24 @@ async function cargarDashboard() {
         }).join('')
       : '<div style="font-size:11px;color:var(--gris-mid)">Sin datos históricos.</div>';
 
-    // — Próximas entregas HTML —
+    // — Próximas entregas HTML (timeline por día) —
+    const _prxGroups = {};
+    proximas.forEach(o => {
+      const k = o.dias < 0 ? 'Vencidas' : o.dias === 0 ? 'Hoy' : o.dias === 1 ? 'Mañana' : `${o.dias}d`;
+      if (!_prxGroups[k]) _prxGroups[k] = [];
+      _prxGroups[k].push(o);
+    });
     const proximasHtml = proximas.length
-      ? proximas.map(o => {
-          const c=o.dias<0?'#DC2626':o.dias===0?'#D97706':o.dias<=2?'#D97706':'#059669';
-          const bg=o.dias<0?'#FEE2E2':o.dias===0?'#FEF3C7':o.dias<=2?'#FEF3C7':'#E6F5EF';
-          const lbl=o.dias<0?`${Math.abs(o.dias)}d vencida`:o.dias===0?'Hoy':o.dias===1?'Mañana':`${o.dias}d`;
-          return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id})">
-            <div style="flex:1;min-width:0">
-              <div style="font-family:'DM Mono',monospace;font-weight:700;font-size:12px">${escapeHtml(o.placa)}</div>
-              <div style="font-size:10px;color:var(--gris-mid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(o.propietario||'—')}</div>
-            </div>
-            <div style="text-align:right;flex-shrink:0">
-              <span style="font-size:10px;font-weight:700;color:${c};background:${bg};padding:2px 7px;border-radius:99px;display:block">${lbl}</span>
-              ${o.horaStr?`<span style="font-family:'DM Mono',monospace;font-size:9px;color:${c};opacity:.75;display:block;margin-top:1px">${o.horaStr}</span>`:''}
-            </div>
+      ? Object.entries(_prxGroups).map(([grp, items]) => {
+          const gC = grp==='Vencidas'?'#DC2626':grp==='Hoy'?'#D97706':'var(--gris-mid)';
+          return `<div style="margin-bottom:10px">
+            <div style="font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:1.4px;color:${gC};margin-bottom:5px">${grp}</div>
+            ${items.map(o => `
+              <div style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer" onclick="abrirOrden(${o.id})">
+                <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--gris-mid);flex-shrink:0;min-width:34px">${o.horaStr||''}</span>
+                <span style="font-family:'DM Mono',monospace;font-weight:800;font-size:12px;color:var(--texto)">${escapeHtml(o.placa)}</span>
+                <span style="font-size:10px;color:var(--gris-mid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${escapeHtml(o.propietario||'')}</span>
+              </div>`).join('')}
           </div>`;
         }).join('')
       : '<div style="font-size:11px;color:var(--gris-mid)">Sin entregas próximas.</div>';
@@ -612,119 +613,98 @@ async function cargarDashboard() {
     // RENDER
     // ════════════════════════════════════════════════════
     cont.innerHTML = `
-      <!-- KPI row -->
-      <div class="dash-kpi-row-gen" style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1.4fr;gap:8px;margin-bottom:10px">
-        <!-- Órdenes activas -->
-        <div style="background:#1E3A5F;border-radius:12px;padding:14px 16px;color:white">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;opacity:.55;margin-bottom:6px">Órdenes activas</div>
-          <div style="font-size:32px;font-weight:800;font-family:'DM Mono',monospace;line-height:1">${activasArr.length}</div>
-          <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
-            <div style="flex:1;height:3px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden">
-              <div style="height:100%;width:${pctActivas}%;background:#93C5FD;border-radius:99px"></div>
-            </div>
-            <span style="font-size:11px;font-weight:700;color:#93C5FD">${pctActivas}%</span>
-          </div>
-          <div style="font-size:10px;opacity:.5;margin-top:3px">del total de órdenes</div>
-        </div>
-        <!-- Total entregadas -->
-        <div class="card" style="padding:14px 16px">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gris-mid);margin-bottom:6px">Total entregadas</div>
-          <div style="font-size:30px;font-weight:800;color:#059669;line-height:1">${entregadasArr.length}</div>
-          <div style="font-size:10px;color:var(--gris-mid);margin-top:3px">Historial completo</div>
-          <button onclick="filtrarOrdenes('Entregada')" style="margin-top:8px;background:none;border:1px solid #D1FAE5;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:600;color:#059669;cursor:pointer;width:100%">Ver cerradas →</button>
-        </div>
-        <!-- Entregadas hoy -->
-        <div class="card" style="padding:14px 16px">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gris-mid);margin-bottom:6px">Entregadas hoy</div>
-          <div style="font-size:30px;font-weight:800;color:#2563EB;line-height:1">${entregadasHoy.length}</div>
-          <div style="font-size:10px;color:var(--gris-mid);margin-top:3px">Vehículos programados</div>
-        </div>
-        <!-- En pulmón -->
-        <div class="card" style="padding:14px 16px">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gris-mid);margin-bottom:6px">En pulmón</div>
-          <div style="font-size:30px;font-weight:800;color:#D97706;line-height:1">${pulmonTotal}</div>
-          <div style="font-size:10px;color:var(--gris-mid);margin-top:3px">${pulmonInt} int · ${pulmonExt} ext</div>
-        </div>
-        <!-- Facturación mes -->
-        <div style="background:var(--azul);border-radius:12px;padding:14px 16px;color:white">
-          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;opacity:.55;margin-bottom:6px">Facturación del mes</div>
-          <div style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1">${fmt(valorMes)}</div>
-          <div style="font-size:10px;opacity:.5;margin-top:5px">Total órdenes: ${totalOrdenes}</div>
-          <button onclick="switchDashTab('financiero')" style="margin-top:6px;background:rgba(255,255,255,.12);border:none;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:600;color:white;cursor:pointer;width:100%">Ver histórico →</button>
-        </div>
-      </div>
-
       ${retrasosHtml}
 
-      <!-- Próximas entregas -->
-      <div class="card" style="padding:12px 14px;margin-bottom:10px">
-        <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:8px">Próximas entregas</div>
-        ${proximasHtml}
-      </div>
-
-      <!-- Fila 3: Carga por área | Procesos activos | Servicios más demandados -->
-      <div class="dash-gen-row3" style="display:grid;grid-template-columns:200px 1fr 200px;gap:10px;margin-bottom:10px;align-items:start">
-        <!-- Donut carga por área -->
-        <div class="card" style="padding:12px 14px">
-          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Carga por área</div>
-          <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Ocupación actual</div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
-            <div style="position:relative">
-              ${buildDonut(donutSlices)}
-              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column">
-                <span style="font-size:16px;font-weight:800;color:var(--texto);line-height:1">${Object.values(srvActivos).reduce((a,b)=>a+b,0)}</span>
-                <span style="font-size:9px;color:var(--gris-mid)">activas</span>
-              </div>
-            </div>
-            ${donutLeyenda}
-          </div>
-        </div>
-
+      <!-- Fila main: Procesos activos | Próximas entregas -->
+      <div class="dash-gen-main" style="display:grid;grid-template-columns:1fr 260px;gap:10px;margin-bottom:10px;align-items:start">
         <!-- Procesos activos tabla -->
         <div class="card" style="padding:12px 14px">
           <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Procesos activos en el taller</div>
           <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Órdenes en proceso</div>
           ${procesosTablaHtml}
         </div>
-
-        <!-- Servicios más demandados -->
+        <!-- Próximas entregas -->
         <div class="card" style="padding:12px 14px">
-          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Servicios más demandados</div>
-          <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Histórico de etapas</div>
-          ${demandadosHtml}
+          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:8px">Próximas entregas</div>
+          ${proximasHtml}
         </div>
       </div>
 
-      <!-- Fila 4: Tiempo promedio | Eficiencia | Técnicos | Repuestos -->
-      <div class="dash-gen-row4" style="display:grid;grid-template-columns:1fr 160px 140px 140px;gap:10px;align-items:start">
+      <!-- Carga por área + Servicios — una tarjeta, layout flex interno -->
+      <div class="card" style="padding:12px 14px;margin-bottom:10px">
+        <div class="dash-gen-info" style="display:flex;gap:0;align-items:start">
+          <div style="flex:0 0 42%;min-width:0;padding-right:16px">
+            <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Carga por área</div>
+            <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Ocupación actual</div>
+            <div style="height:10px;border-radius:5px;overflow:hidden;display:flex;gap:1px;margin-bottom:10px">
+              ${Object.entries(srvActivos).length > 0
+                ? Object.entries(srvActivos).sort((a,b)=>b[1]-a[1]).map(([srv,n]) => {
+                    const pct = Math.round((n/totalActivos)*100);
+                    return `<div style="flex:${pct} 0 0%;background:${srvColor[srv]||'#6B7280'}" title="${srvNombre[srv]||srv}: ${n}"></div>`;
+                  }).join('')
+                : `<div style="flex:1 0 0%;background:var(--gris-borde)"></div>`
+              }
+            </div>
+            ${donutLeyenda}
+          </div>
+          <div class="dash-gen-divider" style="width:1px;background:var(--gris-borde);align-self:stretch;margin-right:16px;flex-shrink:0"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Servicios más demandados</div>
+            <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Histórico de etapas</div>
+            ${demandadosHtml}
+          </div>
+        </div>
+      </div>
+
+      <!-- Fila 4: Tiempo promedio | Stats compactos -->
+      <div class="dash-gen-row4" style="display:grid;grid-template-columns:2fr 1fr;gap:10px;align-items:start">
         <div class="card" style="padding:12px 14px">
           <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Tiempo promedio por servicio</div>
           <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Histórico general</div>
           ${tiempoHtml}
         </div>
-        <!-- Eficiencia -->
-        <div class="card" style="padding:12px 14px;text-align:center">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gris-mid);margin-bottom:8px">Eficiencia</div>
-          <div style="font-size:36px;font-weight:800;color:${efColor};line-height:1">${eficiencia!==null?eficiencia+'%':'—'}</div>
-          <div style="font-size:10px;color:var(--gris-mid);margin-top:4px">Entregas a tiempo</div>
-          <div style="font-size:9px;color:var(--gris-mid);margin-top:2px">Últimos 60 días</div>
-          ${eficiencia!==null?`<div style="height:4px;background:var(--gris-borde);border-radius:99px;overflow:hidden;margin-top:8px"><div style="height:100%;width:${eficiencia}%;background:${efColor};border-radius:99px"></div></div>`:''}
-        </div>
-        <!-- Técnicos activos -->
-        <div class="card" style="padding:12px 14px;text-align:center">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gris-mid);margin-bottom:8px">Técnicos</div>
-          <div style="font-size:36px;font-weight:800;color:#2563EB;line-height:1">${tecActivos.size}</div>
-          <div style="font-size:10px;color:var(--gris-mid);margin-top:4px">Activos ahora</div>
-          <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:3px;margin-top:8px">
-            ${[...tecActivos].slice(0,4).map(t=>`<span style="font-size:9px;background:#EBF2FF;color:#2563EB;border-radius:99px;padding:1px 6px;font-weight:600">${t.split(' ')[0]}</span>`).join('')}
+        <!-- Operación hoy -->
+        <div class="card" style="padding:12px 14px">
+          <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:var(--gris-mid);margin-bottom:12px">Operación hoy</div>
+
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">
+              <span style="font-size:11px;color:var(--gris-mid)">Eficiencia</span>
+              <span style="font-size:18px;font-weight:800;color:${efColor}">${eficiencia!==null?eficiencia+'%':'—'}</span>
+            </div>
+            ${eficiencia!==null?`<div style="height:2px;background:var(--gris-borde);border-radius:99px;overflow:hidden;margin-bottom:2px"><div style="height:100%;width:${eficiencia}%;background:${efColor}"></div></div>`:''}
+            <div style="font-size:9px;color:var(--gris-mid)">Entregas a tiempo · 60 días</div>
           </div>
-        </div>
-        <!-- Repuestos pendientes -->
-        <div class="card" style="padding:12px 14px;text-align:center">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gris-mid);margin-bottom:8px">Repuestos</div>
-          <div style="font-size:36px;font-weight:800;color:${solicitudesPend.length>0?'#DC2626':'#059669'};line-height:1">${solicitudesPend.length}</div>
-          <div style="font-size:10px;color:var(--gris-mid);margin-top:4px">Pendientes</div>
-          <div style="font-size:10px;font-weight:600;color:${solicitudesPend.length>0?'#DC2626':'#059669'};margin-top:2px">${solicitudesPend.length>0?'Atención requerida':'Al día'}</div>
+
+          <div style="margin-bottom:12px">
+            <div style="font-size:9px;color:var(--gris-mid);margin-bottom:5px">Técnicos</div>
+            ${tecActivos.size > 0
+              ? [...tecActivos].slice(0,4).map(t => {
+                  const eAct   = etapasActArr.find(e => e.tecnico === t);
+                  const srv    = eAct?.servicio;
+                  const srvLbl = srv ? (srvNombre[srv]||srv) : null;
+                  const sC2    = srv ? (srvColor[srv]||'#6B7280') : 'var(--gris-mid)';
+                  return `<div style="display:flex;align-items:center;justify-content:space-between;padding:3px 0">
+                    <span style="font-size:11px;font-weight:600;color:var(--texto)">${t.split(' ')[0]}</span>
+                    ${srvLbl?`<span style="font-size:10px;font-weight:600;color:${sC2}">${srvLbl}</span>`:`<span style="font-size:10px;color:var(--gris-mid)">—</span>`}
+                  </div>`;
+                }).join('')
+              : '<div style="font-size:11px;color:var(--gris-mid)">Sin activos</div>'
+            }
+          </div>
+
+          <div style="margin-bottom:${retrasos.length>0?'12px':'0'}">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:11px;color:var(--gris-mid)">Repuestos</span>
+              <span style="font-size:12px;font-weight:700;color:${solicitudesPend.length>0?'#DC2626':'#059669'}">${solicitudesPend.length>0?solicitudesPend.length+' pend.':'Al día'}</span>
+            </div>
+          </div>
+
+          ${retrasos.length > 0 ? `
+            <div style="background:#FEF2F2;border-left:3px solid #DC2626;border-radius:0 4px 4px 0;padding:6px 8px;font-size:11px;color:#DC2626;font-weight:700">
+              ${retrasos.length} ${retrasos.length===1?'vehículo':'vehículos'} con retraso
+            </div>
+          ` : ''}
         </div>
       </div>
     `;
@@ -821,6 +801,134 @@ async function cargarGraficoPeriodo() {
   } catch(e) {
     const cont2 = document.getElementById('dash-grafico-bars');
     if (cont2) cont2.innerHTML = `<div style="font-size:12px;color:var(--rojo)">Error: ${e.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// GRÁFICO FINANCIERO — FACTURACIÓN POR PERÍODO
+// ═══════════════════════════════════════════════════════════
+async function cargarGraficoFinanciero(periodo = 'mensual') {
+  ['semanal','mensual','anual'].forEach(p => {
+    const btn = document.getElementById(`fin-btn-${p}`);
+    if (!btn) return;
+    const activo = p === periodo;
+    btn.style.background = activo ? '#1E3A5F' : 'white';
+    btn.style.color      = activo ? 'white'   : 'var(--gris-mid)';
+    btn.style.border     = '1px solid ' + (activo ? '#1E3A5F' : 'var(--gris-borde)');
+  });
+
+  const cont = document.getElementById('dash-fin-grafico');
+  if (!cont) return;
+  cont.innerHTML = '<div style="text-align:center;padding:28px 0;font-size:12px;color:var(--gris-mid)">Cargando...</div>';
+
+  try {
+    const ahora = new Date();
+    const since = periodo === 'diario'  ? (() => { const d=new Date(); d.setDate(d.getDate()-30); return d.toISOString().slice(0,10); })()
+               : periodo === 'semanal' ? (() => { const d=new Date(); d.setDate(d.getDate()-85); return d.toISOString().slice(0,10); })()
+               : periodo === 'mensual' ? (() => { const d=new Date(ahora.getFullYear(), ahora.getMonth()-12, 1); return d.toISOString().slice(0,10); })()
+               : null;
+
+    const etapas = await api(
+      `/etapas?fin=not.is.null&valor=gt.0&select=fin,valor&order=fin.asc${since?`&fin=gte.${since}`:''}&limit=3000`
+    ).catch(()=>[]) || [];
+
+    const buckets = {};
+
+    if (periodo === 'diario') {
+      for (let i=29; i>=0; i--) {
+        const d = new Date(ahora); d.setDate(d.getDate()-i);
+        const key = d.toISOString().slice(0,10);
+        buckets[key] = { label:`${d.getDate()}/${d.getMonth()+1}`, valor:0 };
+      }
+      etapas.forEach(e => {
+        const key = new Date(e.fin).toISOString().slice(0,10);
+        if (buckets[key]) buckets[key].valor += (e.valor||0);
+      });
+
+    } else if (periodo === 'semanal') {
+      for (let i=11; i>=0; i--) {
+        const d = new Date(ahora); d.setDate(d.getDate()-i*7);
+        const sw = semanaNum(d);
+        const key = `${d.getFullYear()}-S${String(sw).padStart(2,'0')}`;
+        buckets[key] = { label:`S${sw}`, valor:0 };
+      }
+      etapas.forEach(e => {
+        const d = new Date(e.fin);
+        const sw = semanaNum(d);
+        const key = `${d.getFullYear()}-S${String(sw).padStart(2,'0')}`;
+        if (buckets[key]) buckets[key].valor += (e.valor||0);
+      });
+
+    } else if (periodo === 'mensual') {
+      for (let i=11; i>=0; i--) {
+        const d = new Date(ahora.getFullYear(), ahora.getMonth()-i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        buckets[key] = { label:d.toLocaleDateString('es-CO',{month:'short'}), valor:0 };
+      }
+      etapas.forEach(e => {
+        const d = new Date(e.fin);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        if (buckets[key]) buckets[key].valor += (e.valor||0);
+      });
+
+    } else {
+      const years = [...new Set(etapas.map(e => new Date(e.fin).getFullYear()))];
+      const minY  = years.length ? Math.min(...years) : ahora.getFullYear()-2;
+      for (let y=minY; y<=ahora.getFullYear(); y++) buckets[y] = { label:String(y), valor:0 };
+      etapas.forEach(e => {
+        const y = new Date(e.fin).getFullYear();
+        if (buckets[y]) buckets[y].valor += (e.valor||0);
+      });
+    }
+
+    const arr    = Object.values(buckets);
+    const total  = arr.reduce((s,b)=>s+b.valor, 0);
+    const maxVal = Math.max(...arr.map(b=>b.valor), 1);
+    const fmtS   = v => v>=1000000?`$${(v/1000000).toFixed(1)}M`:v>=1000?`$${Math.round(v/1000)}K`:`$${Math.round(v)}`;
+    const fmtF   = v => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0}).format(v);
+
+    if (total === 0) { cont.innerHTML='<div style="text-align:center;padding:28px 0;font-size:12px;color:var(--gris-mid)">Sin datos para este período.</div>'; return; }
+
+    const W=560, H=150, PL=54, PR=10, PT=8, PB=26;
+    const cW=W-PL-PR, cH=H-PT-PB, n=arr.length;
+    const yT = [0,.33,.67,1].map(f=>({ y:(PT+cH*(1-f)).toFixed(1), l:f===0?'0':fmtS(maxVal*f) }));
+    const pts = arr.map((b,i)=>({
+      x:(n>1?PL+(i/(n-1))*cW:PL+cW/2).toFixed(1),
+      y:(PT+cH*(1-(b.valor/maxVal))).toFixed(1),
+      lbl:b.label
+    }));
+    const linePath = n>1 ? pts.map((p,i)=>`${i===0?'M':'L'}${p.x},${p.y}`).join(' ') : '';
+    const areaPath = n>1 ? `${linePath} L${pts[n-1].x},${PT+cH} L${pts[0].x},${PT+cH} Z` : '';
+    const xStep = Math.max(1, Math.ceil(n/7));
+
+    cont.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:auto;display:block" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="finGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#2563EB" stop-opacity=".12"/>
+          <stop offset="100%" stop-color="#2563EB" stop-opacity="0"/>
+        </linearGradient></defs>
+        ${yT.filter((_,i)=>i>0).map(t=>`<line x1="${PL}" y1="${t.y}" x2="${W-PR}" y2="${t.y}" stroke="#E1E5EC" stroke-width="1"/>`).join('')}
+        ${yT.map(t=>`<text x="${PL-5}" y="${(+t.y+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#8A94A6" font-family="'DM Mono',monospace">${t.l}</text>`).join('')}
+        ${areaPath?`<path d="${areaPath}" fill="url(#finGrad)"/>`:''}
+        ${linePath?`<path d="${linePath}" fill="none" stroke="#2563EB" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`:''}
+        ${pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="2.5" fill="white" stroke="#2563EB" stroke-width="1.5"/>`).join('')}
+        ${pts.filter((_,i)=>i%xStep===0||i===n-1).map(p=>`<text x="${p.x}" y="${H-2}" text-anchor="middle" font-size="9" fill="#8A94A6" font-family="'DM Mono',monospace">${p.lbl}</text>`).join('')}
+        <line x1="${PL}" y1="${PT+cH}" x2="${W-PR}" y2="${PT+cH}" stroke="#E1E5EC" stroke-width="1"/>
+      </svg>
+      <div style="display:flex;gap:20px;margin-top:8px;padding-top:8px;border-top:1px solid var(--gris-borde)">
+        <div>
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--gris-mid);margin-bottom:2px">Total período</div>
+          <div style="font-size:13px;font-weight:800;color:var(--texto);font-family:'DM Mono',monospace">${fmtF(total)}</div>
+        </div>
+        <div>
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--gris-mid);margin-bottom:2px">Promedio</div>
+          <div style="font-size:13px;font-weight:800;color:var(--texto);font-family:'DM Mono',monospace">${fmtF(Math.round(total/n))}</div>
+        </div>
+      </div>`;
+
+  } catch(e2) {
+    const c2 = document.getElementById('dash-fin-grafico');
+    if (c2) c2.innerHTML = `<div style="font-size:12px;color:var(--rojo);padding:12px 0">Error: ${e2.message}</div>`;
   }
 }
 
@@ -1002,7 +1110,7 @@ async function cargarDashboardFinanciero() {
       </div>
 
       <!-- KPI row -->
-      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+      <div class="dash-fin-kpi" style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">
         <div style="background:#1E3A5F;border-radius:12px;padding:14px 16px;color:white">
           <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;opacity:.55;margin-bottom:6px">WIP — Trabajo en proceso</div>
           <div style="font-size:20px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1">${fmt(wipTotal)}</div>
@@ -1035,8 +1143,29 @@ async function cargarDashboardFinanciero() {
         </div>
       </div>
 
-      <!-- Tiempo vs estimado | Demoradas -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;align-items:start">
+      <!-- Gráfico de ingresos con selector de período -->
+      <div class="card" style="padding:12px 14px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--texto)">Ingresos en el tiempo</div>
+            <div style="font-size:10px;color:var(--gris-mid)">Basado en etapas completadas</div>
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            ${['semanal','mensual','anual'].map(p => `
+              <button id="fin-btn-${p}" onclick="cargarGraficoFinanciero('${p}')"
+                style="padding:4px 10px;border-radius:20px;border:1px solid var(--gris-borde);background:white;font-size:10px;font-weight:600;color:var(--gris-mid);cursor:pointer;transition:all .15s"
+                onmouseenter="if(!this.dataset.active)this.style.background='var(--gris-bg)'"
+                onmouseleave="if(!this.dataset.active)this.style.background='white'">
+                ${{semanal:'Semanal',mensual:'Mensual',anual:'Anual'}[p]}
+              </button>`).join('')}
+          </div>
+        </div>
+        <div id="dash-fin-grafico" style="width:100%"></div>
+      </div>
+
+      ${demoradas.length > 0 ? `
+      <!-- Tiempo vs estimado | Demoradas (layout 2 col cuando hay demoradas) -->
+      <div class="dash-fin-row2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;align-items:start">
         <div class="card" style="padding:12px 14px">
           <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Tiempo real vs estimado</div>
           <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Promedio por tipo de servicio</div>
@@ -1048,6 +1177,14 @@ async function cargarDashboardFinanciero() {
           ${demoradasHtml}
         </div>
       </div>
+      ` : `
+      <!-- Tiempo vs estimado (ancho completo cuando no hay demoradas) -->
+      <div class="card" style="padding:12px 14px;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Tiempo real vs estimado</div>
+        <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Promedio por tipo de servicio</div>
+        ${tiempoSrvHtml}
+      </div>
+      `}
 
       <!-- Productividad técnicos -->
       <div class="card" style="padding:12px 14px">
@@ -1056,6 +1193,7 @@ async function cargarDashboardFinanciero() {
         ${tecnicoHtml}
       </div>
     `;
+    cargarGraficoFinanciero('mensual');
   } catch(e) {
     cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
   }

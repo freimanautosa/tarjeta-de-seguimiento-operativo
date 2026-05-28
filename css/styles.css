@@ -2789,13 +2789,14 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
     display: none !important;
   }
 
-  /* ── Grid KPI del tab General: 2 cols en móvil ── */
+  /* ── Grid KPI del tab General: 2×2 en móvil ── */
   .dash-kpi-row-gen {
     grid-template-columns: 1fr 1fr !important;
   }
-  /* Facturación (último chip) ocupa fila completa */
-  .dash-kpi-row-gen > div:last-child {
-    grid-column: 1 / -1;
+
+  /* Números de chips del tab General: más compactos en mobile */
+  .gen-kpi-num {
+    font-size: 22px !important;
   }
 
   /* ── Grid dashboard Mes actual: 1 columna ── */
@@ -2813,26 +2814,27 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
     grid-template-columns: 1fr !important;
   }
 
-  /* ══ Tab General: todos sus grids colapsan en mobile ══ */
+  /* ══ Tab General ══ */
+  .dash-gen-main { grid-template-columns: 1fr !important; }
+  .dash-gen-row3 { grid-template-columns: 1fr !important; }
+  .dash-gen-row4 { grid-template-columns: 1fr !important; }
 
-  /* Pipeline (flujo operativo) + Próximas: apila */
-  .dash-gen-pipeline {
-    grid-template-columns: 1fr !important;
-  }
+  /* ══ Tab Financiero ══ */
+  .dash-fin-kpi  { grid-template-columns: 1fr 1fr !important; }
+  .dash-fin-row2 { grid-template-columns: 1fr !important; }
 
-  /* Fila 3: Carga área | Procesos activos | Demandados → 1 col */
-  .dash-gen-row3 {
-    grid-template-columns: 1fr !important;
-  }
+  /* ══ Tab Metas ══ */
+  .dash-metas-kpi    { grid-template-columns: 1fr !important; }
+  .dash-metas-bottom { grid-template-columns: 1fr !important; }
 
-  /* Fila 4: Tiempo | Eficiencia | Técnicos | Repuestos → 2 cols */
-  .dash-gen-row4 {
-    grid-template-columns: 1fr 1fr !important;
-  }
-  /* Tiempo promedio ocupa fila completa */
-  .dash-gen-row4 > div:first-child {
-    grid-column: 1 / -1;
-  }
+  /* ══ General — Carga+Servicios card ══ */
+  .dash-gen-info    { flex-direction: column !important; }
+  .dash-gen-divider { width: 100% !important; height: 1px !important; align-self: auto !important; margin: 10px 0 !important; padding-right: 0 !important; }
+}
+
+/* ══ Financiero — chart height cap on desktop ══ */
+@media (min-width: 769px) {
+  #dash-fin-grafico svg { height: 150px !important; }
 }
 
 /* ══════════════════════════════════════════════════════════
