@@ -460,6 +460,7 @@ async function abrirOrden(id) {
                 <div class="det-dato-fila"><span class="det-dato-lbl">Ingreso</span><span class="det-dato-val">${formatFecha(orden.creado_en)}</span></div>
                 <div class="det-dato-fila"><span class="det-dato-lbl">Entrega 1</span><span class="det-dato-val">${formatFecha(orden.fecha_entrega_1)||'—'}</span></div>
                 ${orden.fecha_entrega_2 ? `<div class="det-dato-fila"><span class="det-dato-lbl">Entrega 2</span><span class="det-dato-val">${formatFecha(orden.fecha_entrega_2)}</span></div>` : ''}
+                ${orden.descripcion_general ? `<div class="det-dato-fila" style="flex-direction:column;align-items:flex-start;gap:3px"><span class="det-dato-lbl">Descripción del trabajo</span><span class="det-dato-val" style="text-align:left;font-weight:500;color:var(--texto);line-height:1.5">${escapeHtml(orden.descripcion_general)}</span></div>` : ''}
               </div>
             </div>
             <!-- Cliente -->
@@ -3694,6 +3695,13 @@ async function generarPreliquidacion(ordenId, conPrecios = false) {
       <div style="font-weight:700;color:#065F46">${orden.estado||'—'}</div>
     </div>
   </div>
+
+  ${orden.descripcion_general ? `
+  <!-- DESCRIPCIÓN DEL TRABAJO -->
+  <div style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:8px;padding:14px 16px;margin-bottom:20px">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#0369A1;margin-bottom:6px">Descripción del trabajo</div>
+    <div style="font-size:13px;color:#1E293B;line-height:1.6">${escapeHtml(orden.descripcion_general)}</div>
+  </div>` : ''}
 
   <!-- ETAPAS POR SERVICIO -->
   ${etapasHtml}

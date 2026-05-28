@@ -118,10 +118,10 @@ function _cotFila(placeholderDesc) {
   const tr = document.createElement('tr');
   tr.className = 'cot-item-row';
   tr.innerHTML = `
-    <td><input type="number" class="cot-inp cot-inp-num" min="1" value="1" oninput="_cotActualizarTotales()"></td>
+    <td><input type="number" class="cot-inp cot-inp-num" min="1" value="1" onfocus="this.select()" oninput="_cotActualizarTotales()"></td>
     <td><input type="text"   class="cot-inp cot-inp-desc" placeholder="${escapeHtml(placeholderDesc)}"></td>
-    <td style="white-space:nowrap"><input type="number" class="cot-inp cot-inp-dto" min="0" max="100" value="0" oninput="_cotActualizarTotales()">%</td>
-    <td><input type="number" class="cot-inp cot-inp-val" min="0" value="0" oninput="_cotActualizarTotales()"></td>
+    <td style="white-space:nowrap"><input type="number" class="cot-inp cot-inp-dto" min="0" max="100" value="0" onfocus="this.select()" oninput="_cotActualizarTotales()">%</td>
+    <td><input type="number" class="cot-inp cot-inp-val" min="0" value="0" onfocus="this.select()" oninput="_cotActualizarTotales()"></td>
     <td class="cot-row-total">${formatCOP(0)}</td>
     <td><button class="btn-del-row" onclick="cotEliminarFila(this)" title="Eliminar">×</button></td>`;
   return tr;
