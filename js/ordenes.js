@@ -1741,12 +1741,11 @@ async function guardarEtapasNueva() {
         fetch(N8N_WEBHOOK, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            evento: 'etapa_finalizada', 
-            orden: { id: ord.id, placa: ord.placa, propietario: ord.propietario, marca: ord.marca, linea: ord.linea, aseguradora: ord.aseguradora }, 
-            etapa_finalizada: null, 
-            siguiente_etapa: { id: null, nombre: et.nombre, servicio: et.servicio, mecanico_id: et.mecanico_id, tecnico: mecanicos.find(m => m.id === et.mecanico_id)?.nombre || null }, 
-            todas_completadas: false, 
-            link: `${window.location.origin}${window.location.pathname}` 
+            evento: 'tecnico_asignado',
+            orden: { id: ord.id, placa: ord.placa, propietario: ord.propietario, marca: ord.marca, linea: ord.linea, aseguradora: ord.aseguradora },
+            siguiente_etapa: { id: null, nombre: et.nombre, servicio: et.servicio, mecanico_id: et.mecanico_id, tecnico: mecanicos.find(m => m.id === et.mecanico_id)?.nombre || null },
+            todas_completadas: false,
+            link: `${window.location.origin}${window.location.pathname}`
           }) 
         }).catch(() => {});
       }
