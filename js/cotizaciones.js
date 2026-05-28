@@ -248,13 +248,15 @@ function _cotActualizarTotales() {
   _txt('cn-sub-mo',    formatCOP(mo.subtotal));
   _txt('cn-res-mo',    formatCOP(mo.subtotal));
   _txt('cn-dto-total', '−' + formatCOP(dtoTotal));
-  _txt('cn-total',     formatCOP(total));
-  _txt('cn-iva-val',   formatCOP(iva));
-  _txt('cn-total-iva', formatCOP(totalIva));
+  _txt('cn-total',         formatCOP(total));
+  _txt('cn-iva-val',       formatCOP(iva));
+  _txt('cn-total-iva',     formatCOP(totalIva));
+  _txt('cn-total-siniva',  formatCOP(total));
   const _show = (id, v) => { const el = document.getElementById(id); if (el) el.style.display = v ? '' : 'none'; };
-  _show('cn-dto-row',       dtoTotal > 0);
-  _show('cn-iva-row',       conIva);
-  _show('cn-total-iva-row', conIva);
+  _show('cn-dto-row',          dtoTotal > 0);
+  _show('cn-iva-row',          conIva);
+  _show('cn-total-iva-row',    conIva);
+  _show('cn-total-siniva-row', !conIva);
 }
 
 function _cotLeerItems(tbodyId) {

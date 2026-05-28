@@ -1762,7 +1762,9 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .cot-resumen { background:var(--gris-bg); border-radius:10px; border:1px solid var(--gris-borde); padding:16px 20px; }
 .cot-res-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; font-size:14px; border-top:1px solid var(--gris-borde); }
 .cot-res-row:first-child { border-top:none; }
-.cot-res-total { font-weight:700; font-size:16px; color:var(--azul); }
+.cot-res-subtotal { font-weight:700; font-size:15px; color:var(--texto); border-top:2px solid var(--gris-borde) !important; margin-top:4px; padding-top:10px !important; }
+.cot-res-subtotal span:last-child { font-family:'DM Mono',monospace; }
+.cot-res-total { font-weight:800; font-size:16px; color:white; background:var(--azul); border-radius:8px; padding:10px 14px !important; margin-top:6px; border-top:none !important; }
 .cot-res-total span:last-child { font-family:'DM Mono',monospace; }
 
 /* ══════════════════════════════════════════════════════════
