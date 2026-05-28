@@ -4033,185 +4033,231 @@ async function generarPreliquidacion(ordenId, conPrecios = false) {
 <meta charset="UTF-8">
 <title>Preliquidación ${escapeHtml(orden.placa)}</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Segoe UI',Arial,sans-serif;color:#1E293B;background:#fff;font-size:13px;line-height:1.5}
-  .page{max-width:900px;margin:0 auto;padding:32px 36px}
-  @media print{body{font-size:12px}.page{padding:20px 24px}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;color:#111;background:#fff;font-size:9.5px;line-height:1.35;padding:0 10px 8px}
+@page{size:A4 portrait;margin:7mm 9mm}
+table{width:100%;border-collapse:collapse}
+th{font-size:7.5px;text-transform:uppercase;letter-spacing:.4px;color:#6B7280;font-weight:700;padding:4px 6px;background:#F9FAFB;border-bottom:1.5px solid #E5E7EB;text-align:left}
+td{padding:3.5px 6px;border-bottom:1px solid #F3F4F6;vertical-align:middle}
+.lbl{font-size:7.5px;color:#9CA3AF;text-transform:uppercase;letter-spacing:.3px;margin-bottom:1px}
+.val{font-weight:600}
+.sec{font-size:7.5px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;background:#1E3A5F;color:#fff;padding:3px 8px}
+.money{font-family:monospace;font-weight:700}
+@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}
 </style>
 </head>
 <body>
-<div class="page">
+<div>
 
-  <!-- ENCABEZADO -->
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1E3A5F;padding-bottom:18px;margin-bottom:24px">
-    <div>
-      <div style="font-size:24px;font-weight:800;color:#1E3A5F;letter-spacing:1px">FREIMANAUTOS</div>
-      <div style="font-size:11px;color:#94A3B8;margin-top:3px">Simplemente profesional</div>
-      <div style="font-size:10px;color:#64748B;margin-top:6px;line-height:1.7">
-        NIT: 800.012.186 &nbsp;·&nbsp; Calle 98A # 68D – 15<br>
-        Tel: 320 902 5804<br>
-        freimanautossa@yahoo.com &nbsp;·&nbsp; freimanautosgerencia@yahoo.com
-      </div>
-    </div>
-    <div style="text-align:right">
-      <div style="font-size:18px;font-weight:700;color:#1E3A5F">PRELIQUIDACIÓN</div>
-      <div style="font-size:11px;font-weight:600;color:${conPrecios?'#7C3AED':'#64748B'};margin-top:2px;letter-spacing:.5px;text-transform:uppercase">${conPrecios?'Con precios — Para cliente':'Sin precios — Uso interno'}</div>
-      <div style="font-family:monospace;font-size:13px;font-weight:700;color:#64748B;letter-spacing:1.5px;margin-top:2px">${formatOT(orden.id)}</div>
-      <div style="font-family:monospace;font-size:20px;font-weight:800;color:#1E3A5F;letter-spacing:3px;margin-top:4px">${escapeHtml(orden.placa)}</div>
-      <div style="font-size:11px;color:#94A3B8;margin-top:4px">Generada: ${fmtHora(new Date().toISOString())}</div>
+<!-- ENCABEZADO -->
+<div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding-bottom:6px;border-bottom:2.5px solid #1E3A5F;margin-bottom:6px">
+  <div>
+    <div style="font-weight:900;font-size:13px;color:#1E3A5F;letter-spacing:.3px">FREIMANAUTOS S.A.</div>
+    <div style="font-size:7.5px;color:#6B7280;margin-top:2px">NIT 860.012.186-5 &nbsp;·&nbsp; Calle 98A #68D-15, Bogotá D.C. &nbsp;·&nbsp; Tel: (601) 742 6450 &nbsp;·&nbsp; freimanautossa@yahoo.com</div>
+  </div>
+  <div style="text-align:center">
+    <div style="font-size:16px;font-weight:900;color:#1E3A5F;letter-spacing:.5px">PRELIQUIDACIÓN</div>
+    <div style="font-size:7.5px;color:${conPrecios?'#7C3AED':'#6B7280'};font-weight:700;letter-spacing:.5px;text-transform:uppercase">${conPrecios?'Con precios · Para cliente':'Sin precios · Uso interno'}</div>
+  </div>
+  <div style="text-align:right;border:1.5px solid #1E3A5F;border-radius:3px;padding:4px 10px;min-width:108px">
+    <div style="font-size:7.5px;color:#6B7280">N° ORDEN</div>
+    <div style="font-size:15px;font-weight:900;font-family:monospace;color:#1E3A5F;letter-spacing:1px">${formatOT(orden.id)}</div>
+    <div style="font-size:12px;font-weight:800;color:#111;letter-spacing:2.5px;margin-top:1px">${escapeHtml(orden.placa)}</div>
+    <div style="font-size:7px;color:#9CA3AF;margin-top:1px">${fmtFecha(new Date().toISOString())}</div>
+  </div>
+</div>
+
+<!-- CLIENTE / VEHÍCULO / FECHAS -->
+<div style="display:grid;grid-template-columns:1fr 1.2fr 0.85fr;gap:5px;margin-bottom:6px">
+
+  <div style="border:1px solid #E5E7EB;border-radius:3px;overflow:hidden">
+    <div class="sec">1. Cliente</div>
+    <div style="padding:5px 7px">
+      <div style="margin-bottom:3px"><div class="lbl">Nombre</div><div class="val" style="font-size:10px">${escapeHtml(orden.propietario)||'—'}</div></div>
+      <div style="margin-bottom:3px"><div class="lbl">Teléfono</div><div>${escapeHtml(orden.telefono)||'—'}</div></div>
+      <div${orden.aseguradora?' style="margin-bottom:3px"':''}><div class="lbl">Tipo</div><div>${escapeHtml(orden.tipo_cliente)||'Particular'}</div></div>
+      ${orden.aseguradora ? `<div><div class="lbl">Aseguradora</div><div class="val" style="color:#1D4ED8">${escapeHtml(orden.aseguradora)}</div></div>` : ''}
     </div>
   </div>
 
-  <!-- DATOS VEHÍCULO Y CLIENTE -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
-    <div style="background:#F8FAFC;border-radius:8px;padding:14px 16px;border:1px solid #E2E8F0">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94A3B8;margin-bottom:10px">Vehículo</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
-        <div><div style="color:#94A3B8;font-size:10px">Marca</div><div style="font-weight:600">${escapeHtml(orden.marca)||'—'}</div></div>
-        <div><div style="color:#94A3B8;font-size:10px">Línea</div><div style="font-weight:600">${escapeHtml(orden.linea)||'—'}</div></div>
-        <div><div style="color:#94A3B8;font-size:10px">Modelo</div><div style="font-weight:600">${escapeHtml(orden.modelo)||'—'}</div></div>
-        <div><div style="color:#94A3B8;font-size:10px">Color</div><div style="font-weight:600">${escapeHtml(orden.color)||'—'}</div></div>
-        <div><div style="color:#94A3B8;font-size:10px">Kilometraje</div><div style="font-weight:600">${orden.km ? orden.km+' km' : '—'}</div></div>
-        <div><div style="color:#94A3B8;font-size:10px">VIN</div><div style="font-weight:600;font-family:monospace;font-size:10px">${escapeHtml(orden.vin)||'—'}</div></div>
-      </div>
-    </div>
-    <div style="background:#F8FAFC;border-radius:8px;padding:14px 16px;border:1px solid #E2E8F0">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94A3B8;margin-bottom:10px">Cliente</div>
-      <div style="display:grid;gap:6px;font-size:12px">
-        <div><div style="color:#94A3B8;font-size:10px">Propietario</div><div style="font-weight:600">${escapeHtml(orden.propietario)||'—'}</div></div>
-        <div><div style="color:#94A3B8;font-size:10px">Teléfono</div><div style="font-weight:600">${escapeHtml(orden.telefono)||'—'}</div></div>
-        <div><div style="color:#94A3B8;font-size:10px">Tipo cliente</div><div style="font-weight:600">${escapeHtml(orden.tipo_cliente)||'Particular'}</div></div>
-        ${orden.aseguradora ? `<div><div style="color:#94A3B8;font-size:10px">Aseguradora</div><div style="font-weight:600">${escapeHtml(orden.aseguradora)}</div></div>` : ''}
-      </div>
+  <div style="border:1px solid #E5E7EB;border-radius:3px;overflow:hidden">
+    <div class="sec">2. Vehículo</div>
+    <div style="padding:5px 7px;display:grid;grid-template-columns:1fr 1fr;gap:3px 8px">
+      <div><div class="lbl">Marca / Línea</div><div class="val">${escapeHtml(orden.marca)||'—'} ${escapeHtml(orden.linea)||''}</div></div>
+      <div><div class="lbl">Modelo / Color</div><div>${escapeHtml(orden.modelo)||'—'} / ${escapeHtml(orden.color)||'—'}</div></div>
+      <div><div class="lbl">Kilometraje</div><div>${orden.kilometraje ? orden.kilometraje.toLocaleString('es-CO')+' km' : '—'}</div></div>
+      <div><div class="lbl">Carrocería</div><div>${escapeHtml(orden.tipo_carroceria)||'—'}</div></div>
+      ${orden.vin ? `<div style="grid-column:span 2"><div class="lbl">VIN / No. Chasis</div><div style="font-family:monospace;font-size:8.5px">${escapeHtml(orden.vin)}</div></div>` : ''}
     </div>
   </div>
 
-  <!-- FECHAS -->
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px">
-    <div style="background:#EBF2FF;border-radius:8px;padding:12px 14px;text-align:center">
-      <div style="font-size:10px;color:#2563EB;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Fecha ingreso</div>
-      <div style="font-weight:700;color:#1E3A5F">${fmtFecha(orden.creado_en)}</div>
-    </div>
-    <div style="background:#FEF3C7;border-radius:8px;padding:12px 14px;text-align:center">
-      <div style="font-size:10px;color:#D97706;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Entrega prometida</div>
-      <div style="font-weight:700;color:#92400E">${fmtFecha(orden.fecha_entrega_1)}</div>
-    </div>
-    <div style="background:#E6F5EF;border-radius:8px;padding:12px 14px;text-align:center">
-      <div style="font-size:10px;color:#059669;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Estado</div>
-      <div style="font-weight:700;color:#065F46">${orden.estado||'—'}</div>
+  <div style="border:1px solid #E5E7EB;border-radius:3px;overflow:hidden">
+    <div class="sec">Fechas / Estado</div>
+    <div style="padding:5px 7px">
+      <div style="margin-bottom:4px"><div class="lbl">Fecha ingreso</div><div class="val">${fmtFecha(orden.creado_en)}</div></div>
+      <div style="margin-bottom:4px"><div class="lbl">Entrega prometida</div><div class="val" style="color:#D97706">${fmtFecha(orden.fecha_entrega_1)}</div></div>
+      <div><div class="lbl">Estado</div><div class="val" style="color:#059669">${orden.estado||'—'}</div></div>
     </div>
   </div>
 
-  ${orden.descripcion_general ? `
-  <!-- DESCRIPCIÓN DEL TRABAJO -->
-  <div style="background:#F0F9FF;border:1px solid #BAE6FD;border-radius:8px;padding:14px 16px;margin-bottom:20px">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#0369A1;margin-bottom:6px">Descripción del trabajo</div>
-    <div style="font-size:13px;color:#1E293B;line-height:1.6">${escapeHtml(orden.descripcion_general)}</div>
-  </div>` : ''}
+</div>
 
-  ${(() => {
-    const danos = (() => { try { return JSON.parse(orden.danos_vehiculo || 'null') || {}; } catch { return {}; } })();
-    const hasDanos = Object.values(danos).some(a => a?.length > 0);
-    if (!hasDanos) return '';
+${(() => {
+  const danos = (() => { try { return JSON.parse(orden.danos_vehiculo||'null')||{}; } catch{return{};} })();
+  const hasDanos = Object.values(danos).some(a => a?.length > 0);
+  const hasDesc = !!orden.descripcion_general;
+  if (!hasDesc && !hasDanos) return '';
 
-    const esCamioneta = ['camioneta','van'].includes(orden.tipo_carroceria);
-    const tipoLabels = { rayon:'Rayón', golpe:'Golpe', abolladura:'Abolladura', pieza_faltante:'Pieza faltante' };
-    const tipoColores = { rayon:'#F59E0B', golpe:'#EF4444', abolladura:'#F97316', pieza_faltante:'#1F2937' };
-    const zonas = ['frontal','trasera','lateral_izq','lateral_der'];
-    const zonaLabel = { frontal:'Frontal', trasera:'Trasera', lateral_izq:'Lateral izquierda', lateral_der:'Lateral derecha' };
-    const markerPos = { frontal:[65,18], trasera:[65,192], lateral_izq:[14,105], lateral_der:[116,105] };
+  const tipoLabels = {rayon:'Rayón',golpe:'Golpe',abolladura:'Abolladura',pieza_faltante:'Pieza faltante'};
+  const tipoColores = {rayon:'#F59E0B',golpe:'#EF4444',abolladura:'#F97316',pieza_faltante:'#1F2937'};
+  const zonas = ['frontal','trasera','lateral_izq','lateral_der'];
+  const zonaLabel = {frontal:'Frontal',trasera:'Trasera',lateral_izq:'Lateral izq.',lateral_der:'Lateral der.'};
+  const markerPos = {frontal:[65,16],trasera:[65,194],lateral_izq:[13,105],lateral_der:[117,105]};
+  const esCamioneta = ['camioneta','van'].includes(orden.tipo_carroceria);
 
-    const svgAutoMovil = '<svg viewBox="0 0 130 210" width="100" height="162" xmlns="http://www.w3.org/2000/svg"><rect x="22" y="22" width="86" height="166" rx="16" fill="#F3F4F6" stroke="#374151" stroke-width="1.8"/><path d="M36,36 Q65,30 94,36 L91,58 Q65,53 39,58 Z" fill="#BFDBFE" stroke="#6B7280" stroke-width="1"/><path d="M36,174 Q65,180 94,174 L91,152 Q65,157 39,152 Z" fill="#BFDBFE" stroke="#6B7280" stroke-width="1"/><line x1="22" y1="95" x2="108" y2="95" stroke="#9CA3AF" stroke-width="0.8"/><line x1="22" y1="115" x2="108" y2="115" stroke="#9CA3AF" stroke-width="0.8"/><rect x="9" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="9" y="140" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="140" width="13" height="28" rx="4" fill="#374151"/><ellipse cx="19" cy="78" rx="4" ry="6" fill="#9CA3AF" stroke="#6B7280" stroke-width="0.8"/><ellipse cx="111" cy="78" rx="4" ry="6" fill="#9CA3AF" stroke="#6B7280" stroke-width="0.8"/></svg>';
+  const svgAuto = '<svg viewBox="0 0 130 210" width="72" height="116" xmlns="http://www.w3.org/2000/svg"><rect x="22" y="22" width="86" height="166" rx="16" fill="#F3F4F6" stroke="#374151" stroke-width="1.8"/><path d="M36,36 Q65,30 94,36 L91,58 Q65,53 39,58 Z" fill="#BFDBFE" stroke="#6B7280" stroke-width="1"/><path d="M36,174 Q65,180 94,174 L91,152 Q65,157 39,152 Z" fill="#BFDBFE" stroke="#6B7280" stroke-width="1"/><line x1="22" y1="95" x2="108" y2="95" stroke="#9CA3AF" stroke-width="0.8"/><line x1="22" y1="115" x2="108" y2="115" stroke="#9CA3AF" stroke-width="0.8"/><rect x="9" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="9" y="140" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="140" width="13" height="28" rx="4" fill="#374151"/><ellipse cx="19" cy="78" rx="4" ry="6" fill="#9CA3AF"/><ellipse cx="111" cy="78" rx="4" ry="6" fill="#9CA3AF"/></svg>';
+  const svgCam = '<svg viewBox="0 0 130 210" width="72" height="116" xmlns="http://www.w3.org/2000/svg"><rect x="22" y="22" width="86" height="80" rx="10" fill="#F3F4F6" stroke="#374151" stroke-width="1.8"/><path d="M34,30 Q65,24 96,30 L93,52 Q65,47 37,52 Z" fill="#BFDBFE" stroke="#6B7280" stroke-width="1"/><line x1="22" y1="102" x2="108" y2="102" stroke="#374151" stroke-width="2"/><rect x="22" y="102" width="86" height="86" rx="5" fill="#E5E7EB" stroke="#374151" stroke-width="1.8"/><line x1="30" y1="130" x2="100" y2="130" stroke="#9CA3AF" stroke-width="0.7"/><line x1="30" y1="158" x2="100" y2="158" stroke="#9CA3AF" stroke-width="0.7"/><rect x="9" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="9" y="112" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="112" width="13" height="28" rx="4" fill="#374151"/><rect x="9" y="142" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="142" width="13" height="28" rx="4" fill="#374151"/><ellipse cx="19" cy="68" rx="4" ry="6" fill="#9CA3AF"/><ellipse cx="111" cy="68" rx="4" ry="6" fill="#9CA3AF"/></svg>';
 
-    const svgCamioneta = '<svg viewBox="0 0 130 210" width="100" height="162" xmlns="http://www.w3.org/2000/svg"><rect x="22" y="22" width="86" height="80" rx="10" fill="#F3F4F6" stroke="#374151" stroke-width="1.8"/><path d="M34,30 Q65,24 96,30 L93,52 Q65,47 37,52 Z" fill="#BFDBFE" stroke="#6B7280" stroke-width="1"/><line x1="22" y1="102" x2="108" y2="102" stroke="#374151" stroke-width="2"/><rect x="22" y="102" width="86" height="86" rx="5" fill="#E5E7EB" stroke="#374151" stroke-width="1.8"/><line x1="30" y1="130" x2="100" y2="130" stroke="#9CA3AF" stroke-width="0.7"/><line x1="30" y1="158" x2="100" y2="158" stroke="#9CA3AF" stroke-width="0.7"/><rect x="9" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="9" y="112" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="112" width="13" height="28" rx="4" fill="#374151"/><rect x="9" y="142" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="142" width="13" height="28" rx="4" fill="#374151"/><ellipse cx="19" cy="68" rx="4" ry="6" fill="#9CA3AF" stroke="#6B7280" stroke-width="0.8"/><ellipse cx="111" cy="68" rx="4" ry="6" fill="#9CA3AF" stroke="#6B7280" stroke-width="0.8"/></svg>';
-
-    const marcadoresHtml = zonas.flatMap(zona => {
-      const tipos = danos[zona] || [];
-      if (!tipos.length) return [];
-      const [cx, cy] = markerPos[zona];
-      return tipos.map((tipo, i) => {
-        const offsetX = (i - (tipos.length - 1) / 2) * 14;
-        return '<circle cx="' + (cx + offsetX) + '" cy="' + cy + '" r="7" fill="' + (tipoColores[tipo]||'#6B7280') + '" stroke="white" stroke-width="1.5" opacity="0.95"/>';
-      });
+  let danosBlock = '';
+  if (hasDanos) {
+    const marcadores = zonas.flatMap(z => {
+      const ts = danos[z]||[]; if (!ts.length) return [];
+      const [cx,cy] = markerPos[z];
+      return ts.map((t,i) => '<circle cx="'+(cx+(i-(ts.length-1)/2)*13)+'" cy="'+cy+'" r="6" fill="'+(tipoColores[t]||'#9CA3AF')+'" stroke="white" stroke-width="1.5" opacity="0.95"/>');
     }).join('');
-
-    const svgBase = esCamioneta ? svgCamioneta : svgAutoMovil;
-    const svgConMarcadores = svgBase.replace('</svg>', marcadoresHtml + '</svg>');
-
-    const listaDanos = zonas.filter(z => (danos[z]||[]).length > 0).map(zona =>
-      '<div style="margin-bottom:8px"><div style="font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">' + zonaLabel[zona] + '</div><div style="display:flex;flex-wrap:wrap;gap:4px">' +
-      (danos[zona]||[]).map(t => '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:4px;padding:2px 7px"><span style="width:8px;height:8px;border-radius:50%;background:' + (tipoColores[t]||'#9CA3AF') + ';flex-shrink:0;display:inline-block"></span>' + (tipoLabels[t]||t) + '</span>').join('') +
-      '</div></div>'
+    const svgFinal = (esCamioneta ? svgCam : svgAuto).replace('</svg>', marcadores+'</svg>');
+    const listaDanos = zonas.filter(z=>(danos[z]||[]).length>0).map(z =>
+      '<div style="margin-bottom:4px"><span style="font-size:7.5px;font-weight:700;color:#374151;text-transform:uppercase">'+zonaLabel[z]+':</span> '+
+      (danos[z]||[]).map(t=>'<span style="display:inline-flex;align-items:center;gap:3px;font-size:8.5px;margin-right:5px"><span style="width:7px;height:7px;border-radius:50%;background:'+(tipoColores[t]||'#9CA3AF')+';display:inline-block;flex-shrink:0"></span>'+(tipoLabels[t]||t)+'</span>').join('')+'</div>'
     ).join('');
+    const leyenda = Object.entries(tipoColores).map(([k,c])=>'<span style="display:inline-flex;align-items:center;gap:3px;font-size:7.5px;color:#6B7280;margin-right:8px"><span style="width:7px;height:7px;border-radius:50%;background:'+c+';display:inline-block"></span>'+tipoLabels[k]+'</span>').join('');
+    danosBlock = '<div style="flex-shrink:0;display:flex;gap:8px;align-items:flex-start"><div>'+svgFinal+'</div><div style="padding-top:2px"><div style="font-size:7.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#374151;margin-bottom:5px">3. Estado del vehículo</div>'+listaDanos+'<div style="margin-top:5px;padding-top:4px;border-top:1px solid #F3F4F6">'+leyenda+'</div></div></div>';
+  }
 
-    const leyendaHtml = Object.entries(tipoColores).map(([k,c]) =>
-      '<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:#6B7280;margin-right:10px"><span style="width:8px;height:8px;border-radius:50%;background:' + c + ';display:inline-block"></span>' + tipoLabels[k] + '</span>'
-    ).join('');
+  const descBlock = hasDesc ?
+    '<div style="flex:1;border:1px solid #BAE6FD;border-radius:3px;background:#F0F9FF;padding:6px 8px"><div style="font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#0369A1;margin-bottom:3px">Descripción del trabajo</div><div style="font-size:9.5px;color:#1E293B;line-height:1.5">'+(escapeHtml(orden.descripcion_general)||'')+'</div></div>' : '';
 
-    return '<div style="border:1.5px solid #E5E7EB;border-radius:8px;padding:14px 16px;margin-bottom:20px"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#374151;margin-bottom:12px">3. Estado del vehículo — Daños al ingreso</div><div style="display:flex;align-items:flex-start;gap:20px"><div style="flex-shrink:0">' + svgConMarcadores + '</div><div style="flex:1">' + listaDanos + '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #F3F4F6">' + leyendaHtml + '</div></div></div></div>';
-  })()}
+  return '<div style="display:flex;gap:8px;align-items:stretch;margin-bottom:6px">'+descBlock+danosBlock+'</div>';
+})()}
 
-  <!-- ETAPAS POR SERVICIO -->
-  ${etapasHtml}
+<!-- 4. TRABAJOS -->
+<div style="margin-bottom:6px">
+  <div class="sec">4. Descripción de trabajos</div>
+  <table style="border:1px solid #E5E7EB;border-top:none">
+    <thead><tr>
+      <th style="width:20px;text-align:center">#</th>
+      <th>Descripción del trabajo</th>
+      <th style="width:68px">Tipo</th>
+      <th style="width:88px">Técnico asignado</th>
+      <th style="width:50px;text-align:center">Duración</th>
+      <th style="width:75px;text-align:right">Valor unitario</th>
+      <th style="width:75px;text-align:right">Valor total</th>
+    </tr></thead>
+    <tbody>
+      ${etapas.map((e,i) => `<tr>
+        <td style="color:#9CA3AF;text-align:center;font-size:8.5px">${i+1}</td>
+        <td style="font-weight:600">${escapeHtml(e.etapa||e.nombre||'—')}</td>
+        <td><span style="font-size:8px;font-weight:700;color:${srvColor[e.servicio]||'#374151'}">${srvNombres[e.servicio]||e.servicio||'—'}</span></td>
+        <td>${escapeHtml(e.tecnico||'—')}</td>
+        <td style="text-align:center;font-family:monospace;font-size:8.5px">${durMin(e.inicio,e.fin)}</td>
+        <td style="text-align:right;font-family:monospace">${fmt(e.valor)}</td>
+        <td style="text-align:right;font-family:monospace;font-weight:700">${fmt(e.valor)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>
+</div>
 
-  <!-- REPUESTOS -->
-  ${repuestosHtml}
+${solicitudes.length ? `<div style="margin-bottom:6px">
+  <div class="sec">5. Repuestos / Materiales</div>
+  <table style="border:1px solid #E5E7EB;border-top:none">
+    <thead><tr>
+      <th style="width:20px;text-align:center">#</th>
+      <th style="width:55px">Código</th>
+      <th>Descripción</th>
+      <th style="width:38px;text-align:center">Cant.</th>
+      ${conPrecios ? '<th style="width:80px;text-align:right">Vr. Unitario</th>' : ''}
+      ${conPrecios ? '<th style="width:80px;text-align:right">Vr. Total</th>' : ''}
+    </tr></thead>
+    <tbody>
+      ${solicitudes.map((sol,si) => {
+        const cot = cotizaciones.find(c=>c.solicitud_id===sol.id);
+        const items = solItems.filter(i=>i.solicitud_id===sol.id);
+        const filas = items.length ? items : [{repuesto:sol.repuesto,unidades:sol.unidades||1}];
+        return filas.map((item,idx) => `<tr>
+          <td style="color:#9CA3AF;text-align:center;font-size:8.5px">${si+1}</td>
+          <td style="font-family:monospace;font-size:8.5px;color:#6B7280">${escapeHtml(cot?.codigo||'—')}</td>
+          <td style="font-weight:600">${escapeHtml(item.repuesto||'—')}</td>
+          <td style="text-align:center">${item.unidades||1}</td>
+          ${conPrecios ? `<td style="text-align:right;font-family:monospace">${idx===0&&cot?.precio_venta_jefe ? fmt(cot.precio_venta_jefe/(item.unidades||1)) : ''}</td>` : ''}
+          ${conPrecios ? `<td style="text-align:right;font-family:monospace;font-weight:700">${idx===0&&cot?.precio_venta_jefe ? fmt(cot.precio_venta_jefe) : ''}</td>` : ''}
+        </tr>`).join('');
+      }).join('')}
+    </tbody>
+  </table>
+</div>` : ''}
 
-  <!-- NOVEDADES -->
-  ${novedadesHtml}
+${novedades.length ? `<div style="margin-bottom:6px">
+  <div class="sec" style="background:#991B1B">Novedades registradas (${novedades.length})</div>
+  <table style="border:1px solid #FECACA;border-top:none">
+    <thead><tr style="background:#FEF2F2">
+      <th style="color:#991B1B">Tipo</th><th style="color:#991B1B">Motivo</th>
+      <th style="color:#991B1B;width:90px">Responsable</th><th style="color:#991B1B;width:95px">Fecha</th>
+    </tr></thead>
+    <tbody>
+      ${novedades.map(n=>`<tr><td style="font-weight:600">${escapeHtml(n.tipo)||'—'}</td><td>${escapeHtml(n.motivo)||'—'}</td><td>${escapeHtml(n.responsable)||'—'}</td><td style="font-family:monospace;font-size:8.5px">${fmtHora(n.creado_en)}</td></tr>`).join('')}
+    </tbody>
+  </table>
+</div>` : ''}
 
-  <!-- TOTALES -->
-  <div style="border-top:2px solid #E2E8F0;padding-top:16px;margin-top:8px">
-    <div style="display:flex;justify-content:flex-end">
-      <div style="min-width:300px">
-        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F1F5F9;font-size:13px">
-          <span style="color:#64748B">Total horas facturadas</span>
-          <span style="font-weight:600">${totalHorasFact}h</span>
+<!-- FIRMAS + TOTALES -->
+<div style="display:grid;grid-template-columns:1fr 205px;gap:5px">
+
+  <div style="border:1px solid #E5E7EB;border-radius:3px;overflow:hidden">
+    <div class="sec">6. Firmas</div>
+    <div style="padding:6px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="padding-top:28px">
+        <div style="border-top:1.5px solid #374151;padding-top:4px">
+          <div style="font-size:8.5px;text-align:center;font-weight:600">Firma recepcionista</div>
+          <div style="font-size:7.5px;color:#9CA3AF;margin-top:4px">C.C. ________________________</div>
         </div>
-        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F1F5F9;font-size:13px">
-          <span style="color:#64748B">Horas adicionales</span>
-          <span style="font-weight:600">${totalHorasAdi}h</span>
+      </div>
+      <div style="padding-top:28px">
+        <div style="border-top:1.5px solid #374151;padding-top:4px">
+          <div style="font-size:8.5px;text-align:center;font-weight:600">Firma cliente</div>
+          <div style="font-size:7.5px;color:#9CA3AF;margin-top:4px">C.C. ________________________</div>
         </div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F1F5F9;font-size:14px;font-weight:700;color:#1E3A5F">
-          <span>Mano de obra</span>
-          <span style="font-family:monospace">${fmt(totalManoObra)}</span>
-        </div>
-        ${conPrecios && totalRepuestos > 0 ? `
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F1F5F9;font-size:14px;font-weight:700;color:#5B21B6">
-          <span>Repuestos</span>
-          <span style="font-family:monospace">${fmt(totalRepuestos)}</span>
-        </div>` : ''}
-        ${conPrecios ? (() => {
-          const subtotal = totalManoObra + totalRepuestos;
-          const iva      = Math.round(subtotal * 0.19);
-          const totalIva = subtotal + iva;
-          return `
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #E2E8F0;font-size:14px;font-weight:700;color:#1E3A5F;border-top:2px solid #1E3A5F;margin-top:4px">
-          <span>Subtotal</span>
-          <span style="font-family:monospace">${fmt(subtotal)}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F1F5F9;font-size:13px;color:#64748B">
-          <span>IVA (19%)</span>
-          <span style="font-family:monospace;font-weight:600">${fmt(iva)}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:14px 16px;font-size:18px;font-weight:800;color:#fff;background:#1E3A5F;border-radius:8px;margin-top:8px">
-          <span>TOTAL + IVA</span>
-          <span style="font-family:monospace">${fmt(totalIva)}</span>
-        </div>`;
-        })() : `
-        <div style="display:flex;justify-content:space-between;padding:12px 0 0;font-size:17px;font-weight:800;color:#1E3A5F;border-top:2px solid #1E3A5F;margin-top:4px">
-          <span>TOTAL MANO DE OBRA</span>
-          <span style="font-family:monospace">${fmt(totalManoObra)}</span>
-        </div>`}
       </div>
     </div>
   </div>
 
-  <!-- NOTA -->
-  <div style="margin-top:32px;border-top:1px solid #E2E8F0;padding-top:14px;font-size:10px;color:#94A3B8;display:flex;justify-content:space-between">
-    <span>FREIMANAUTOS · NIT 800.012.186 · Calle 98A # 68D – 15 · Tel: 320 902 5804 · Documento preliminar — no constituye factura</span>
-    <span>Generado el ${new Date().toLocaleString('es-CO')}</span>
+  <div style="border:1px solid #E5E7EB;border-radius:3px;overflow:hidden">
+    <div class="sec">Totales</div>
+    <div style="padding:6px 8px">
+      <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #F3F4F6;font-size:9.5px">
+        <span style="color:#6B7280">Subtotal trabajos</span><span class="money">${fmt(totalManoObra)}</span>
+      </div>
+      ${conPrecios && totalRepuestos > 0 ? `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #F3F4F6;font-size:9.5px">
+        <span style="color:#6B7280">Subtotal repuestos</span><span class="money">${fmt(totalRepuestos)}</span>
+      </div>` : ''}
+      ${conPrecios ? (() => {
+        const sub = totalManoObra + totalRepuestos;
+        const iva = Math.round(sub * 0.19);
+        return `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #E5E7EB;font-size:9.5px">
+          <span style="color:#6B7280">IVA (19%)</span><span class="money">${fmt(iva)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 7px;background:#1E3A5F;color:#fff;border-radius:3px;margin-top:5px">
+          <span style="font-weight:800;font-size:9.5px">TOTAL A PAGAR</span>
+          <span class="money" style="font-size:11px">$&nbsp;${new Intl.NumberFormat('es-CO',{minimumFractionDigits:0}).format(sub+iva)}</span>
+        </div>`;
+      })() : `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 7px;background:#1E3A5F;color:#fff;border-radius:3px;margin-top:5px">
+        <span style="font-weight:800;font-size:9.5px">TOTAL M.O.</span>
+        <span class="money" style="font-size:11px">${fmt(totalManoObra)}</span>
+      </div>`}
+      <div style="font-size:7px;color:#9CA3AF;margin-top:5px;text-align:center;line-height:1.4">Documento preliminar · no constituye factura<br>Generado: ${new Date().toLocaleString('es-CO')}</div>
+    </div>
   </div>
+
+</div>
 
 </div>
 </body>
