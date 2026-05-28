@@ -2167,6 +2167,10 @@ function montarJefe() {
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <span class="nav-label">Aseguradoras</span>
       </button>
+      <button class="nav-item" id="nav-vehiculos" onclick="navJefe('vehiculos')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        <span class="nav-label">Vehículos</span>
+      </button>
     `;
   }
 
@@ -2213,7 +2217,7 @@ function montarJefe() {
 
 function navJefe(pag) {
   // Actualizar clases active en sidebar y bottom nav
-  const pages = ['ordenes', 'nueva', 'dashboard', 'cotizaciones', 'calendario', 'mecanicos', 'repuestos', 'reportes', 'flotillas', 'aseguradoras'];
+  const pages = ['ordenes', 'nueva', 'dashboard', 'cotizaciones', 'calendario', 'mecanicos', 'repuestos', 'reportes', 'flotillas', 'aseguradoras', 'vehiculos'];
   pages.forEach(p => {
     const navBtn = document.getElementById('nav-' + p);
     const bnavBtn = document.getElementById('bnav-' + p);
@@ -2284,6 +2288,11 @@ function navJefe(pag) {
       pagId = 'pag-aseguradoras';
       titulo = 'Aseguradoras';
       setTimeout(() => { if (typeof montarAseguradoras === 'function') montarAseguradoras(); }, 50);
+      break;
+    case 'vehiculos':
+      pagId = 'pag-vehiculos';
+      titulo = 'Vehículos registrados';
+      cargarVehiculos();
       break;
     default:
       pagId = 'pag-ordenes';
@@ -2848,6 +2857,129 @@ async function eliminarRol(rolId, nombre) {
     toast(`Rol "${nombre}" eliminado`);
     abrirGestionRoles();
   } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// REGISTRO DE VEHÍCULOS
+// ═══════════════════════════════════════════════════════════
+
+let _vehiculosBusqueda = '';
+
+async function cargarVehiculos() {
+  const cont = document.getElementById('pag-vehiculos');
+  if (!cont) return;
+  cont.innerHTML = '<div class="loading-state">Cargando vehículos...</div>';
+  try {
+    const ordenes = await api('/ordenes?select=id,placa,marca,linea,modelo,color,vin,propietario,telefono,correo_cliente,cedula_cliente,tipo_cliente,aseguradora,estado,creado_en,fecha_entrega_1&order=placa.asc,creado_en.desc&limit=2000').catch(() => []) || [];
+
+    // Agrupar por placa
+    const vehiculosMap = {};
+    ordenes.forEach(o => {
+      const placa = (o.placa || '').toUpperCase();
+      if (!placa) return;
+      if (!vehiculosMap[placa]) {
+        vehiculosMap[placa] = { info: o, ordenes: [] };
+      }
+      vehiculosMap[placa].ordenes.push(o);
+    });
+
+    const vehiculos = Object.values(vehiculosMap).sort((a, b) =>
+      (a.info.placa || '').localeCompare(b.info.placa || '')
+    );
+
+    const _renderVehiculos = (lista) => {
+      if (!lista.length) return `<div class="empty-state"><div class="empty-state-icon"><svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>Sin vehículos encontrados.</div>`;
+
+      return lista.map(v => {
+        const info = v.info;
+        const ots  = v.ordenes;
+        const estadoColor = { Activa:'#2563EB', Entregada:'#059669', Archivada:'#6B7280', Programada:'#7C3AED' };
+
+        const otsHtml = ots.map(o => {
+          const col = estadoColor[o.estado] || '#6B7280';
+          const fecha = o.creado_en ? new Date(o.creado_en).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+          return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id});navJefe('detalle')" title="Abrir OT-${String(o.id).padStart(4,'0')}">
+            <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${col};flex-shrink:0">OT-${String(o.id).padStart(4,'0')}</span>
+            <span style="flex:1;font-size:12px;color:var(--gris-mid)">${fecha}</span>
+            <span style="font-size:11px;font-weight:600;color:${col};background:${col}18;border-radius:99px;padding:2px 8px;flex-shrink:0">${o.estado || 'Sin estado'}</span>
+          </div>`;
+        }).join('');
+
+        return `<div style="background:white;border:1.5px solid var(--gris-borde);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+          <div style="padding:14px 16px;border-bottom:1px solid var(--gris-borde);display:flex;align-items:flex-start;gap:14px">
+            <div style="width:42px;height:42px;border-radius:8px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="20" height="20" fill="none" stroke="#2563EB" stroke-width="1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span style="font-size:17px;font-weight:800;font-family:'DM Mono',monospace;letter-spacing:.05em;color:var(--texto)">${escapeHtml(info.placa||'—')}</span>
+                <span style="font-size:12px;color:var(--gris-mid);font-weight:500">${[info.marca,info.linea,info.modelo].filter(Boolean).map(escapeHtml).join(' ') || '—'}</span>
+                ${info.color ? `<span style="font-size:11px;color:var(--gris-mid)">· ${escapeHtml(info.color)}</span>` : ''}
+              </div>
+              <div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap">
+                ${info.propietario ? `<span style="font-size:12px;color:var(--texto)"><span style="color:var(--gris-mid)">Propietario:</span> ${escapeHtml(info.propietario)}</span>` : ''}
+                ${info.telefono ? `<a href="tel:${escapeHtml(info.telefono)}" style="font-size:12px;color:var(--azul-mid)">${escapeHtml(info.telefono)}</a>` : ''}
+                ${info.cedula_cliente ? `<span style="font-size:12px;color:var(--gris-mid);font-family:'DM Mono',monospace">${escapeHtml(info.cedula_cliente)}</span>` : ''}
+              </div>
+              ${info.vin ? `<div style="font-size:11px;color:var(--gris-mid);font-family:'DM Mono',monospace;margin-top:3px">VIN: ${escapeHtml(info.vin)}</div>` : ''}
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:18px;font-weight:800;color:var(--azul)">${ots.length}</div>
+              <div style="font-size:10px;color:var(--gris-mid);text-transform:uppercase;letter-spacing:.05em">OT${ots.length!==1?'s':''}</div>
+            </div>
+          </div>
+          <div style="padding:4px 16px 8px">
+            ${otsHtml || '<div style="font-size:12px;color:var(--gris-mid);padding:10px 0;text-align:center">Sin órdenes</div>'}
+          </div>
+        </div>`;
+      }).join('');
+    };
+
+    cont.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px;position:relative">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gris-mid)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" placeholder="Buscar por placa, propietario, marca..." id="veh-buscar"
+            style="width:100%;padding:9px 12px 9px 34px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;outline:none;box-sizing:border-box"
+            oninput="_vehiculosFiltrar(this.value)" value="${escapeHtml(_vehiculosBusqueda)}">
+        </div>
+        <div style="font-size:13px;color:var(--gris-mid);flex-shrink:0">${vehiculos.length} vehículo${vehiculos.length!==1?'s':''} registrado${vehiculos.length!==1?'s':''}</div>
+      </div>
+      <div id="veh-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px">
+        ${_renderVehiculos(vehiculos)}
+      </div>`;
+
+    // Guardar para filtrado en memoria
+    window._vehiculosData = vehiculos;
+    window._vehiculosRender = _renderVehiculos;
+
+    // Aplicar búsqueda pendiente si hay
+    if (_vehiculosBusqueda) _vehiculosFiltrar(_vehiculosBusqueda);
+
+  } catch(e) {
+    cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
+  }
+}
+
+function _vehiculosFiltrar(q) {
+  _vehiculosBusqueda = q;
+  const grid = document.getElementById('veh-grid');
+  if (!grid || !window._vehiculosData) return;
+  const term = q.toLowerCase().trim();
+  const filtrados = term
+    ? window._vehiculosData.filter(v => {
+        const i = v.info;
+        return (i.placa||'').toLowerCase().includes(term)
+          || (i.propietario||'').toLowerCase().includes(term)
+          || (i.marca||'').toLowerCase().includes(term)
+          || (i.linea||'').toLowerCase().includes(term)
+          || (i.cedula_cliente||'').toLowerCase().includes(term)
+          || (i.telefono||'').toLowerCase().includes(term);
+      })
+    : window._vehiculosData;
+  grid.innerHTML = window._vehiculosRender(filtrados);
+  const counter = grid.previousElementSibling?.querySelector('div:last-child');
+  if (counter) counter.textContent = `${filtrados.length} vehículo${filtrados.length!==1?'s':''} registrado${filtrados.length!==1?'s':''}`;
 }
 
 // ═══════════════════════════════════════════════════════════
