@@ -1619,7 +1619,7 @@ function buildChecklist(containerId, servicios, existentes) {
         <div class="etapa-extra-campos" id="campos-${et.key}" style="display:${checked ? 'block' : 'none'};margin-top:8px;padding:10px;background:var(--gris-bg);border-radius:6px;border:1px solid var(--gris-borde)">
           <div style="display:grid;grid-template-columns:1fr 80px 110px;gap:8px">
             <div><label style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris-mid);display:block;margin-bottom:3px">Descripción</label>
-              <input id="desc-et-${et.key}" type="text" placeholder="Detalle..." style="width:100%;padding:7px 9px;border:1.5px solid var(--gris-borde);border-radius:5px;font-size:12px" value="${ex?.descripcion||''}"></div>
+              <textarea id="desc-et-${et.key}" placeholder="Detalle del trabajo a realizar..." style="width:100%;padding:7px 9px;border:1.5px solid var(--gris-borde);border-radius:5px;font-size:12px;min-height:72px;resize:vertical;box-sizing:border-box;line-height:1.4;font-family:inherit">${ex?.descripcion||''}</textarea></div>
             <div><label style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris-mid);display:block;margin-bottom:3px"># Horas</label>
               <input id="piezas-et-${et.key}" type="number" min="0" step="0.5" placeholder="0" style="width:100%;padding:7px 9px;border:1.5px solid var(--gris-borde);border-radius:5px;font-size:12px" value="${ex?.horas_estimadas||''}"></div>
             <div><label style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gris-mid);display:block;margin-bottom:3px">Valor COP</label>
@@ -1807,6 +1807,41 @@ async function confirmarAgregarEtapas() {
 // ============================================================
 // FOTOS
 // ============================================================
+
+// Comprime una imagen usando Canvas antes de subirla.
+// maxW: ancho máximo en px (alto se escala proporcionalmente)
+// quality: 0-1 para JPEG
+function comprimirImagen(file, maxW = 1280, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    // Si no es imagen o es muy pequeña, devolver sin cambios
+    if (!file.type.startsWith('image/')) { resolve(file); return; }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      // Solo redimensionar si supera el máximo
+      if (width > maxW) {
+        height = Math.round((height * maxW) / width);
+        width = maxW;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width  = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(blob => {
+        if (!blob) { resolve(file); return; }
+        // Crear un nuevo File con el blob comprimido
+        const compressed = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg', lastModified: Date.now() });
+        resolve(compressed);
+      }, 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 async function subirFotos(input, nombre, eid, k) {
   const files = Array.from(input.files);
   if (!files.length) return;
@@ -1814,9 +1849,10 @@ async function subirFotos(input, nombre, eid, k) {
   let sub = 0;
   for (const file of files) {
     try {
-      const ext = file.name.split('.').pop();
-      const path = `${ordenActual.id}/etapas/${eid}_${Date.now()}.${ext}`;
-      const url = await storageUpload(file, path);
+      if (prog) prog.textContent = `Comprimiendo ${sub + 1}/${files.length}...`;
+      const fileComprimido = await comprimirImagen(file);
+      const path = `${ordenActual.id}/etapas/${eid}_${Date.now()}.jpg`;
+      const url = await storageUpload(fileComprimido, path);
       await api('/fotos_etapas', 'POST', { etapa_id: eid, orden_id: ordenActual.id, etapa_nombre: nombre, url, nombre: file.name }, { Prefer: 'return=minimal' });
       sub++;
       if (prog) prog.textContent = `Subiendo ${sub}/${files.length}...`;
