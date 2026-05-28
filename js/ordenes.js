@@ -3726,10 +3726,28 @@ async function generarPreliquidacion(ordenId, conPrecios = false) {
           <span>Repuestos</span>
           <span style="font-family:monospace">${fmt(totalRepuestos)}</span>
         </div>` : ''}
-        <div style="display:flex;justify-content:space-between;padding:12px 0 0;font-size:17px;font-weight:800;color:#1E3A5F;border-top:2px solid #1E3A5F;margin-top:4px">
-          <span>TOTAL${conPrecios ? ' GENERAL' : ' MANO DE OBRA'}</span>
-          <span style="font-family:monospace">${fmt(conPrecios ? totalManoObra + totalRepuestos : totalManoObra)}</span>
+        ${conPrecios ? (() => {
+          const subtotal = totalManoObra + totalRepuestos;
+          const iva      = Math.round(subtotal * 0.19);
+          const totalIva = subtotal + iva;
+          return `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #E2E8F0;font-size:14px;font-weight:700;color:#1E3A5F;border-top:2px solid #1E3A5F;margin-top:4px">
+          <span>Subtotal</span>
+          <span style="font-family:monospace">${fmt(subtotal)}</span>
         </div>
+        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F1F5F9;font-size:13px;color:#64748B">
+          <span>IVA (19%)</span>
+          <span style="font-family:monospace;font-weight:600">${fmt(iva)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:14px 16px;font-size:18px;font-weight:800;color:#fff;background:#1E3A5F;border-radius:8px;margin-top:8px">
+          <span>TOTAL + IVA</span>
+          <span style="font-family:monospace">${fmt(totalIva)}</span>
+        </div>`;
+        })() : `
+        <div style="display:flex;justify-content:space-between;padding:12px 0 0;font-size:17px;font-weight:800;color:#1E3A5F;border-top:2px solid #1E3A5F;margin-top:4px">
+          <span>TOTAL MANO DE OBRA</span>
+          <span style="font-family:monospace">${fmt(totalManoObra)}</span>
+        </div>`}
       </div>
     </div>
   </div>
