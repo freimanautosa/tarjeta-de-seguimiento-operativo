@@ -460,7 +460,6 @@ async function abrirOrden(id) {
                 <div class="det-dato-fila"><span class="det-dato-lbl">Ingreso</span><span class="det-dato-val">${formatFecha(orden.creado_en)}</span></div>
                 <div class="det-dato-fila"><span class="det-dato-lbl">Entrega 1</span><span class="det-dato-val">${formatFecha(orden.fecha_entrega_1)||'—'}</span></div>
                 ${orden.fecha_entrega_2 ? `<div class="det-dato-fila"><span class="det-dato-lbl">Entrega 2</span><span class="det-dato-val">${formatFecha(orden.fecha_entrega_2)}</span></div>` : ''}
-                ${orden.descripcion_general ? `<div class="det-dato-fila" style="flex-direction:column;align-items:flex-start;gap:3px"><span class="det-dato-lbl">Descripción del trabajo</span><span class="det-dato-val" style="text-align:left;font-weight:500;color:var(--texto);line-height:1.5">${escapeHtml(orden.descripcion_general)}</span></div>` : ''}
               </div>
             </div>
             <!-- Cliente -->
@@ -478,6 +477,14 @@ async function abrirOrden(id) {
                 <div class="det-dato-fila"><span class="det-dato-lbl">Aseguradora</span><span class="det-dato-val">${escapeHtml(orden.aseguradora||'')||'—'}</span></div>
               </div>
             </div>
+          </div>
+          <!-- Descripción general del trabajo -->
+          <div style="background:#F0F7FF;border:1.5px solid #BFDBFE;border-radius:10px;padding:14px 16px;margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
+              <svg width="14" height="14" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              <span style="font-size:12px;font-weight:700;color:#1D4ED8;text-transform:uppercase;letter-spacing:.05em">Descripción del trabajo</span>
+            </div>
+            <div style="font-size:13.5px;color:#1E293B;line-height:1.6;white-space:pre-wrap">${orden.descripcion_general ? escapeHtml(orden.descripcion_general) : '<span style="color:#94A3B8;font-style:italic">Sin descripción registrada</span>'}</div>
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <div class="seccion-titulo" style="margin-bottom:0">Servicios y Etapas</div>
