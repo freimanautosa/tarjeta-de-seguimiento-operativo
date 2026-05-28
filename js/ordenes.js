@@ -1462,6 +1462,15 @@ async function crearOrden() {
       }
       return 'Activa';
     })(),
+    ingreso_en: (() => {
+      const fp = document.getElementById('n-fecha-programada')?.value;
+      if (fp) {
+        const d = new Date();
+        const hoy = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        if (fp > hoy) return null; // programada: ingreso_en se registra al llegar
+      }
+      return new Date().toISOString(); // activa directa: ingresa ahora
+    })(),
     cliente_id: clienteId,
     vin: vin || null,
     correo_cliente: correoCliente || null
@@ -2093,7 +2102,7 @@ async function cambiarEstado(v) {
 async function recibirVehiculo(ordenId) {
   if (!confirm('¿Confirmar ingreso del vehículo al taller?\nEsto activará la orden y habilitará las etapas de trabajo.')) return;
   try {
-    await api(`/ordenes?id=eq.${ordenId}`, 'PATCH', { estado: 'Activa' });
+    await api(`/ordenes?id=eq.${ordenId}`, 'PATCH', { estado: 'Activa', ingreso_en: new Date().toISOString() });
     toast('✓ Vehículo recibido — orden activada');
     cargarOrdenes();
     abrirOrden(ordenId);

@@ -601,7 +601,7 @@ async function cargarPantallaTaller() {
       return ets.some(e => !e.fin);
     });
 
-    const creadasHoy  = ordenesEnGrid.filter(o => new Date(o.creado_en) >= hoy && new Date(o.creado_en) < manana);
+    const creadasHoy  = ordenesEnGrid.filter(o => { const f = new Date(o.ingreso_en || o.creado_en); return f >= hoy && f < manana; });
     const entregarHoy = ordenesEnGrid.filter(o => o.fecha_entrega_1?.split('T')[0] === hoyISO || o.fecha_entrega_2?.split('T')[0] === hoyISO);
     const enProceso   = ordenesEnGrid.filter(o => etapasActivas.some(e => e.orden_id === o.id));
 
