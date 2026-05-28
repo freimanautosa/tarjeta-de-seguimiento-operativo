@@ -940,9 +940,12 @@ function resetNuevaOrden() {
   const aseguradora = document.getElementById('n-aseguradora');
   const dano = document.getElementById('n-dano');
   const tipoCliente = document.getElementById('n-tipo-cliente');
+  const tipoCarroceria = document.getElementById('n-tipo-carroceria');
   if (aseguradora) aseguradora.value = '';
   if (dano) dano.value = '';
   if (tipoCliente) tipoCliente.value = '';
+  if (tipoCarroceria) tipoCarroceria.value = '';
+  document.querySelectorAll('.dano-cb').forEach(cb => { cb.checked = false; });
   document.querySelectorAll('.inv-item').forEach(el => {
     el.classList.remove('checked');
     const chk = el.querySelector('input[type=checkbox]');
@@ -1456,6 +1459,16 @@ async function crearOrden() {
     fecha_entrega_2: document.getElementById('n-fecha2')?.value || null,
     fecha_programada: document.getElementById('n-fecha-programada')?.value || null,
     descripcion_general: document.getElementById('n-descripcion-general')?.value.trim() || null,
+    tipo_carroceria: document.getElementById('n-tipo-carroceria')?.value || null,
+    danos_vehiculo: (() => {
+      const d = {};
+      document.querySelectorAll('.dano-cb:checked').forEach(cb => {
+        const [zona, tipo] = cb.value.split(':');
+        if (!d[zona]) d[zona] = [];
+        d[zona].push(tipo);
+      });
+      return Object.keys(d).length ? JSON.stringify(d) : null;
+    })(),
     inventario: JSON.stringify({ items: invItems, observaciones: document.getElementById('n-inv-obs')?.value.trim() || null }),
     estado: (() => {
       const fp = document.getElementById('n-fecha-programada')?.value;
@@ -4095,6 +4108,48 @@ async function generarPreliquidacion(ordenId, conPrecios = false) {
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#0369A1;margin-bottom:6px">Descripción del trabajo</div>
     <div style="font-size:13px;color:#1E293B;line-height:1.6">${escapeHtml(orden.descripcion_general)}</div>
   </div>` : ''}
+
+  ${(() => {
+    const danos = (() => { try { return JSON.parse(orden.danos_vehiculo || 'null') || {}; } catch { return {}; } })();
+    const hasDanos = Object.values(danos).some(a => a?.length > 0);
+    if (!hasDanos) return '';
+
+    const esCamioneta = ['camioneta','van'].includes(orden.tipo_carroceria);
+    const tipoLabels = { rayon:'Rayón', golpe:'Golpe', abolladura:'Abolladura', pieza_faltante:'Pieza faltante' };
+    const tipoColores = { rayon:'#F59E0B', golpe:'#EF4444', abolladura:'#F97316', pieza_faltante:'#1F2937' };
+    const zonas = ['frontal','trasera','lateral_izq','lateral_der'];
+    const zonaLabel = { frontal:'Frontal', trasera:'Trasera', lateral_izq:'Lateral izquierda', lateral_der:'Lateral derecha' };
+    const markerPos = { frontal:[65,18], trasera:[65,192], lateral_izq:[14,105], lateral_der:[116,105] };
+
+    const svgAutoMovil = '<svg viewBox="0 0 130 210" width="100" height="162" xmlns="http://www.w3.org/2000/svg"><rect x="22" y="22" width="86" height="166" rx="16" fill="#F3F4F6" stroke="#374151" stroke-width="1.8"/><path d="M36,36 Q65,30 94,36 L91,58 Q65,53 39,58 Z" fill="#BFDBFE" stroke="#6B7280" stroke-width="1"/><path d="M36,174 Q65,180 94,174 L91,152 Q65,157 39,152 Z" fill="#BFDBFE" stroke="#6B7280" stroke-width="1"/><line x1="22" y1="95" x2="108" y2="95" stroke="#9CA3AF" stroke-width="0.8"/><line x1="22" y1="115" x2="108" y2="115" stroke="#9CA3AF" stroke-width="0.8"/><rect x="9" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="9" y="140" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="140" width="13" height="28" rx="4" fill="#374151"/><ellipse cx="19" cy="78" rx="4" ry="6" fill="#9CA3AF" stroke="#6B7280" stroke-width="0.8"/><ellipse cx="111" cy="78" rx="4" ry="6" fill="#9CA3AF" stroke="#6B7280" stroke-width="0.8"/></svg>';
+
+    const svgCamioneta = '<svg viewBox="0 0 130 210" width="100" height="162" xmlns="http://www.w3.org/2000/svg"><rect x="22" y="22" width="86" height="80" rx="10" fill="#F3F4F6" stroke="#374151" stroke-width="1.8"/><path d="M34,30 Q65,24 96,30 L93,52 Q65,47 37,52 Z" fill="#BFDBFE" stroke="#6B7280" stroke-width="1"/><line x1="22" y1="102" x2="108" y2="102" stroke="#374151" stroke-width="2"/><rect x="22" y="102" width="86" height="86" rx="5" fill="#E5E7EB" stroke="#374151" stroke-width="1.8"/><line x1="30" y1="130" x2="100" y2="130" stroke="#9CA3AF" stroke-width="0.7"/><line x1="30" y1="158" x2="100" y2="158" stroke="#9CA3AF" stroke-width="0.7"/><rect x="9" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="9" y="112" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="112" width="13" height="28" rx="4" fill="#374151"/><rect x="9" y="142" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="142" width="13" height="28" rx="4" fill="#374151"/><ellipse cx="19" cy="68" rx="4" ry="6" fill="#9CA3AF" stroke="#6B7280" stroke-width="0.8"/><ellipse cx="111" cy="68" rx="4" ry="6" fill="#9CA3AF" stroke="#6B7280" stroke-width="0.8"/></svg>';
+
+    const marcadoresHtml = zonas.flatMap(zona => {
+      const tipos = danos[zona] || [];
+      if (!tipos.length) return [];
+      const [cx, cy] = markerPos[zona];
+      return tipos.map((tipo, i) => {
+        const offsetX = (i - (tipos.length - 1) / 2) * 14;
+        return '<circle cx="' + (cx + offsetX) + '" cy="' + cy + '" r="7" fill="' + (tipoColores[tipo]||'#6B7280') + '" stroke="white" stroke-width="1.5" opacity="0.95"/>';
+      });
+    }).join('');
+
+    const svgBase = esCamioneta ? svgCamioneta : svgAutoMovil;
+    const svgConMarcadores = svgBase.replace('</svg>', marcadoresHtml + '</svg>');
+
+    const listaDanos = zonas.filter(z => (danos[z]||[]).length > 0).map(zona =>
+      '<div style="margin-bottom:8px"><div style="font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">' + zonaLabel[zona] + '</div><div style="display:flex;flex-wrap:wrap;gap:4px">' +
+      (danos[zona]||[]).map(t => '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:4px;padding:2px 7px"><span style="width:8px;height:8px;border-radius:50%;background:' + (tipoColores[t]||'#9CA3AF') + ';flex-shrink:0;display:inline-block"></span>' + (tipoLabels[t]||t) + '</span>').join('') +
+      '</div></div>'
+    ).join('');
+
+    const leyendaHtml = Object.entries(tipoColores).map(([k,c]) =>
+      '<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:#6B7280;margin-right:10px"><span style="width:8px;height:8px;border-radius:50%;background:' + c + ';display:inline-block"></span>' + tipoLabels[k] + '</span>'
+    ).join('');
+
+    return '<div style="border:1.5px solid #E5E7EB;border-radius:8px;padding:14px 16px;margin-bottom:20px"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#374151;margin-bottom:12px">3. Estado del vehículo — Daños al ingreso</div><div style="display:flex;align-items:flex-start;gap:20px"><div style="flex-shrink:0">' + svgConMarcadores + '</div><div style="flex:1">' + listaDanos + '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #F3F4F6">' + leyendaHtml + '</div></div></div></div>';
+  })()}
 
   <!-- ETAPAS POR SERVICIO -->
   ${etapasHtml}
