@@ -481,9 +481,15 @@ async function abrirOrden(id) {
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <div class="seccion-titulo" style="margin-bottom:0">Servicios y Etapas</div>
-            ${esJefe() && !todasCalidadAprobada ? '<button class="btn btn-ghost btn-sm" onclick="abrirModalAgregar()">+ Agregar etapas</button>' : ''}
+            ${esJefe() && !todasCalidadAprobada && orden.estado !== 'Programada' ? '<button class="btn btn-ghost btn-sm" onclick="abrirModalAgregar()">+ Agregar etapas</button>' : ''}
           </div>
-          ${serviciosHtml}
+          ${orden.estado === 'Programada'
+            ? `<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:28px 20px;background:#F8FAFC;border:1.5px dashed #CBD5E1;border-radius:10px;text-align:center;margin-bottom:12px">
+                 <svg width="32" height="32" fill="none" stroke="#94A3B8" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="12" cy="16" r="1"/></svg>
+                 <div style="font-size:13px;font-weight:600;color:#64748B">Vehículo aún no ha ingresado</div>
+                 <div style="font-size:12px;color:#94A3B8">Las etapas de trabajo estarán disponibles cuando el vehículo llegue al taller y el jefe confirme su ingreso.</div>
+               </div>`
+            : serviciosHtml}
         </div>
         <div class="detalle-sidebar">
           <div class="sidebar-card">
@@ -558,7 +564,19 @@ async function abrirOrden(id) {
           <div class="sidebar-card">
             <div class="sidebar-card-header">Estado de la orden</div>
             <div class="sidebar-card-body">
-              ${orden.estado === 'Entregada' || orden.estado === 'Archivada'
+              ${orden.estado === 'Programada'
+                ? `<div style="display:flex;flex-direction:column;gap:10px">
+                     <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:#F1F5F9;border-radius:20px">
+                       <span style="width:8px;height:8px;border-radius:50%;background:#6366F1;display:inline-block"></span>
+                       <span style="font-size:13px;font-weight:700;color:#4338CA">Programada</span>
+                     </div>
+                     ${orden.fecha_programada ? `<div style="font-size:12px;color:var(--gris-mid);text-align:center">📅 Fecha esperada: <strong>${formatFecha(orden.fecha_programada)}</strong></div>` : ''}
+                     <button class="btn btn-primary" style="width:100%;background:#059669;border-color:#059669" onclick="recibirVehiculo(${orden.id})">
+                       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                       Vehículo llegó — Activar orden
+                     </button>
+                   </div>`
+                : orden.estado === 'Entregada' || orden.estado === 'Archivada'
                 ? `<div style="display:flex;flex-direction:column;gap:8px">
                      <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:var(--azul-light);border-radius:20px">
                        <span style="width:8px;height:8px;border-radius:50%;background:var(--azul-mid);display:inline-block"></span>
@@ -2052,14 +2070,24 @@ async function subirCotizacion(input) {
 // ESTADO ORDEN (JEFE)
 // ============================================================
 async function cambiarEstado(v) {
-  try { 
+  try {
     const patch = { estado: v };
     if (v === 'Entregada') patch.entregada_en = new Date().toISOString();
-    await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', patch); 
-    ordenActual.estado = v; 
-    toast(`Estado: ${v} ✓`); 
-    cargarOrdenes(); 
-    if (ordenActual) abrirOrden(ordenActual.id); 
+    await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', patch);
+    ordenActual.estado = v;
+    toast(`Estado: ${v} ✓`);
+    cargarOrdenes();
+    if (ordenActual) abrirOrden(ordenActual.id);
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+async function recibirVehiculo(ordenId) {
+  if (!confirm('¿Confirmar ingreso del vehículo al taller?\nEsto activará la orden y habilitará las etapas de trabajo.')) return;
+  try {
+    await api(`/ordenes?id=eq.${ordenId}`, 'PATCH', { estado: 'Activa' });
+    toast('✓ Vehículo recibido — orden activada');
+    cargarOrdenes();
+    abrirOrden(ordenId);
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
 
