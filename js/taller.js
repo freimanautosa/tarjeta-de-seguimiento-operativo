@@ -564,7 +564,7 @@ async function cargarPantallaTaller() {
     const hoyISO = hoy.toISOString().split('T')[0];
 
     const [ordenesActivas, entregadasHoy, etapasActivas, etapasTodas, aprobacionesTodas, ordenesProgramadas] = await Promise.all([
-      api(`/ordenes?estado=eq.Activa&order=fecha_entrega_1.asc`).catch(()=>[]) || [],
+      api(`/ordenes?estado=eq.Activa&estado=neq.Programada&order=fecha_entrega_1.asc`).catch(()=>[]) || [],
       api(`/ordenes?estado=eq.Entregada&entregada_en=gte.${hoy.toISOString()}&order=entregada_en.desc`).catch(()=>[]) || [],
       api(`/etapas?fin=is.null&inicio=not.is.null&select=id,orden_id,etapa,servicio,mecanico_id,tecnico,inicio,pausado,pausa_inicio,tiempo_pausado_min`).catch(()=>[]) || [],
       api(`/etapas?select=id,orden_id,etapa,servicio,inicio,fin,tecnico&order=creado_en.asc`).catch(()=>[]) || [],
@@ -592,6 +592,9 @@ async function cargarPantallaTaller() {
     const listasIds = new Set(ordenesListas.map(o => o.id));
 
     const ordenesEnGrid = ordenesActivas.filter(o => {
+      // Nunca mostrar órdenes programadas en el grid, sin importar el estado en DB
+      if (o.estado === 'Programada') return false;
+      if (o.fecha_programada && o.fecha_programada > hoyISO) return false;
       if (listasIds.has(o.id)) return false;
       const ets = etapasTodas.filter(e => e.orden_id === o.id);
       if (!ets.length) return true;
