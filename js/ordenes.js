@@ -2887,65 +2887,74 @@ async function cargarVehiculos() {
     );
 
     const _renderVehiculos = (lista) => {
-      if (!lista.length) return `<div class="empty-state"><div class="empty-state-icon"><svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>Sin vehículos encontrados.</div>`;
+      if (!lista.length) return `<div style="padding:40px;text-align:center;color:var(--gris-mid);font-size:13px">Sin vehículos encontrados.</div>`;
 
-      return lista.map(v => {
+      const estadoColor = { Activa:'#2563EB', Entregada:'#059669', Archivada:'#6B7280', Programada:'#7C3AED' };
+
+      return lista.map((v, idx) => {
         const info = v.info;
         const ots  = v.ordenes;
-        const estadoColor = { Activa:'#2563EB', Entregada:'#059669', Archivada:'#6B7280', Programada:'#7C3AED' };
 
         const otsHtml = ots.map(o => {
           const col = estadoColor[o.estado] || '#6B7280';
-          const fecha = o.creado_en ? new Date(o.creado_en).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) : '—';
-          return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id});navJefe('detalle')" title="Abrir OT-${String(o.id).padStart(4,'0')}">
-            <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${col};flex-shrink:0">OT-${String(o.id).padStart(4,'0')}</span>
-            <span style="flex:1;font-size:12px;color:var(--gris-mid)">${fecha}</span>
-            <span style="font-size:11px;font-weight:600;color:${col};background:${col}18;border-radius:99px;padding:2px 8px;flex-shrink:0">${o.estado || 'Sin estado'}</span>
-          </div>`;
+          const fecha = o.creado_en ? new Date(o.creado_en).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'2-digit'}) : '—';
+          return `<span onclick="abrirOrden(${o.id});navJefe('detalle')"
+            style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;padding:3px 8px;border-radius:6px;border:1px solid ${col}30;background:${col}0d;transition:background .15s"
+            onmouseover="this.style.background='${col}20'" onmouseout="this.style.background='${col}0d'">
+            <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${col}">OT-${String(o.id).padStart(4,'0')}</span>
+            <span style="font-size:10px;color:${col};opacity:.7">${fecha}</span>
+            <span style="font-size:10px;font-weight:600;color:${col}">${o.estado||''}</span>
+          </span>`;
         }).join('');
 
-        return `<div style="background:white;border:1.5px solid var(--gris-borde);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-          <div style="padding:14px 16px;border-bottom:1px solid var(--gris-borde);display:flex;align-items:flex-start;gap:14px">
-            <div style="width:42px;height:42px;border-radius:8px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <svg width="20" height="20" fill="none" stroke="#2563EB" stroke-width="1.8" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-            </div>
-            <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                <span style="font-size:17px;font-weight:800;font-family:'DM Mono',monospace;letter-spacing:.05em;color:var(--texto)">${escapeHtml(info.placa||'—')}</span>
-                <span style="font-size:12px;color:var(--gris-mid);font-weight:500">${[info.marca,info.linea,info.modelo].filter(Boolean).map(escapeHtml).join(' ') || '—'}</span>
-                ${info.color ? `<span style="font-size:11px;color:var(--gris-mid)">· ${escapeHtml(info.color)}</span>` : ''}
-              </div>
-              <div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap">
-                ${info.propietario ? `<span style="font-size:12px;color:var(--texto)"><span style="color:var(--gris-mid)">Propietario:</span> ${escapeHtml(info.propietario)}</span>` : ''}
-                ${info.telefono ? `<a href="tel:${escapeHtml(info.telefono)}" style="font-size:12px;color:var(--azul-mid)">${escapeHtml(info.telefono)}</a>` : ''}
-                ${info.cedula_cliente ? `<span style="font-size:12px;color:var(--gris-mid);font-family:'DM Mono',monospace">${escapeHtml(info.cedula_cliente)}</span>` : ''}
-              </div>
-              ${info.vin ? `<div style="font-size:11px;color:var(--gris-mid);font-family:'DM Mono',monospace;margin-top:3px">VIN: ${escapeHtml(info.vin)}</div>` : ''}
-            </div>
-            <div style="text-align:right;flex-shrink:0">
-              <div style="font-size:18px;font-weight:800;color:var(--azul)">${ots.length}</div>
-              <div style="font-size:10px;color:var(--gris-mid);text-transform:uppercase;letter-spacing:.05em">OT${ots.length!==1?'s':''}</div>
-            </div>
+        const vehiculo = [info.marca, info.linea, info.modelo].filter(Boolean).map(escapeHtml).join(' ');
+        const isLast = idx === lista.length - 1;
+
+        return `<div style="display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:0;padding:11px 16px;border-bottom:${isLast ? 'none' : '1px solid var(--gris-borde)'};background:white;transition:background .12s" onmouseover="this.style.background='#FAFBFD'" onmouseout="this.style.background='white'">
+
+          <!-- Placa + vehículo -->
+          <div>
+            <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:800;color:var(--texto);letter-spacing:.04em">${escapeHtml(info.placa||'—')}</div>
+            <div style="font-size:11px;color:var(--gris-mid);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px">${vehiculo || '—'}${info.color ? ` · ${escapeHtml(info.color)}` : ''}</div>
           </div>
-          <div style="padding:4px 16px 8px">
-            ${otsHtml || '<div style="font-size:12px;color:var(--gris-mid);padding:10px 0;text-align:center">Sin órdenes</div>'}
+
+          <!-- Propietario + OTs -->
+          <div style="padding:0 16px">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              ${info.propietario ? `<span style="font-size:12.5px;font-weight:600;color:var(--texto)">${escapeHtml(info.propietario)}</span>` : ''}
+              ${info.telefono ? `<a href="tel:${escapeHtml(info.telefono)}" style="font-size:11.5px;color:var(--azul-mid);text-decoration:none">${escapeHtml(info.telefono)}</a>` : ''}
+              ${info.cedula_cliente ? `<span style="font-size:11px;color:var(--gris-mid);font-family:'DM Mono',monospace">${escapeHtml(info.cedula_cliente)}</span>` : ''}
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:5px">${otsHtml}</div>
+          </div>
+
+          <!-- Contador OTs -->
+          <div style="text-align:right;flex-shrink:0;padding-left:8px">
+            <span style="font-size:13px;font-weight:700;color:var(--azul)">${ots.length}</span>
+            <span style="font-size:10px;color:var(--gris-mid);margin-left:2px">OT${ots.length!==1?'s':''}</span>
           </div>
         </div>`;
       }).join('');
     };
 
     cont.innerHTML = `
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
         <div style="flex:1;min-width:200px;position:relative">
-          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gris-mid)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gris-mid);pointer-events:none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input type="text" placeholder="Buscar por placa, propietario, marca..." id="veh-buscar"
-            style="width:100%;padding:9px 12px 9px 34px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;outline:none;box-sizing:border-box"
+            style="width:100%;padding:8px 12px 8px 32px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;outline:none;box-sizing:border-box;background:white"
             oninput="_vehiculosFiltrar(this.value)" value="${escapeHtml(_vehiculosBusqueda)}">
         </div>
-        <div style="font-size:13px;color:var(--gris-mid);flex-shrink:0">${vehiculos.length} vehículo${vehiculos.length!==1?'s':''} en el registro</div>
+        <div style="font-size:12.5px;color:var(--gris-mid);flex-shrink:0">${vehiculos.length} vehículo${vehiculos.length!==1?'s':''} registrado${vehiculos.length!==1?'s':''}</div>
       </div>
-      <div id="veh-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px">
-        ${_renderVehiculos(vehiculos)}
+      <div id="veh-grid" style="border:1.5px solid var(--gris-borde);border-radius:10px;overflow:hidden;background:white">
+        <!-- cabecera -->
+        <div style="display:grid;grid-template-columns:110px 1fr auto;gap:0;padding:8px 16px;background:#F8F9FB;border-bottom:1.5px solid var(--gris-borde)">
+          <span style="font-size:10.5px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:.07em">Placa</span>
+          <span style="font-size:10.5px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:.07em;padding-left:16px">Propietario / Órdenes</span>
+          <span style="font-size:10.5px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:.07em">OTs</span>
+        </div>
+        <div id="veh-list-inner">${_renderVehiculos(vehiculos)}</div>
       </div>`;
 
     // Guardar para filtrado en memoria
@@ -2962,8 +2971,8 @@ async function cargarVehiculos() {
 
 function _vehiculosFiltrar(q) {
   _vehiculosBusqueda = q;
-  const grid = document.getElementById('veh-grid');
-  if (!grid || !window._vehiculosData) return;
+  const inner = document.getElementById('veh-list-inner');
+  if (!inner || !window._vehiculosData) return;
   const term = q.toLowerCase().trim();
   const filtrados = term
     ? window._vehiculosData.filter(v => {
@@ -2976,8 +2985,8 @@ function _vehiculosFiltrar(q) {
           || (i.telefono||'').toLowerCase().includes(term);
       })
     : window._vehiculosData;
-  grid.innerHTML = window._vehiculosRender(filtrados);
-  const counter = grid.previousElementSibling?.querySelector('div:last-child');
+  inner.innerHTML = window._vehiculosRender(filtrados);
+  const counter = document.querySelector('#pag-vehiculos [style*="registrado"]');
   if (counter) counter.textContent = `${filtrados.length} vehículo${filtrados.length!==1?'s':''} registrado${filtrados.length!==1?'s':''}`;
 }
 
