@@ -2,9 +2,11 @@
 // COTIZACIONES
 // ═══════════════════════════════════════════════════════════
 
-// ─── NUEVA COTIZACIÓN ─────────────────────────────────────
+// ─── NUEVA / EDITAR COTIZACIÓN ────────────────────────────
 
-function nuevaCotizacion() {
+let _cotEditandoId = null;   // null = nueva, number = editando
+
+function _cotLimpiarFormulario() {
   ['cn-placa','cn-marca','cn-linea','cn-ano','cn-color','cn-vin','cn-km',
    'cn-nombre','cn-cedula','cn-celular','cn-correo'].forEach(id => {
     const el = document.getElementById(id);
@@ -19,6 +21,11 @@ function nuevaCotizacion() {
   if (repTbody) repTbody.innerHTML = '';
   if (moTbody)  moTbody.innerHTML  = '';
   _cotActualizarTotales();
+}
+
+function nuevaCotizacion() {
+  _cotEditandoId = null;
+  _cotLimpiarFormulario();
   cotAgregarRepuesto();
   cotAgregarManoObra();
   mostrarPagina('pag-cotizacion-nueva');
@@ -26,10 +33,79 @@ function nuevaCotizacion() {
   if (titleEl) titleEl.textContent = 'Nueva Cotización';
   const actEl = document.getElementById('topbar-actions');
   if (actEl) actEl.innerHTML = '';
+  // Botones en modo crear
+  const btnG = document.getElementById('btn-guardar-cot');
+  const btnP = document.getElementById('btn-guardar-pdf-cot');
+  if (btnG) btnG.textContent = 'Guardar cotización →';
+  if (btnP) btnP.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Guardar + PDF`;
   closeSidebar();
 }
 
-function volverACotizaciones() { navJefe('cotizaciones'); }
+async function editarCotizacion(cotId) {
+  cerrarModalCotizacion();
+  let cot = todasCotizaciones.find(c => c.id === cotId);
+  if (!cot) {
+    const arr = await api(`/cotizaciones?id=eq.${cotId}&limit=1`).catch(() => []);
+    cot = arr?.[0];
+  }
+  if (!cot) { toast('No se encontró la cotización', 'err'); return; }
+
+  _cotEditandoId = cotId;
+  _cotLimpiarFormulario();
+
+  // Rellenar campos
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.value = val; };
+  set('cn-placa',  cot.placa);
+  set('cn-marca',  cot.marca);
+  set('cn-linea',  cot.modelo);   // campo linea/modelo
+  set('cn-ano',    cot.año);
+  set('cn-color',  cot.color);
+  set('cn-vin',    cot.vin);
+  set('cn-km',     cot.kilometraje);
+  set('cn-nombre', cot.nombre_cliente);
+  set('cn-cedula', cot.cedula_cliente);
+  set('cn-celular',cot.telefono_cliente);
+  set('cn-correo', cot.correo_cliente);
+
+  // IVA
+  const ivaCheck = document.getElementById('cn-iva-check');
+  if (ivaCheck) ivaCheck.checked = (cot.iva > 0);
+
+  // Rellenar tablas de ítems
+  let repItems = [], moItems = [];
+  try { repItems = typeof cot.repuestos       === 'string' ? JSON.parse(cot.repuestos)       : (cot.repuestos       || []); } catch(e) { repItems = []; }
+  try { moItems  = typeof cot.mano_obra_items === 'string' ? JSON.parse(cot.mano_obra_items) : (cot.mano_obra_items || []); } catch(e) { moItems  = []; }
+
+  const _llenarTabla = (tbodyId, items, placeholderDesc) => {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (!items.length) { tbody.appendChild(_cotFila(placeholderDesc)); return; }
+    items.forEach(it => {
+      const tr = _cotFila(placeholderDesc);
+      tr.querySelector('.cot-inp-num').value = it.cantidad  ?? 1;
+      tr.querySelector('.cot-inp-desc').value= it.descripcion || '';
+      tr.querySelector('.cot-inp-dto').value = it.descuento_pct ?? 0;
+      tr.querySelector('.cot-inp-val').value = it.valor_unitario ?? 0;
+      tbody.appendChild(tr);
+    });
+  };
+  _llenarTabla('cot-rep-tbody', repItems, 'Descripción del repuesto');
+  _llenarTabla('cot-mo-tbody',  moItems,  'Concepto de mano de obra');
+  _cotActualizarTotales();
+
+  mostrarPagina('pag-cotizacion-nueva');
+  const titleEl = document.getElementById('topbar-title');
+  if (titleEl) titleEl.textContent = 'Editar Cotización';
+  // Botones en modo editar
+  const btnG = document.getElementById('btn-guardar-cot');
+  const btnP = document.getElementById('btn-guardar-pdf-cot');
+  if (btnG) btnG.textContent = 'Actualizar cotización →';
+  if (btnP) btnP.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Actualizar + PDF`;
+  closeSidebar();
+}
+
+function volverACotizaciones() { _cotEditandoId = null; navJefe('cotizaciones'); }
 
 // ─── OCR + BÚSQUEDA ───────────────────────────────────────
 
@@ -241,8 +317,10 @@ async function generarPdfCotizacion(cotId) {
       mano_obra_items:   moItems,
       total_repuestos:   cot.total_repuestos   || 0,
       mano_obra:         cot.mano_obra         || 0,
+      subtotal:          (cot.total_repuestos||0) + (cot.mano_obra||0),
       descuento_total:   cot.descuento_total   || 0,
       iva:               cot.iva               || 0,
+      con_iva:           (cot.iva || 0) > 0,
       total_general:     cot.total_general     || 0,
       tecnico:           cot.tecnico           || '',
       aseguradora:       cot.aseguradora       || '',
@@ -299,6 +377,7 @@ async function guardarNuevaCotizacion(conPdf = false) {
 
   const btnGuardar = document.getElementById('btn-guardar-cot');
   const btnPdf     = document.getElementById('btn-guardar-pdf-cot');
+  const esEditar   = _cotEditandoId !== null;
   if (btnGuardar) { btnGuardar.disabled = true; btnGuardar.textContent = 'Guardando...'; }
   if (btnPdf)     { btnPdf.disabled = true; }
 
@@ -312,16 +391,7 @@ async function guardarNuevaCotizacion(conPdf = false) {
     const iva        = conIva ? Math.round(subtotal * 0.19) : 0;
     const totalFinal = subtotal + iva;
 
-    // Código único tipo COT-2026-000001
-    const codigoCot = `COT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
-    const now  = new Date();
-    const fecha = now.toLocaleDateString('es-CO');
-    const hora  = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-
-    const body = {
-      codigo_cotizacion: codigoCot,
-      fecha:             fecha,
-      hora:              hora,
+    const camposBase = {
       placa:             document.getElementById('cn-placa')?.value.trim().toUpperCase() || '',
       marca:             document.getElementById('cn-marca')?.value.trim() || '',
       modelo:            document.getElementById('cn-linea')?.value.trim() || '',
@@ -339,12 +409,28 @@ async function guardarNuevaCotizacion(conPdf = false) {
       mano_obra:         totalMo,
       iva:               iva,
       total_general:     totalFinal,
-      estado:            'pendiente'
     };
 
-    const res = await api('/cotizaciones?select=id', 'POST', body, { Prefer: 'return=representation' });
-    const cotId = res[0]?.id;
-    toast('Cotización guardada ✓');
+    let cotId;
+    if (esEditar) {
+      // PATCH — actualizar existente
+      await api(`/cotizaciones?id=eq.${_cotEditandoId}`, 'PATCH', camposBase);
+      cotId = _cotEditandoId;
+      toast('Cotización actualizada ✓');
+    } else {
+      // POST — crear nueva
+      const now  = new Date();
+      const body = {
+        ...camposBase,
+        codigo_cotizacion: `COT-${now.getFullYear()}-${String(Date.now()).slice(-6)}`,
+        fecha:             now.toLocaleDateString('es-CO'),
+        hora:              now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+        estado:            'pendiente'
+      };
+      const res = await api('/cotizaciones?select=id', 'POST', body, { Prefer: 'return=representation' });
+      cotId = res[0]?.id;
+      toast('Cotización guardada ✓');
+    }
 
     if (conPdf && cotId) {
       toast('Generando PDF...');
@@ -357,12 +443,13 @@ async function guardarNuevaCotizacion(conPdf = false) {
       }
     }
 
+    _cotEditandoId = null;
     volverACotizaciones();
     await cargarCotizaciones();
   } catch(e) {
     toast('Error al guardar: ' + e.message, 'err');
   } finally {
-    if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.textContent = 'Guardar cotización →'; }
+    if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.textContent = esEditar ? 'Actualizar cotización →' : 'Guardar cotización →'; }
     if (btnPdf)     { btnPdf.disabled = false; }
   }
 }
@@ -430,6 +517,7 @@ function renderCotizaciones(data) {
         <div class="cot-chip">Valor: <strong>${fmt(c.total_general)}</strong></div>
       </div>
       <div class="cot-card-bot">
+        ${estado !== 'rechazada' ? `<button class="btn btn-ghost btn-sm" style="font-size:12px;color:var(--azul)" onclick="event.stopPropagation();editarCotizacion(${c.id})">✏️ Editar</button>` : ''}
         ${c.url_pdf
           ? `<a href="${c.url_pdf}" target="_blank" class="btn btn-outline btn-sm" style="font-size:12px" onclick="event.stopPropagation()">📄 Ver PDF</a>
              <button class="btn btn-ghost btn-sm" style="font-size:11px;opacity:.7" onclick="event.stopPropagation();generarPdfCotizacion(${c.id})" data-pdf="${c.id}">↺ Regen.</button>`
@@ -567,10 +655,15 @@ async function abrirDetalleCotizacion(cotId) {
     </div>
     <!-- TOTALES -->
     <div style="background:var(--gris-bg);border-radius:10px;padding:14px">
-      <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span>Repuestos</span><span>${fmt(cot.total_repuestos)}</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span>Mano de obra</span><span>${fmt(cot.mano_obra)}</span></div>
-      ${cot.iva ? `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span>IVA 19%</span><span>${fmt(cot.iva)}</span></div>` : ''}
-      <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;padding:8px 0 4px;border-top:1px solid var(--gris-borde);margin-top:4px"><span>Total</span><span>${fmt(cot.total_general)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--gris-borde)"><span style="color:var(--gris-mid)">Repuestos</span><span style="font-weight:600">${fmt(cot.total_repuestos)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--gris-borde)"><span style="color:var(--gris-mid)">Mano de obra</span><span style="font-weight:600">${fmt(cot.mano_obra)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding:8px 0;border-bottom:1px solid var(--gris-borde)"><span>Subtotal</span><span>${fmt((cot.total_repuestos||0)+(cot.mano_obra||0))}</span></div>
+      ${cot.iva ? `
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--gris-borde)"><span style="color:var(--gris-mid)">IVA (19%)</span><span style="font-weight:600">${fmt(cot.iva)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;padding:10px 12px;background:var(--azul);color:white;border-radius:8px;margin-top:8px"><span>TOTAL CON IVA</span><span>${fmt(cot.total_general)}</span></div>
+      ` : `
+      <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;padding:10px 12px;background:var(--azul);color:white;border-radius:8px;margin-top:8px"><span>TOTAL</span><span>${fmt(cot.total_general)}</span></div>
+      `}
     </div>`;
 
   // Botones del footer
@@ -579,6 +672,7 @@ async function abrirDetalleCotizacion(cotId) {
   const footerEl = document.getElementById('mcot-footer');
   footerEl.innerHTML = `
     <button class="btn btn-ghost" onclick="cerrarModalCotizacion()">Cerrar</button>
+    ${estado !== 'rechazada' ? `<button class="btn btn-ghost btn-sm" style="color:var(--azul)" onclick="editarCotizacion(${cot.id})">✏️ Editar</button>` : ''}
     ${cot.url_pdf
       ? `<a href="${cot.url_pdf}" target="_blank" class="btn btn-outline" style="text-decoration:none">📄 Ver PDF</a>
          <button class="btn btn-ghost btn-sm" onclick="generarPdfCotizacion(${cot.id})" data-pdf="${cot.id}">↺ Regen. PDF</button>`
