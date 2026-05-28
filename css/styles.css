@@ -1849,6 +1849,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   align-items: flex-start;
   margin-bottom: 16px;
   padding: 0 2px;
+  max-width: 860px;
 }
 .wizard-step-item {
   display: flex;

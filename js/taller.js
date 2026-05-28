@@ -568,14 +568,23 @@ async function cargarPantallaTaller() {
       api(`/ordenes?estado=eq.Entregada&entregada_en=gte.${hoy.toISOString()}&order=entregada_en.desc`).catch(()=>[]) || [],
       api(`/etapas?fin=is.null&inicio=not.is.null&select=id,orden_id,etapa,servicio,mecanico_id,tecnico,inicio,pausado,pausa_inicio,tiempo_pausado_min`).catch(()=>[]) || [],
       api(`/etapas?select=id,orden_id,etapa,servicio,inicio,fin,tecnico&order=creado_en.asc`).catch(()=>[]) || [],
-      api(`/aprobaciones_etapa?estado=eq.aprobado&select=etapa_id`).catch(()=>[]) || [],
+      api(`/aprobaciones_etapa?select=etapa_id,estado&order=creado_en.desc`).catch(()=>[]) || [],
       api(`/ordenes?estado=eq.Programada&order=fecha_programada.asc&select=id,placa,marca,linea,fecha_programada`).catch(()=>[]) || []
     ]);
 
-    const aprobadas = new Set(aprobacionesTodas.map(a => a.etapa_id));
+    // Tomar el estado MÁS RECIENTE por etapa (orden desc ya viene del query)
+    const _ultimoEstadoEtapa = {};
+    aprobacionesTodas.forEach(a => {
+      if (!(_ultimoEstadoEtapa[a.etapa_id])) _ultimoEstadoEtapa[a.etapa_id] = a.estado;
+    });
+    const aprobadas = new Set(
+      Object.entries(_ultimoEstadoEtapa)
+        .filter(([, estado]) => estado === 'aprobado')
+        .map(([etapa_id]) => Number(etapa_id))
+    );
 
     // ── Clasificar órdenes ───────────────────────────────────
-    // Una orden está "lista" solo cuando TODAS sus etapas tienen fin Y calidad aprobada
+    // Una orden está "lista" solo cuando TODAS sus etapas tienen fin Y calidad aprobada (última aprobación)
     const ordenesListas = ordenesActivas.filter(o => {
       const ets = etapasTodas.filter(e => e.orden_id === o.id);
       return ets.length > 0 && ets.every(e => e.fin) && ets.every(e => aprobadas.has(e.id));
