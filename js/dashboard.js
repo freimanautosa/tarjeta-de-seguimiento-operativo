@@ -167,20 +167,20 @@ async function cargarDashboardMes() {
       const pctOrd  = metaMes?.meta_ordenes  ? Math.min(Math.round((ordenesMes.length / metaMes.meta_ordenes) * 100), 100) : null;
 
       const chip = (num, label, sub, color, bg, onclick) =>
-        `<div onclick="${onclick}" style="background:${bg};border:1px solid ${bg === 'white' ? 'var(--gris-borde)' : 'transparent'};border-radius:9px;padding:8px 14px;cursor:${onclick ? 'pointer' : 'default'};text-align:center;min-width:72px;transition:opacity .15s" onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">
-          <div style="font-size:22px;font-weight:800;color:${color};line-height:1;font-family:'DM Mono',monospace">${num}</div>
-          <div style="font-size:10px;font-weight:600;color:${color};opacity:.75;margin-top:3px;white-space:nowrap">${label}</div>
-          ${sub ? `<div style="font-size:9px;color:${color};opacity:.5;white-space:nowrap">${sub}</div>` : ''}
+        `<div class="kpi-chip" onclick="${onclick}" style="background:${bg};border:1px solid ${bg === 'white' ? 'var(--gris-borde)' : 'transparent'};border-radius:9px;padding:8px 12px;cursor:${onclick ? 'pointer' : 'default'};text-align:center;transition:opacity .15s" onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">
+          <div class="kpi-chip-num" style="font-size:22px;font-weight:800;color:${color};line-height:1;font-family:'DM Mono',monospace">${num}</div>
+          <div class="kpi-chip-label" style="font-size:10px;font-weight:600;color:${color};opacity:.75;margin-top:3px;white-space:nowrap">${label}</div>
+          ${sub ? `<div class="kpi-chip-sub" style="font-size:9px;color:${color};opacity:.5;white-space:nowrap">${sub}</div>` : ''}
         </div>`;
 
       chipsEl.innerHTML =
         // Facturación
-        `<div style="background:#1E3A5F;border-radius:9px;padding:8px 14px;color:white;min-width:130px;display:flex;flex-direction:column;justify-content:space-between">
-          <div style="font-size:10px;font-weight:600;opacity:.5;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap">Facturación del mes</div>
-          <div style="font-size:20px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1;white-space:nowrap;margin-top:4px">${fmt(valorMes)}</div>
-          <div style="margin-top:6px">
+        `<div class="kpi-chip kpi-chip-fact" style="background:#1E3A5F;border-radius:9px;padding:8px 12px;color:white;display:flex;flex-direction:column;justify-content:space-between">
+          <div class="kpi-chip-label" style="font-size:10px;font-weight:600;opacity:.5;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap">Facturación</div>
+          <div class="kpi-chip-num kpi-chip-fact-val" style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1;margin-top:4px">${fmt(valorMes)}</div>
+          <div class="kpi-chip-bar" style="margin-top:5px">
             ${barColor ? `<div style="height:3px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;margin-bottom:3px"><div style="height:100%;width:${pctFact}%;background:${barColor};border-radius:99px"></div></div>` : ''}
-            <span style="font-size:9px;opacity:.55;white-space:nowrap">${pctFact !== null ? `Meta: ${pctFact}%` : 'Sin meta configurada'}</span>
+            <span class="kpi-chip-sub" style="font-size:9px;opacity:.55;white-space:nowrap">${pctFact !== null ? `Meta: ${pctFact}%` : '—'}</span>
           </div>
         </div>` +
         chip(activasNormales, 'Activas', 'En proceso', '#2563EB', 'white', "navJefe('ordenes')") +
@@ -622,7 +622,7 @@ async function cargarDashboard() {
     // ════════════════════════════════════════════════════
     cont.innerHTML = `
       <!-- KPI row -->
-      <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1.4fr;gap:8px;margin-bottom:10px">
+      <div class="dash-kpi-row-gen" style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1.4fr;gap:8px;margin-bottom:10px">
         <!-- Órdenes activas -->
         <div style="background:#1E3A5F;border-radius:12px;padding:14px 16px;color:white">
           <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;opacity:.55;margin-bottom:6px">Órdenes activas</div>
@@ -666,7 +666,7 @@ async function cargarDashboard() {
       ${retrasosHtml}
 
       <!-- Pipeline + Próximas entregas -->
-      <div style="display:grid;grid-template-columns:1fr 210px;gap:10px;margin-bottom:10px">
+      <div class="dash-gen-pipeline" style="display:grid;grid-template-columns:1fr 210px;gap:10px;margin-bottom:10px">
         <div class="card" style="padding:12px 14px">
           <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Flujo operativo del taller</div>
           <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Estado actual de vehículos en cada etapa</div>
@@ -696,7 +696,7 @@ async function cargarDashboard() {
       </div>
 
       <!-- Fila 3: Carga por área | Procesos activos | Servicios más demandados -->
-      <div style="display:grid;grid-template-columns:200px 1fr 200px;gap:10px;margin-bottom:10px;align-items:start">
+      <div class="dash-gen-row3" style="display:grid;grid-template-columns:200px 1fr 200px;gap:10px;margin-bottom:10px;align-items:start">
         <!-- Donut carga por área -->
         <div class="card" style="padding:12px 14px">
           <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Carga por área</div>
@@ -729,7 +729,7 @@ async function cargarDashboard() {
       </div>
 
       <!-- Fila 4: Tiempo promedio | Eficiencia | Técnicos | Repuestos -->
-      <div style="display:grid;grid-template-columns:1fr 160px 140px 140px;gap:10px;align-items:start">
+      <div class="dash-gen-row4" style="display:grid;grid-template-columns:1fr 160px 140px 140px;gap:10px;align-items:start">
         <div class="card" style="padding:12px 14px">
           <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:2px">Tiempo promedio por servicio</div>
           <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Histórico general</div>

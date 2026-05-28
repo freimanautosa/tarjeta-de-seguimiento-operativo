@@ -2734,81 +2734,128 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .dash-kpi-strip { scrollbar-width: none; }
 .dash-kpi-strip::-webkit-scrollbar { display: none; }
 
-/* Chips hijos: llenan su columna */
-.dash-kpi-strip > div {
-  min-width: 0 !important; /* permite que el grid comprima por debajo del inline min-width */
+/* Chips hijos desktop: llenan su columna, sin inline min-width */
+.dash-kpi-strip .kpi-chip,
+.dash-kpi-strip .kpi-chip-fact {
+  min-width: 0 !important;
   width: 100%;
 }
 
-/* Chip facturación: sin white-space nowrap para que el valor se ajuste */
-.dash-kpi-strip > div:first-child > div:first-child {
+/* Valor de facturación desktop: puede hacer wrap si es largo */
+.kpi-chip-fact .kpi-chip-fact-val {
   white-space: normal;
   word-break: break-all;
 }
 
-/* ── Strip en móvil: scroll horizontal ── */
+/* ── Grid KPI del tab General: mismo tratamiento mobile ── */
+.dash-kpi-row-gen > div {
+  min-width: 0;
+}
+
+/* ════════════════════════════════════════════════════════
+   MOBILE  ≤ 768px
+════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
+
+  /* Tabs: solo flex wrap normal */
+  #dash-tabs-row { flex-wrap: wrap; }
+
+  /* ── Strip: scroll horizontal ── */
   .dash-kpi-strip {
     display: flex;
     flex-wrap: nowrap;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     gap: 6px;
-    padding-bottom: 2px;
+    padding-bottom: 4px;
     margin-bottom: 12px;
   }
 
-  /* Tabs: solo flex wrap normal */
-  #dash-tabs-row {
-    flex-wrap: wrap;
-  }
-
-  /* Chips: tamaño compacto, fijo para que quepan varios visibles */
-  .dash-kpi-strip > div {
-    flex-shrink: 0;
-    min-width: 80px !important;
+  /* Chips: no se encojen, ancho mínimo fijo */
+  .dash-kpi-strip .kpi-chip {
+    flex: 0 0 auto;
+    min-width: 72px !important;
+    max-width: 90px !important;
     padding: 7px 10px !important;
   }
 
-  /* Chip facturación: un poco más ancho */
-  .dash-kpi-strip > div:first-child {
-    min-width: 110px !important;
+  /* Chip Facturación: un poco más ancho (valor numérico largo) */
+  .dash-kpi-strip .kpi-chip-fact {
+    flex: 0 0 auto;
+    min-width: 100px !important;
+    max-width: 120px !important;
+    padding: 7px 10px !important;
   }
 
-  /* Número principal: más pequeño en móvil */
-  .dash-kpi-strip > div > div:first-child {
-    font-size: 15px !important;
+  /* Número de cada chip: tamaño reducido */
+  .dash-kpi-strip .kpi-chip-num {
+    font-size: 18px !important;
   }
 
-  /* Valor facturación */
-  .dash-kpi-strip > div:first-child > div:first-child {
+  /* Valor de Facturación: aún más pequeño y con wrap */
+  .dash-kpi-strip .kpi-chip-fact-val {
     font-size: 13px !important;
-    white-space: nowrap;
-    word-break: normal;
+    white-space: normal !important;
+    word-break: break-all !important;
+    line-height: 1.2 !important;
   }
 
   /* Etiqueta: legible pero compacta */
-  .dash-kpi-strip > div > div:nth-child(2) {
+  .dash-kpi-strip .kpi-chip-label {
     font-size: 9px !important;
+    white-space: normal !important;
   }
 
-  /* Sub-etiqueta y barra progreso: ocultos en móvil */
-  .dash-kpi-strip > div > div:nth-child(3) {
+  /* Sub-etiqueta, barra y meta: ocultos en móvil */
+  .dash-kpi-strip .kpi-chip-sub,
+  .dash-kpi-strip .kpi-chip-bar {
     display: none !important;
   }
 
-  /* Grid dashboard principal: 1 columna */
+  /* ── Grid KPI del tab General: 2+3 filas en móvil ── */
+  .dash-kpi-row-gen {
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-rows: auto auto !important;
+  }
+  /* El chip Facturación ocupa la fila 1 completa */
+  .dash-kpi-row-gen > div:last-child {
+    grid-column: 1 / -1;
+  }
+
+  /* ── Grid dashboard Mes actual: 1 columna ── */
   .dash-mes-grid {
     grid-template-columns: 1fr !important;
   }
 
-  /* Fila inferior (tiempo + repuestos): 1 columna en móvil */
+  /* ── Fila inferior (tiempo + repuestos): 1 columna ── */
   .dash-mes-bottom {
     grid-template-columns: 1fr !important;
   }
 
-  /* Fechas en nueva orden: 1 columna */
+  /* ── Fechas en nueva orden: 1 columna ── */
   .n-fechas-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  /* ══ Tab General: todos sus grids colapsan en mobile ══ */
+
+  /* Pipeline (flujo operativo) + Próximas: apila */
+  .dash-gen-pipeline {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Fila 3: Carga área | Procesos activos | Demandados → 1 col */
+  .dash-gen-row3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Fila 4: Tiempo | Eficiencia | Técnicos | Repuestos → 2 cols */
+  .dash-gen-row4 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  /* Tiempo promedio ocupa fila completa */
+  .dash-gen-row4 > div:first-child {
+    grid-column: 1 / -1;
   }
 }
 
