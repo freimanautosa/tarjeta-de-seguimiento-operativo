@@ -553,22 +553,6 @@ async function abrirOrden(id) {
               ${typeof renderSeccionAseguradora === 'function' ? renderSeccionAseguradora(orden) : ''}
             </div>
           </div>` : ''}
-          <div class="sidebar-card">
-            <div class="sidebar-card-header">Cotización PDF</div>
-            <div class="sidebar-card-body">
-              <div id="d-cotizacion-link" style="margin-bottom:12px;font-size:13px">
-                ${orden.cotizacion_url
-                  ? `<a href="${safeUrl(orden.cotizacion_url)}" target="_blank" rel="noopener noreferrer" style="color:var(--azul-mid);text-decoration:underline">Ver PDF →</a>`
-                  : '<span style="color:var(--gris-mid)">Sin cotización adjunta</span>'}
-              </div>
-              <div class="upload-zone" onclick="document.getElementById('fi-cotizacion').click()">
-                <input type="file" id="fi-cotizacion" accept=".pdf,application/pdf" onchange="subirCotizacion(this)">
-                <div style="opacity:0.45">${ico('file', 20)}</div>
-                <p>${orden.cotizacion_url ? 'Reemplazar PDF' : 'Subir PDF'}</p>
-                <div class="upload-prog" id="prog-cotizacion"></div>
-              </div>
-            </div>
-          </div>
           ${esJefe() ? `
           <div class="sidebar-card">
             <div class="sidebar-card-header">Estado de la orden</div>
@@ -2104,39 +2088,6 @@ async function _desactivarPulmon() {
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
 
-// ============================================================
-// COTIZACIÓN (subir PDF)
-// ============================================================
-async function subirCotizacion(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const prog = document.getElementById('prog-cotizacion');
-  if (prog) prog.textContent = 'Subiendo...';
-  try {
-    const ext = file.name.split('.').pop();
-    const path = `${ordenActual.id}/cotizacion/cotizacion_${Date.now()}.${ext}`;
-    const url = await storageUpload(file, path);
-    await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', { cotizacion_url: url });
-    ordenActual.cotizacion_url = url;
-    const linkDiv = document.getElementById('d-cotizacion-link');
-    if (linkDiv) linkDiv.innerHTML = `<a href="${url}" target="_blank" style="color:var(--azul-mid);text-decoration:underline">Ver PDF de cotización →</a>`;
-    if (prog) prog.textContent = '';
-    input.value = '';
-    toast('Cotización subida ✓');
-    fetch(N8N_WEBHOOK, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        evento: 'cotizacion_subida', 
-        orden: { id: ordenActual.id, placa: ordenActual.placa, propietario: ordenActual.propietario, marca: ordenActual.marca, linea: ordenActual.linea, aseguradora: ordenActual.aseguradora }, 
-        cotizacion_url: url, 
-        link: `${window.location.origin}${window.location.pathname}` 
-      }) 
-    }).catch(() => {});
-  } catch(e) { 
-    if (prog) prog.textContent = ''; 
-    toast('Error subiendo PDF: ' + e.message, 'err'); 
-  }
-}
 
 // ============================================================
 // ESTADO ORDEN (JEFE)
@@ -4027,6 +3978,25 @@ async function generarPreliquidacion(ordenId, conPrecios = false) {
         </table>
       </div>` : '';
 
+    // ── SVGs línea-limpia para bocetos de vehículo ──────────────────────────────
+    const _st = 'fill="none" stroke="#111"';
+    // Sedan frontal
+    const _svgSF = `<svg viewBox="0 0 116 80" width="108" height="74" xmlns="http://www.w3.org/2000/svg"><path ${_st} stroke-width="1.3" d="M20,26 Q58,14 96,26 L100,38 L100,56 L16,56 L16,38 Z"/><path ${_st} stroke-width="1" d="M26,26 Q58,18 90,26"/><line ${_st} stroke-width="0.8" x1="58" y1="14" x2="58" y2="26"/><path ${_st} stroke-width="1.1" d="M6,34 L6,54 Q6,58 12,58 L20,58 L20,34 Q18,28 13,27 Z"/><path ${_st} stroke-width="1.1" d="M110,34 L110,54 Q110,58 104,58 L96,58 L96,34 Q98,28 103,27 Z"/><rect ${_st} stroke-width="0.9" x="34" y="40" width="48" height="14" rx="2"/><line ${_st} stroke-width="0.5" x1="42" y1="40" x2="42" y2="54"/><line ${_st} stroke-width="0.5" x1="50" y1="40" x2="50" y2="54"/><line ${_st} stroke-width="0.5" x1="58" y1="40" x2="58" y2="54"/><line ${_st} stroke-width="0.5" x1="66" y1="40" x2="66" y2="54"/><line ${_st} stroke-width="0.5" x1="74" y1="40" x2="74" y2="54"/><path ${_st} stroke-width="1.2" d="M6,56 L6,64 Q6,70 12,70 L104,70 Q110,70 110,64 L110,56"/><rect ${_st} stroke-width="0.8" x="42" y="60" width="32" height="7" rx="0.5"/><path ${_st} stroke-width="1.2" d="M6,64 Q6,80 17,80 Q28,80 28,64"/><path ${_st} stroke-width="1.2" d="M110,64 Q110,80 99,80 Q88,80 88,64"/><circle ${_st} stroke-width="0.8" cx="58" cy="43" r="5"/></svg>`;
+    // Sedan trasera
+    const _svgST = `<svg viewBox="0 0 116 80" width="108" height="74" xmlns="http://www.w3.org/2000/svg"><path ${_st} stroke-width="1.3" d="M20,26 Q58,14 96,26 L100,38 L100,56 L16,56 L16,38 Z"/><path ${_st} stroke-width="1" d="M26,26 Q58,18 90,26"/><line ${_st} stroke-width="0.8" x1="58" y1="14" x2="58" y2="26"/><rect ${_st} stroke-width="1.1" x="7" y="26" width="14" height="28" rx="1"/><rect ${_st} stroke-width="1.1" x="95" y="26" width="14" height="28" rx="1"/><line ${_st} stroke-width="0.8" x1="21" y1="36" x2="95" y2="36"/><path ${_st} stroke-width="1.2" d="M6,56 L6,64 Q6,70 12,70 L104,70 Q110,70 110,64 L110,56"/><rect ${_st} stroke-width="0.9" x="40" y="57" width="36" height="9" rx="0.5"/><path ${_st} stroke-width="1.2" d="M6,64 Q6,80 17,80 Q28,80 28,64"/><path ${_st} stroke-width="1.2" d="M110,64 Q110,80 99,80 Q88,80 88,64"/></svg>`;
+    // Sedan lateral izq (facing right)
+    const _svgSL = `<svg viewBox="0 0 180 70" width="168" height="65" xmlns="http://www.w3.org/2000/svg"><circle ${_st} stroke-width="1.3" cx="40" cy="58" r="11"/><circle ${_st} stroke-width="1" cx="40" cy="58" r="4"/><circle ${_st} stroke-width="1.3" cx="140" cy="58" r="11"/><circle ${_st} stroke-width="1" cx="140" cy="58" r="4"/><path ${_st} stroke-width="1.3" d="M22,47 Q22,36 40,36 Q58,36 58,47"/><path ${_st} stroke-width="1.3" d="M122,47 Q122,36 140,36 Q158,36 158,47"/><path ${_st} stroke-width="1.5" d="M18,47 L16,38 Q16,28 25,23 L50,15 Q66,10 83,10 Q100,10 116,13 L146,21 Q158,26 160,36 L162,47"/><line ${_st} stroke-width="1.2" x1="22" y1="47" x2="58" y2="47"/><line ${_st} stroke-width="0.8" x1="58" y1="47" x2="122" y2="47"/><line ${_st} stroke-width="1.2" x1="122" y1="47" x2="158" y2="47"/><path ${_st} stroke-width="1" d="M50,15 Q83,8 116,13"/><line ${_st} stroke-width="1.1" x1="83" y1="10" x2="83" y2="46"/><line ${_st} stroke-width="1" x1="50" y1="15" x2="44" y2="42"/><line ${_st} stroke-width="1" x1="116" y1="13" x2="122" y2="42"/><path ${_st} stroke-width="0.8" d="M46,17 L40,42 L81,42 L83,11"/><path ${_st} stroke-width="0.8" d="M85,11 L83,42 L120,42 L116,14"/><line ${_st} stroke-width="1.2" x1="60" y1="32" x2="70" y2="32"/><line ${_st} stroke-width="1.2" x1="97" y1="32" x2="107" y2="32"/><path ${_st} stroke-width="1" d="M158,28 L165,28 L165,44 L160,46"/><rect ${_st} stroke-width="1" x="11" y="25" width="6" height="18" rx="1"/><path ${_st} stroke-width="1" d="M162,38 L167,40 L167,52 Q167,55 162,55 L158,55 L158,47"/><path ${_st} stroke-width="1" d="M18,40 L13,42 L13,54 Q13,57 18,57 L22,57 L22,47"/></svg>`;
+    // Sedan lateral der (mirror)
+    const _svgSD = `<svg viewBox="0 0 180 70" width="168" height="65" xmlns="http://www.w3.org/2000/svg"><g transform="scale(-1,1) translate(-180,0)">${_svgSL.replace(/<svg[^>]*>/,'').replace('</svg>','')}</g></svg>`;
+    // Camioneta frontal (más boxy)
+    const _svgCF = `<svg viewBox="0 0 116 80" width="108" height="74" xmlns="http://www.w3.org/2000/svg"><path ${_st} stroke-width="1.3" d="M14,22 Q58,14 102,22 L106,34 L106,58 L10,58 L10,34 Z"/><path ${_st} stroke-width="1" d="M18,22 Q58,16 98,22"/><line ${_st} stroke-width="0.8" x1="58" y1="14" x2="58" y2="22"/><path ${_st} stroke-width="1.1" d="M4,32 L4,56 Q4,60 10,60 L10,32 Q8,24 6,24 Z"/><path ${_st} stroke-width="1.1" d="M112,32 L112,56 Q112,60 106,60 L106,32 Q108,24 110,24 Z"/><rect ${_st} stroke-width="1" x="28" y="38" width="60" height="18" rx="1"/><line ${_st} stroke-width="0.5" x1="38" y1="38" x2="38" y2="56"/><line ${_st} stroke-width="0.5" x1="48" y1="38" x2="48" y2="56"/><line ${_st} stroke-width="0.5" x1="58" y1="38" x2="58" y2="56"/><line ${_st} stroke-width="0.5" x1="68" y1="38" x2="68" y2="56"/><line ${_st} stroke-width="0.5" x1="78" y1="38" x2="78" y2="56"/><path ${_st} stroke-width="1.2" d="M4,58 L4,66 Q4,74 11,74 L105,74 Q112,74 112,66 L112,58"/><rect ${_st} stroke-width="0.8" x="40" y="62" width="36" height="8" rx="0.5"/><path ${_st} stroke-width="1.3" d="M4,66 Q4,80 16,80 Q28,80 28,66"/><path ${_st} stroke-width="1.3" d="M112,66 Q112,80 100,80 Q88,80 88,66"/></svg>`;
+    // Camioneta trasera
+    const _svgCT = `<svg viewBox="0 0 116 80" width="108" height="74" xmlns="http://www.w3.org/2000/svg"><path ${_st} stroke-width="1.3" d="M14,22 Q58,14 102,22 L106,34 L106,58 L10,58 L10,34 Z"/><path ${_st} stroke-width="1" d="M18,22 Q58,16 98,22"/><rect ${_st} stroke-width="1.1" x="4" y="22" width="14" height="34" rx="0.5"/><rect ${_st} stroke-width="1.1" x="98" y="22" width="14" height="34" rx="0.5"/><line ${_st} stroke-width="1.2" x1="18" y1="22" x2="98" y2="22"/><line ${_st} stroke-width="0.8" x1="18" y1="34" x2="98" y2="34"/><path ${_st} stroke-width="1.2" d="M4,58 L4,68 Q4,74 11,74 L105,74 Q112,74 112,68 L112,58"/><rect ${_st} stroke-width="0.9" x="40" y="60" width="36" height="10" rx="0.5"/><path ${_st} stroke-width="1.3" d="M4,68 Q4,80 16,80 Q28,80 28,68"/><path ${_st} stroke-width="1.3" d="M112,68 Q112,80 100,80 Q88,80 88,68"/></svg>`;
+    // Camioneta lateral izq (pickup)
+    const _svgCL = `<svg viewBox="0 0 200 70" width="186" height="65" xmlns="http://www.w3.org/2000/svg"><circle ${_st} stroke-width="1.3" cx="42" cy="58" r="11"/><circle ${_st} stroke-width="1" cx="42" cy="58" r="4"/><circle ${_st} stroke-width="1.3" cx="158" cy="58" r="11"/><circle ${_st} stroke-width="1" cx="158" cy="58" r="4"/><path ${_st} stroke-width="1.3" d="M24,47 Q24,36 42,36 Q60,36 60,47"/><path ${_st} stroke-width="1.3" d="M140,47 Q140,36 158,36 Q176,36 176,47"/><path ${_st} stroke-width="1.5" d="M20,47 L18,38 Q18,28 27,24 L52,16 Q66,12 84,12 L100,12 L100,47"/><path ${_st} stroke-width="1.5" d="M100,12 L100,6 L175,6 L178,10 L178,47"/><line ${_st} stroke-width="0.8" x1="100" y1="6" x2="100" y2="47"/><line ${_st} stroke-width="1.2" x1="24" y1="47" x2="60" y2="47"/><line ${_st} stroke-width="0.8" x1="60" y1="47" x2="140" y2="47"/><line ${_st} stroke-width="1.2" x1="140" y1="47" x2="176" y2="47"/><line ${_st} stroke-width="1" x1="52" y1="16" x2="48" y2="42"/><line ${_st} stroke-width="1.1" x1="84" y1="12" x2="84" y2="46"/><path ${_st} stroke-width="0.8" d="M50,18 L44,42 L82,42 L84,13"/><line ${_st} stroke-width="1.2" x1="60" y1="30" x2="70" y2="30"/><path ${_st} stroke-width="1" d="M176,22 L183,22 L183,44 L178,46"/><rect ${_st} stroke-width="1" x="12" y="26" width="6" height="16" rx="1"/></svg>`;
+    // Camioneta lateral der (mirror)
+    const _svgCD = `<svg viewBox="0 0 200 70" width="186" height="65" xmlns="http://www.w3.org/2000/svg"><g transform="scale(-1,1) translate(-200,0)">${_svgCL.replace(/<svg[^>]*>/,'').replace('</svg>','')}</g></svg>`;
+
     const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -4034,229 +4004,239 @@ async function generarPreliquidacion(ordenId, conPrecios = false) {
 <title>Preliquidación ${escapeHtml(orden.placa)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,Helvetica,sans-serif;color:#111;background:#fff;font-size:9.5px;line-height:1.35;padding:0 10px 8px}
-@page{size:A4 portrait;margin:7mm 9mm}
+body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:9px;line-height:1.3}
+@page{size:A4 landscape;margin:7mm 8mm}
 table{width:100%;border-collapse:collapse}
-th{font-size:7.5px;text-transform:uppercase;letter-spacing:.4px;color:#6B7280;font-weight:700;padding:4px 6px;background:#F9FAFB;border-bottom:1.5px solid #E5E7EB;text-align:left}
-td{padding:3.5px 6px;border-bottom:1px solid #F3F4F6;vertical-align:middle}
-.lbl{font-size:7.5px;color:#9CA3AF;text-transform:uppercase;letter-spacing:.3px;margin-bottom:1px}
-.val{font-weight:600}
-.sec{font-size:7.5px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;background:#1E3A5F;color:#fff;padding:3px 8px}
+th{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:3px 5px;background:#F0F0F0;text-align:left;border:0.5px solid #ccc}
+td{padding:3px 5px;border:0.5px solid #ddd;vertical-align:middle}
+.lbl{font-size:7px;color:#777;text-transform:uppercase;letter-spacing:.2px;margin-bottom:1px}
+.val{font-weight:600;font-size:9px}
+.sh{font-size:7px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;background:#1E3A5F;color:#fff;padding:2.5px 7px}
 .money{font-family:monospace;font-weight:700}
 @media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}
 </style>
 </head>
 <body>
-<div>
+<div style="padding:0 6px 6px">
 
 <!-- ENCABEZADO -->
-<div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding-bottom:6px;border-bottom:2.5px solid #1E3A5F;margin-bottom:6px">
+<div style="display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;border-bottom:2.5px solid #1E3A5F;padding-bottom:5px;margin-bottom:6px">
   <div>
-    <div style="font-weight:900;font-size:13px;color:#1E3A5F;letter-spacing:.3px">FREIMANAUTOS S.A.</div>
-    <div style="font-size:7.5px;color:#6B7280;margin-top:2px">NIT 860.012.186-5 &nbsp;·&nbsp; Calle 98A #68D-15, Bogotá D.C. &nbsp;·&nbsp; Tel: (601) 742 6450 &nbsp;·&nbsp; freimanautossa@yahoo.com</div>
+    <div style="font-weight:900;font-size:14px;color:#1E3A5F;letter-spacing:.3px">FREIMANAUTOS S.A.</div>
+    <div style="font-size:7.5px;color:#555;margin-top:2px">NIT 860.012.186-5</div>
+    <div style="font-size:7.5px;color:#555">Calle 98A #68D-15 Bogotá D.C.</div>
+    <div style="font-size:7.5px;color:#555">Tel: (601) 742 6450</div>
   </div>
   <div style="text-align:center">
-    <div style="font-size:16px;font-weight:900;color:#1E3A5F;letter-spacing:.5px">PRELIQUIDACIÓN</div>
-    <div style="font-size:7.5px;color:${conPrecios?'#7C3AED':'#6B7280'};font-weight:700;letter-spacing:.5px;text-transform:uppercase">${conPrecios?'Con precios · Para cliente':'Sin precios · Uso interno'}</div>
+    <div style="font-size:20px;font-weight:900;color:#1E3A5F;letter-spacing:1px">PRELIQUIDACIÓN</div>
   </div>
-  <div style="text-align:right;border:1.5px solid #1E3A5F;border-radius:3px;padding:4px 10px;min-width:108px">
-    <div style="font-size:7.5px;color:#6B7280">N° ORDEN</div>
-    <div style="font-size:15px;font-weight:900;font-family:monospace;color:#1E3A5F;letter-spacing:1px">${formatOT(orden.id)}</div>
-    <div style="font-size:12px;font-weight:800;color:#111;letter-spacing:2.5px;margin-top:1px">${escapeHtml(orden.placa)}</div>
-    <div style="font-size:7px;color:#9CA3AF;margin-top:1px">${fmtFecha(new Date().toISOString())}</div>
+  <div style="border:1.5px solid #111;padding:4px 10px;text-align:center;min-width:160px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:3px">
+      <div style="text-align:left;border-right:1px solid #ccc;padding-right:8px">
+        <div style="font-size:7px;color:#777;text-transform:uppercase">Fecha</div>
+        <div style="font-size:8.5px;font-weight:700">${new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'})}</div>
+        <div style="font-size:7.5px;color:#555">${new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',hour12:true})}</div>
+      </div>
+      <div style="padding-left:8px">
+        <div style="font-size:7px;color:#777;text-transform:uppercase">Placa</div>
+        <div style="font-size:13px;font-weight:900;letter-spacing:2px;color:#1E3A5F">${escapeHtml(orden.placa)}</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:7px;color:#777;text-transform:uppercase">N° Orden</div>
+      <div style="font-size:18px;font-weight:900;font-family:monospace;color:#1E3A5F;letter-spacing:2px">${formatOT(orden.id)}</div>
+    </div>
   </div>
 </div>
 
-<!-- CLIENTE / VEHÍCULO / FECHAS -->
-<div style="display:grid;grid-template-columns:1fr 1.2fr 0.85fr;gap:5px;margin-bottom:6px">
+<!-- FILA INFO: 1.Cliente | 2.Vehículo | 3.Estado | Elementos/Fechas -->
+<div style="display:grid;grid-template-columns:155px 190px 1fr 165px;gap:0;border:0.8px solid #999;margin-bottom:5px">
 
-  <div style="border:1px solid #E5E7EB;border-radius:3px;overflow:hidden">
-    <div class="sec">1. Cliente</div>
+  <!-- 1. CLIENTE -->
+  <div style="border-right:0.8px solid #999">
+    <div class="sh">1. Cliente</div>
     <div style="padding:5px 7px">
-      <div style="margin-bottom:3px"><div class="lbl">Nombre</div><div class="val" style="font-size:10px">${escapeHtml(orden.propietario)||'—'}</div></div>
-      <div style="margin-bottom:3px"><div class="lbl">Teléfono</div><div>${escapeHtml(orden.telefono)||'—'}</div></div>
-      <div${orden.aseguradora?' style="margin-bottom:3px"':''}><div class="lbl">Tipo</div><div>${escapeHtml(orden.tipo_cliente)||'Particular'}</div></div>
+      <div style="margin-bottom:4px"><div class="lbl">Nombre</div><div class="val" style="font-size:9.5px">${escapeHtml(orden.propietario)||'—'}</div></div>
+      <div style="margin-bottom:4px"><div class="lbl">Teléfono</div><div>${escapeHtml(orden.telefono)||'—'}</div></div>
+      <div style="margin-bottom:4px"><div class="lbl">Email</div><div style="font-size:8px">${escapeHtml(orden.correo_cliente||orden.email||'—')}</div></div>
+      <div${orden.aseguradora?' style="margin-bottom:4px"':''}><div class="lbl">Tipo</div><div>${escapeHtml(orden.tipo_cliente)||'Particular'}</div></div>
       ${orden.aseguradora ? `<div><div class="lbl">Aseguradora</div><div class="val" style="color:#1D4ED8">${escapeHtml(orden.aseguradora)}</div></div>` : ''}
     </div>
   </div>
 
-  <div style="border:1px solid #E5E7EB;border-radius:3px;overflow:hidden">
-    <div class="sec">2. Vehículo</div>
-    <div style="padding:5px 7px;display:grid;grid-template-columns:1fr 1fr;gap:3px 8px">
-      <div><div class="lbl">Marca / Línea</div><div class="val">${escapeHtml(orden.marca)||'—'} ${escapeHtml(orden.linea)||''}</div></div>
-      <div><div class="lbl">Modelo / Color</div><div>${escapeHtml(orden.modelo)||'—'} / ${escapeHtml(orden.color)||'—'}</div></div>
-      <div><div class="lbl">Kilometraje</div><div>${orden.kilometraje ? orden.kilometraje.toLocaleString('es-CO')+' km' : '—'}</div></div>
-      <div><div class="lbl">Carrocería</div><div>${escapeHtml(orden.tipo_carroceria)||'—'}</div></div>
-      ${orden.vin ? `<div style="grid-column:span 2"><div class="lbl">VIN / No. Chasis</div><div style="font-family:monospace;font-size:8.5px">${escapeHtml(orden.vin)}</div></div>` : ''}
-    </div>
-  </div>
-
-  <div style="border:1px solid #E5E7EB;border-radius:3px;overflow:hidden">
-    <div class="sec">Fechas / Estado</div>
+  <!-- 2. VEHÍCULO -->
+  <div style="border-right:0.8px solid #999">
+    <div class="sh">2. Vehículo</div>
     <div style="padding:5px 7px">
-      <div style="margin-bottom:4px"><div class="lbl">Fecha ingreso</div><div class="val">${fmtFecha(orden.creado_en)}</div></div>
-      <div style="margin-bottom:4px"><div class="lbl">Entrega prometida</div><div class="val" style="color:#D97706">${fmtFecha(orden.fecha_entrega_1)}</div></div>
-      <div><div class="lbl">Estado</div><div class="val" style="color:#059669">${orden.estado||'—'}</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 6px">
+        <div><div class="lbl">Marca / Línea</div><div class="val">${escapeHtml(orden.marca)||'—'} ${escapeHtml(orden.linea)||''}</div></div>
+        <div><div class="lbl">Modelo / Color</div><div>${escapeHtml(orden.modelo)||'—'} / ${escapeHtml(orden.color)||'—'}</div></div>
+        <div><div class="lbl">KM</div><div>${orden.kilometraje ? orden.kilometraje.toLocaleString('es-CO') : '—'}</div></div>
+        <div><div class="lbl">Carrocería</div><div>${escapeHtml(orden.tipo_carroceria||'—')}</div></div>
+        ${orden.vin ? `<div style="grid-column:span 2"><div class="lbl">VIN / No. Chasis</div><div style="font-family:monospace;font-size:8px">${escapeHtml(orden.vin)}</div></div>` : ''}
+      </div>
+      ${orden.descripcion_general ? `<div style="margin-top:5px;padding-top:4px;border-top:0.5px solid #ddd"><div class="lbl">Descripción</div><div style="font-size:8.5px;line-height:1.4">${escapeHtml(orden.descripcion_general)}</div></div>` : ''}
+    </div>
+  </div>
+
+  <!-- 3. ESTADO DEL VEHÍCULO -->
+  <div style="border-right:0.8px solid #999">
+    <div class="sh">3. Estado del vehículo &mdash; Mapa de daños</div>
+    ${(() => {
+      const danos = (() => { try { return JSON.parse(orden.danos_vehiculo||'null')||{}; } catch{return{};} })();
+      const hasDanos = Object.values(danos).some(a=>a?.length>0);
+      const esCamioneta = ['camioneta','van'].includes(orden.tipo_carroceria);
+      const tipoLabels = {rayon:'Rayón',golpe:'Golpe',abolladura:'Abolladura',pieza_faltante:'Pieza faltante'};
+      const tipoColores = {rayon:'#F59E0B',golpe:'#EF4444',abolladura:'#F97316',pieza_faltante:'#111'};
+      // Marcadores para vistas frontales (viewBox 116×80 → frontal pos approx center)
+      const mFrontal = hasDanos ? (danos.frontal||[]).map((t,i,a)=>'<circle cx="'+(58+(i-(a.length-1)/2)*16)+'" cy="65" r="6" fill="'+(tipoColores[t]||'#999')+'" stroke="white" stroke-width="1.3" opacity="0.9"/>').join('') : '';
+      const mTrasera = hasDanos ? (danos.trasera||[]).map((t,i,a)=>'<circle cx="'+(58+(i-(a.length-1)/2)*16)+'" cy="65" r="6" fill="'+(tipoColores[t]||'#999')+'" stroke="white" stroke-width="1.3" opacity="0.9"/>').join('') : '';
+      const mLatIzq  = hasDanos ? (danos.lateral_izq||[]).map((t,i,a)=>'<circle cx="'+(90+(i-(a.length-1)/2)*16)+'" cy="52" r="6" fill="'+(tipoColores[t]||'#999')+'" stroke="white" stroke-width="1.3" opacity="0.9"/>').join('') : '';
+      const mLatDer  = hasDanos ? (danos.lateral_der||[]).map((t,i,a)=>'<circle cx="'+(90+(i-(a.length-1)/2)*16)+'" cy="52" r="6" fill="'+(tipoColores[t]||'#999')+'" stroke="white" stroke-width="1.3" opacity="0.9"/>').join('') : '';
+      const addMarkers = (svg,m) => m ? svg.replace('</svg>',m+'</svg>') : svg;
+      const [sF,sT,sLI,sLD] = esCamioneta
+        ? [addMarkers(_svgCF,mFrontal), addMarkers(_svgCT,mTrasera), addMarkers(_svgCL,mLatIzq), addMarkers(_svgCD,mLatDer)]
+        : [addMarkers(_svgSF,mFrontal), addMarkers(_svgST,mTrasera), addMarkers(_svgSL,mLatIzq), addMarkers(_svgSD,mLatDer)];
+      const danosList = hasDanos ? ['frontal','trasera','lateral_izq','lateral_der'].filter(z=>(danos[z]||[]).length>0).map(z=>
+        '<div style="font-size:7.5px;margin-bottom:2px"><b style="text-transform:uppercase">'+{frontal:'Frontal',trasera:'Trasera',lateral_izq:'Lat. Izq.',lateral_der:'Lat. Der.'}[z]+':</b> '+
+        (danos[z]||[]).map(t=>'<span style="display:inline-flex;align-items:center;gap:2px;margin-right:4px"><span style="width:6px;height:6px;border-radius:50%;background:'+(tipoColores[t]||'#999')+';display:inline-block"></span>'+(tipoLabels[t]||t)+'</span>').join('')+'</div>'
+      ).join('') : '<div style="font-size:8px;color:#aaa;font-style:italic">Sin daños registrados</div>';
+      return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+        <div style="border-right:0.5px solid #ddd;border-bottom:0.5px solid #ddd;padding:3px;text-align:center">
+          <div style="font-size:7px;color:#555;margin-bottom:2px;text-transform:uppercase">Frontal</div>${sF}</div>
+        <div style="border-bottom:0.5px solid #ddd;padding:3px;text-align:center">
+          <div style="font-size:7px;color:#555;margin-bottom:2px;text-transform:uppercase">Trasera</div>${sT}</div>
+        <div style="border-right:0.5px solid #ddd;padding:3px;text-align:center">
+          <div style="font-size:7px;color:#555;margin-bottom:2px;text-transform:uppercase">Lateral izquierda</div>${sLI}</div>
+        <div style="padding:3px;text-align:center">
+          <div style="font-size:7px;color:#555;margin-bottom:2px;text-transform:uppercase">Lateral derecha</div>${sLD}</div>
+      </div>
+      <div style="padding:4px 7px;border-top:0.8px solid #999">
+        <div style="font-size:7px;font-weight:700;text-transform:uppercase;margin-bottom:3px">Daños registrados</div>
+        ${danosList}
+      </div>`;
+    })()}
+  </div>
+
+  <!-- TIPO DE DAÑO + FECHAS -->
+  <div>
+    <div class="sh">Tipo de daño / Fechas</div>
+    <div style="padding:5px 7px">
+      <div style="margin-bottom:6px">
+        <div class="lbl" style="margin-bottom:3px">Tipo de daño</div>
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px"><span style="width:9px;height:9px;border-radius:50%;background:#F59E0B;display:inline-block"></span><span>Rayón</span></div>
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px"><span style="width:9px;height:9px;border-radius:50%;background:#EF4444;display:inline-block"></span><span>Golpe</span></div>
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px"><span style="width:9px;height:9px;border-radius:50%;background:#F97316;display:inline-block"></span><span>Abolladura</span></div>
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:6px"><span style="width:9px;height:9px;border-radius:50%;background:#111;display:inline-block"></span><span>Pieza faltante</span></div>
+      </div>
+      <div style="border-top:0.5px solid #ddd;padding-top:5px">
+        <div style="margin-bottom:3px"><div class="lbl">Ingreso</div><div class="val">${fmtFecha(orden.creado_en)}</div></div>
+        <div style="margin-bottom:3px"><div class="lbl">Entrega prometida</div><div class="val" style="color:#D97706">${fmtFecha(orden.fecha_entrega_1)}</div></div>
+        <div style="margin-bottom:3px"><div class="lbl">Estado</div><div class="val" style="color:#059669">${orden.estado||'—'}</div></div>
+        <div><div class="lbl">Nivel de daño</div><div class="val">${escapeHtml(orden.nivel_dano||'—')}</div></div>
+      </div>
     </div>
   </div>
 
 </div>
 
-${(() => {
-  const danos = (() => { try { return JSON.parse(orden.danos_vehiculo||'null')||{}; } catch{return{};} })();
-  const hasDanos = Object.values(danos).some(a => a?.length > 0);
-  const hasDesc = !!orden.descripcion_general;
-  if (!hasDesc && !hasDanos) return '';
-
-  const tipoLabels = {rayon:'Rayón',golpe:'Golpe',abolladura:'Abolladura',pieza_faltante:'Pieza faltante'};
-  const tipoColores = {rayon:'#F59E0B',golpe:'#EF4444',abolladura:'#F97316',pieza_faltante:'#1F2937'};
-  const zonas = ['frontal','trasera','lateral_izq','lateral_der'];
-  const zonaLabel = {frontal:'Frontal',trasera:'Trasera',lateral_izq:'Lateral izq.',lateral_der:'Lateral der.'};
-  const markerPos = {frontal:[65,16],trasera:[65,194],lateral_izq:[13,105],lateral_der:[117,105]};
-  const esCamioneta = ['camioneta','van'].includes(orden.tipo_carroceria);
-
-  const svgAuto = '<svg viewBox="0 0 130 210" width="72" height="116" xmlns="http://www.w3.org/2000/svg"><rect x="22" y="22" width="86" height="166" rx="16" fill="#F3F4F6" stroke="#374151" stroke-width="1.8"/><path d="M36,36 Q65,30 94,36 L91,58 Q65,53 39,58 Z" fill="#BFDBFE" stroke="#6B7280" stroke-width="1"/><path d="M36,174 Q65,180 94,174 L91,152 Q65,157 39,152 Z" fill="#BFDBFE" stroke="#6B7280" stroke-width="1"/><line x1="22" y1="95" x2="108" y2="95" stroke="#9CA3AF" stroke-width="0.8"/><line x1="22" y1="115" x2="108" y2="115" stroke="#9CA3AF" stroke-width="0.8"/><rect x="9" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="9" y="140" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="140" width="13" height="28" rx="4" fill="#374151"/><ellipse cx="19" cy="78" rx="4" ry="6" fill="#9CA3AF"/><ellipse cx="111" cy="78" rx="4" ry="6" fill="#9CA3AF"/></svg>';
-  const svgCam = '<svg viewBox="0 0 130 210" width="72" height="116" xmlns="http://www.w3.org/2000/svg"><rect x="22" y="22" width="86" height="80" rx="10" fill="#F3F4F6" stroke="#374151" stroke-width="1.8"/><path d="M34,30 Q65,24 96,30 L93,52 Q65,47 37,52 Z" fill="#BFDBFE" stroke="#6B7280" stroke-width="1"/><line x1="22" y1="102" x2="108" y2="102" stroke="#374151" stroke-width="2"/><rect x="22" y="102" width="86" height="86" rx="5" fill="#E5E7EB" stroke="#374151" stroke-width="1.8"/><line x1="30" y1="130" x2="100" y2="130" stroke="#9CA3AF" stroke-width="0.7"/><line x1="30" y1="158" x2="100" y2="158" stroke="#9CA3AF" stroke-width="0.7"/><rect x="9" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="42" width="13" height="28" rx="4" fill="#374151"/><rect x="9" y="112" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="112" width="13" height="28" rx="4" fill="#374151"/><rect x="9" y="142" width="13" height="28" rx="4" fill="#374151"/><rect x="108" y="142" width="13" height="28" rx="4" fill="#374151"/><ellipse cx="19" cy="68" rx="4" ry="6" fill="#9CA3AF"/><ellipse cx="111" cy="68" rx="4" ry="6" fill="#9CA3AF"/></svg>';
-
-  let danosBlock = '';
-  if (hasDanos) {
-    const marcadores = zonas.flatMap(z => {
-      const ts = danos[z]||[]; if (!ts.length) return [];
-      const [cx,cy] = markerPos[z];
-      return ts.map((t,i) => '<circle cx="'+(cx+(i-(ts.length-1)/2)*13)+'" cy="'+cy+'" r="6" fill="'+(tipoColores[t]||'#9CA3AF')+'" stroke="white" stroke-width="1.5" opacity="0.95"/>');
-    }).join('');
-    const svgFinal = (esCamioneta ? svgCam : svgAuto).replace('</svg>', marcadores+'</svg>');
-    const listaDanos = zonas.filter(z=>(danos[z]||[]).length>0).map(z =>
-      '<div style="margin-bottom:4px"><span style="font-size:7.5px;font-weight:700;color:#374151;text-transform:uppercase">'+zonaLabel[z]+':</span> '+
-      (danos[z]||[]).map(t=>'<span style="display:inline-flex;align-items:center;gap:3px;font-size:8.5px;margin-right:5px"><span style="width:7px;height:7px;border-radius:50%;background:'+(tipoColores[t]||'#9CA3AF')+';display:inline-block;flex-shrink:0"></span>'+(tipoLabels[t]||t)+'</span>').join('')+'</div>'
-    ).join('');
-    const leyenda = Object.entries(tipoColores).map(([k,c])=>'<span style="display:inline-flex;align-items:center;gap:3px;font-size:7.5px;color:#6B7280;margin-right:8px"><span style="width:7px;height:7px;border-radius:50%;background:'+c+';display:inline-block"></span>'+tipoLabels[k]+'</span>').join('');
-    danosBlock = '<div style="flex-shrink:0;display:flex;gap:8px;align-items:flex-start"><div>'+svgFinal+'</div><div style="padding-top:2px"><div style="font-size:7.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#374151;margin-bottom:5px">3. Estado del vehículo</div>'+listaDanos+'<div style="margin-top:5px;padding-top:4px;border-top:1px solid #F3F4F6">'+leyenda+'</div></div></div>';
-  }
-
-  const descBlock = hasDesc ?
-    '<div style="flex:1;border:1px solid #BAE6FD;border-radius:3px;background:#F0F9FF;padding:6px 8px"><div style="font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#0369A1;margin-bottom:3px">Descripción del trabajo</div><div style="font-size:9.5px;color:#1E293B;line-height:1.5">'+(escapeHtml(orden.descripcion_general)||'')+'</div></div>' : '';
-
-  return '<div style="display:flex;gap:8px;align-items:stretch;margin-bottom:6px">'+descBlock+danosBlock+'</div>';
-})()}
-
-<!-- 4. TRABAJOS -->
-<div style="margin-bottom:6px">
-  <div class="sec">4. Descripción de trabajos</div>
-  <table style="border:1px solid #E5E7EB;border-top:none">
-    <thead><tr>
-      <th style="width:20px;text-align:center">#</th>
-      <th>Descripción del trabajo</th>
-      <th style="width:68px">Tipo</th>
-      <th style="width:88px">Técnico asignado</th>
-      <th style="width:50px;text-align:center">Duración</th>
-      <th style="width:75px;text-align:right">Valor unitario</th>
-      <th style="width:75px;text-align:right">Valor total</th>
-    </tr></thead>
-    <tbody>
-      ${etapas.map((e,i) => `<tr>
-        <td style="color:#9CA3AF;text-align:center;font-size:8.5px">${i+1}</td>
-        <td style="font-weight:600">${escapeHtml(e.etapa||e.nombre||'—')}</td>
-        <td><span style="font-size:8px;font-weight:700;color:${srvColor[e.servicio]||'#374151'}">${srvNombres[e.servicio]||e.servicio||'—'}</span></td>
-        <td>${escapeHtml(e.tecnico||'—')}</td>
-        <td style="text-align:center;font-family:monospace;font-size:8.5px">${durMin(e.inicio,e.fin)}</td>
-        <td style="text-align:right;font-family:monospace">${fmt(e.valor)}</td>
-        <td style="text-align:right;font-family:monospace;font-weight:700">${fmt(e.valor)}</td>
-      </tr>`).join('')}
-    </tbody>
-  </table>
-</div>
-
-${solicitudes.length ? `<div style="margin-bottom:6px">
-  <div class="sec">5. Repuestos / Materiales</div>
-  <table style="border:1px solid #E5E7EB;border-top:none">
-    <thead><tr>
-      <th style="width:20px;text-align:center">#</th>
-      <th style="width:55px">Código</th>
-      <th>Descripción</th>
-      <th style="width:38px;text-align:center">Cant.</th>
-      ${conPrecios ? '<th style="width:80px;text-align:right">Vr. Unitario</th>' : ''}
-      ${conPrecios ? '<th style="width:80px;text-align:right">Vr. Total</th>' : ''}
-    </tr></thead>
-    <tbody>
-      ${solicitudes.map((sol,si) => {
-        const cot = cotizaciones.find(c=>c.solicitud_id===sol.id);
-        const items = solItems.filter(i=>i.solicitud_id===sol.id);
-        const filas = items.length ? items : [{repuesto:sol.repuesto,unidades:sol.unidades||1}];
-        return filas.map((item,idx) => `<tr>
-          <td style="color:#9CA3AF;text-align:center;font-size:8.5px">${si+1}</td>
-          <td style="font-family:monospace;font-size:8.5px;color:#6B7280">${escapeHtml(cot?.codigo||'—')}</td>
-          <td style="font-weight:600">${escapeHtml(item.repuesto||'—')}</td>
-          <td style="text-align:center">${item.unidades||1}</td>
-          ${conPrecios ? `<td style="text-align:right;font-family:monospace">${idx===0&&cot?.precio_venta_jefe ? fmt(cot.precio_venta_jefe/(item.unidades||1)) : ''}</td>` : ''}
-          ${conPrecios ? `<td style="text-align:right;font-family:monospace;font-weight:700">${idx===0&&cot?.precio_venta_jefe ? fmt(cot.precio_venta_jefe) : ''}</td>` : ''}
-        </tr>`).join('');
-      }).join('')}
-    </tbody>
-  </table>
-</div>` : ''}
-
-${novedades.length ? `<div style="margin-bottom:6px">
-  <div class="sec" style="background:#991B1B">Novedades registradas (${novedades.length})</div>
-  <table style="border:1px solid #FECACA;border-top:none">
-    <thead><tr style="background:#FEF2F2">
-      <th style="color:#991B1B">Tipo</th><th style="color:#991B1B">Motivo</th>
-      <th style="color:#991B1B;width:90px">Responsable</th><th style="color:#991B1B;width:95px">Fecha</th>
-    </tr></thead>
-    <tbody>
-      ${novedades.map(n=>`<tr><td style="font-weight:600">${escapeHtml(n.tipo)||'—'}</td><td>${escapeHtml(n.motivo)||'—'}</td><td>${escapeHtml(n.responsable)||'—'}</td><td style="font-family:monospace;font-size:8.5px">${fmtHora(n.creado_en)}</td></tr>`).join('')}
-    </tbody>
-  </table>
-</div>` : ''}
-
-<!-- FIRMAS + TOTALES -->
-<div style="display:grid;grid-template-columns:1fr 205px;gap:5px">
-
-  <div style="border:1px solid #E5E7EB;border-radius:3px;overflow:hidden">
-    <div class="sec">6. Firmas</div>
-    <div style="padding:6px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div style="padding-top:28px">
-        <div style="border-top:1.5px solid #374151;padding-top:4px">
-          <div style="font-size:8.5px;text-align:center;font-weight:600">Firma recepcionista</div>
-          <div style="font-size:7.5px;color:#9CA3AF;margin-top:4px">C.C. ________________________</div>
-        </div>
-      </div>
-      <div style="padding-top:28px">
-        <div style="border-top:1.5px solid #374151;padding-top:4px">
-          <div style="font-size:8.5px;text-align:center;font-weight:600">Firma cliente</div>
-          <div style="font-size:7.5px;color:#9CA3AF;margin-top:4px">C.C. ________________________</div>
-        </div>
-      </div>
-    </div>
+<!-- 4. TRABAJOS (tabla) + TOTALES (derecha) -->
+<div style="display:grid;grid-template-columns:1fr 175px;gap:0;border:0.8px solid #999;margin-bottom:5px">
+  <div style="border-right:0.8px solid #999">
+    <div class="sh">4. Descripción de trabajos</div>
+    <table>
+      <thead><tr>
+        <th style="width:18px;text-align:center">#</th>
+        <th>Descripción del trabajo</th>
+        <th style="width:75px">Tipo (Mecánica, Elec., etc.)</th>
+        <th style="width:85px">Técnico asignado</th>
+        <th style="width:50px;text-align:center">Horas est.</th>
+        <th style="width:72px;text-align:right">Valor unitario</th>
+        <th style="width:72px;text-align:right">Valor total</th>
+      </tr></thead>
+      <tbody>
+        ${etapas.map((e,i) => `<tr>
+          <td style="color:#aaa;text-align:center;font-size:8px">${i+1}</td>
+          <td style="font-weight:600">${escapeHtml(e.etapa||e.nombre||'—')}</td>
+          <td style="font-size:8px;color:${srvColor[e.servicio]||'#374151'};font-weight:700">${srvNombres[e.servicio]||e.servicio||'—'}</td>
+          <td>${escapeHtml(e.tecnico||'—')}</td>
+          <td style="text-align:center;font-family:monospace;font-size:8px">${e.horas_facturadas||'—'}</td>
+          <td style="text-align:right;font-family:monospace">${fmt(e.valor)}</td>
+          <td style="text-align:right;font-family:monospace;font-weight:700">${fmt(e.valor)}</td>
+        </tr>`).join('')}
+        ${Array.from({length:Math.max(0,6-etapas.length)},(_,i)=>`<tr><td style="color:#ddd;text-align:center;font-size:8px">${etapas.length+i+1}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`).join('')}
+      </tbody>
+    </table>
   </div>
-
-  <div style="border:1px solid #E5E7EB;border-radius:3px;overflow:hidden">
-    <div class="sec">Totales</div>
+  <!-- TOTALES -->
+  <div>
+    <div class="sh">Totales</div>
     <div style="padding:6px 8px">
-      <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #F3F4F6;font-size:9.5px">
-        <span style="color:#6B7280">Subtotal trabajos</span><span class="money">${fmt(totalManoObra)}</span>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid #ddd;font-size:8.5px">
+        <span>Subtotal trabajos</span><span class="money">$</span>
       </div>
-      ${conPrecios && totalRepuestos > 0 ? `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #F3F4F6;font-size:9.5px">
-        <span style="color:#6B7280">Subtotal repuestos</span><span class="money">${fmt(totalRepuestos)}</span>
-      </div>` : ''}
-      ${conPrecios ? (() => {
-        const sub = totalManoObra + totalRepuestos;
-        const iva = Math.round(sub * 0.19);
-        return `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #E5E7EB;font-size:9.5px">
-          <span style="color:#6B7280">IVA (19%)</span><span class="money">${fmt(iva)}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 7px;background:#1E3A5F;color:#fff;border-radius:3px;margin-top:5px">
-          <span style="font-weight:800;font-size:9.5px">TOTAL A PAGAR</span>
-          <span class="money" style="font-size:11px">$&nbsp;${new Intl.NumberFormat('es-CO',{minimumFractionDigits:0}).format(sub+iva)}</span>
-        </div>`;
-      })() : `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 7px;background:#1E3A5F;color:#fff;border-radius:3px;margin-top:5px">
-        <span style="font-weight:800;font-size:9.5px">TOTAL M.O.</span>
-        <span class="money" style="font-size:11px">${fmt(totalManoObra)}</span>
-      </div>`}
-      <div style="font-size:7px;color:#9CA3AF;margin-top:5px;text-align:center;line-height:1.4">Documento preliminar · no constituye factura<br>Generado: ${new Date().toLocaleString('es-CO')}</div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid #ddd;font-size:8.5px">
+        <span>Subtotal repuestos</span><span class="money">${conPrecios && totalRepuestos > 0 ? fmt(totalRepuestos) : '$'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid #ddd;font-size:8.5px">
+        <span>IVA (19%)</span><span class="money">$</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:6px 5px;font-size:10px;font-weight:800;background:#1E3A5F;color:#fff;margin-top:5px">
+        <span>TOTAL A PAGAR</span>
+        <span class="money">${conPrecios ? (() => { const s=totalManoObra+totalRepuestos; return '$ '+new Intl.NumberFormat('es-CO',{minimumFractionDigits:0}).format(s+Math.round(s*.19)); })() : '$'}</span>
+      </div>
+      ${!conPrecios ? `<div style="margin-top:6px;padding:4px 5px;border:0.8px solid #1E3A5F;font-size:8.5px;font-weight:700;display:flex;justify-content:space-between"><span>M.O. sin IVA</span><span class="money">${fmt(totalManoObra)}</span></div>` : ''}
     </div>
   </div>
+</div>
 
+<!-- 5. REPUESTOS + FIRMAS -->
+<div style="display:grid;grid-template-columns:1fr 175px;gap:0;border:0.8px solid #999">
+  <div style="border-right:0.8px solid #999">
+    <div class="sh">5. Repuestos / Materiales</div>
+    <table>
+      <thead><tr>
+        <th style="width:18px;text-align:center">#</th>
+        <th style="width:55px">Código</th>
+        <th>Descripción</th>
+        <th style="width:35px;text-align:center">Cant.</th>
+        <th style="width:75px;text-align:right">Vr. Unitario</th>
+        <th style="width:75px;text-align:right">Vr. Total</th>
+      </tr></thead>
+      <tbody>
+        ${solicitudes.length ? solicitudes.map((sol,si) => {
+          const cot = cotizaciones.find(c=>c.solicitud_id===sol.id);
+          const items = solItems.filter(i=>i.solicitud_id===sol.id);
+          const filas = items.length ? items : [{repuesto:sol.repuesto,unidades:sol.unidades||1}];
+          return filas.map((item,idx) => `<tr>
+            <td style="color:#aaa;text-align:center;font-size:8px">${si+1}</td>
+            <td style="font-family:monospace;font-size:8px;color:#777">${escapeHtml(cot?.codigo||'—')}</td>
+            <td style="font-weight:600">${escapeHtml(item.repuesto||'—')}</td>
+            <td style="text-align:center">${item.unidades||1}</td>
+            <td style="text-align:right;font-family:monospace">${conPrecios&&idx===0&&cot?.precio_venta_jefe ? fmt(cot.precio_venta_jefe/(item.unidades||1)) : ''}</td>
+            <td style="text-align:right;font-family:monospace;font-weight:700">${conPrecios&&idx===0&&cot?.precio_venta_jefe ? fmt(cot.precio_venta_jefe) : ''}</td>
+          </tr>`).join('');
+        }).join('') : ''}
+        ${Array.from({length:Math.max(0,4-solicitudes.length)},(_,i)=>`<tr><td style="color:#ddd;text-align:center;font-size:8px">${solicitudes.length+i+1}</td><td></td><td></td><td></td><td></td><td></td></tr>`).join('')}
+      </tbody>
+    </table>
+    ${novedades.length ? `<div style="border-top:0.8px solid #ccc;padding:3px 7px;background:#FFF5F5"><b style="font-size:7px;text-transform:uppercase;color:#991B1B">Novedades:</b> ${novedades.map(n=>'<span style="font-size:8px;margin-left:6px">'+escapeHtml(n.tipo||'—')+': '+escapeHtml(n.motivo||'—')+'</span>').join('')}</div>` : ''}
+  </div>
+  <!-- 6. FIRMAS -->
+  <div>
+    <div class="sh">6. Firmas</div>
+    <div style="padding:8px 10px">
+      <div style="margin-top:22px;border-top:1.2px solid #111;padding-top:4px;margin-bottom:14px">
+        <div style="font-size:8px;font-weight:600;text-align:center">Firma recepcionista</div>
+        <div style="font-size:7.5px;color:#888;margin-top:4px">C.C. ______________________</div>
+      </div>
+      <div style="margin-top:22px;border-top:1.2px solid #111;padding-top:4px">
+        <div style="font-size:8px;font-weight:600;text-align:center">Firma cliente</div>
+        <div style="font-size:7.5px;color:#888;margin-top:4px">C.C. ______________________</div>
+      </div>
+      <div style="margin-top:8px;font-size:6.5px;color:#aaa;text-align:center;line-height:1.4">Documento preliminar · no constituye factura<br>${new Date().toLocaleString('es-CO')}</div>
+    </div>
+  </div>
 </div>
 
 </div>
