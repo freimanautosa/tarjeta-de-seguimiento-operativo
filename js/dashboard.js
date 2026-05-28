@@ -174,15 +174,6 @@ async function cargarDashboardMes() {
         </div>`;
 
       chipsEl.innerHTML =
-        // Facturación
-        `<div class="kpi-chip kpi-chip-fact" style="background:#1E3A5F;border-radius:9px;padding:8px 12px;color:white;display:flex;flex-direction:column;justify-content:space-between">
-          <div class="kpi-chip-label" style="font-size:10px;font-weight:600;opacity:.5;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap">Facturación</div>
-          <div class="kpi-chip-num kpi-chip-fact-val" style="font-size:18px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1;margin-top:4px">${fmt(valorMes)}</div>
-          <div class="kpi-chip-bar" style="margin-top:5px">
-            ${barColor ? `<div style="height:3px;background:rgba(255,255,255,.15);border-radius:99px;overflow:hidden;margin-bottom:3px"><div style="height:100%;width:${pctFact}%;background:${barColor};border-radius:99px"></div></div>` : ''}
-            <span class="kpi-chip-sub" style="font-size:9px;opacity:.55;white-space:nowrap">${pctFact !== null ? `Meta: ${pctFact}%` : '—'}</span>
-          </div>
-        </div>` +
         chip(activasNormales, 'Activas', 'En proceso', '#2563EB', 'white', "navJefe('ordenes')") +
         chip(ordenesMes.length + (pctOrd !== null ? `<span style='font-size:12px;opacity:.6'>/${metaMes.meta_ordenes}</span>` : ''), 'Creadas', 'Este mes', '#7C3AED', 'white', "dashFiltrarOrdenes('creadas')") +
         chip(entregadasMes, 'Entregadas', 'Este mes', '#059669', 'white', "dashFiltrarOrdenes('entregadas')") +
@@ -665,34 +656,10 @@ async function cargarDashboard() {
 
       ${retrasosHtml}
 
-      <!-- Pipeline + Próximas entregas -->
-      <div class="dash-gen-pipeline" style="display:grid;grid-template-columns:1fr 210px;gap:10px;margin-bottom:10px">
-        <div class="card" style="padding:12px 14px">
-          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Flujo operativo del taller</div>
-          <div style="font-size:10px;color:var(--gris-mid);margin-bottom:10px">Estado actual de vehículos en cada etapa</div>
-          <div style="display:flex;align-items:stretch;gap:3px">
-            ${[
-              {label:'Activas',  val:activasArr.length, color:'#2563EB', bg:'#EBF2FF'},
-              {label:'Asignadas',val:asignadas,          color:'#7C3AED', bg:'#F5F3FF'},
-              {label:'Latonería',val:enLat,              color:'#DC2626', bg:'#FEE2E2'},
-              {label:'Pintura',  val:enPin,              color:'#D97706', bg:'#FEF3C7'},
-              {label:'Mecánica', val:enMec,              color:'#0891B2', bg:'#E0F2FE'},
-              {label:'Adicionales',val:enAdd,            color:'#059669', bg:'#E6F5EF'},
-              {label:'Listas',   val:listaEnt,           color:'#16A34A', bg:'#DCFCE7'},
-            ].map((p,i,arr)=>`
-              <div style="flex:1;min-width:0;display:flex;align-items:center;gap:3px">
-                <div style="flex:1;background:${p.bg};border-radius:8px;padding:8px 4px;text-align:center">
-                  <div style="font-size:20px;font-weight:800;color:${p.color};line-height:1">${p.val}</div>
-                  <div style="font-size:9px;font-weight:600;color:${p.color};margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.label}</div>
-                </div>
-                ${i<arr.length-1?`<svg width="8" height="8" fill="none" stroke="var(--gris-mid)" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>`:''}
-              </div>`).join('')}
-          </div>
-        </div>
-        <div class="card" style="padding:12px 14px">
-          <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:8px">Próximas entregas</div>
-          ${proximasHtml}
-        </div>
+      <!-- Próximas entregas -->
+      <div class="card" style="padding:12px 14px;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:8px">Próximas entregas</div>
+        ${proximasHtml}
       </div>
 
       <!-- Fila 3: Carga por área | Procesos activos | Servicios más demandados -->

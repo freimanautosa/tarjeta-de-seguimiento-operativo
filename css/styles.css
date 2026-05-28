@@ -39,6 +39,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   font-size: 14px;
   line-height: 1.5;
+  overflow-x: hidden; /* evita scroll horizontal en cualquier pantalla */
 }
 a { text-decoration: none; color: inherit; }
 button { font-family: 'DM Sans', sans-serif; cursor: pointer; border: none; }
@@ -2718,14 +2719,14 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 
 /* ══════════════════════════════════════════════════════════
    DASHBOARD KPI STRIP
-   Desktop: 5 columnas iguales, full-width, debajo de los tabs.
-   Móvil:   fila horizontal scrolleable, chips compactos.
+   Desktop: 4 columnas iguales (Activas · Creadas · Entregadas · Pulmón)
+   Móvil:   flex, se reparten el ancho disponible, sin scroll.
 ══════════════════════════════════════════════════════════ */
 
 /* ── Strip base (desktop) ── */
 .dash-kpi-strip {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   margin-bottom: 14px;
 }
@@ -2734,20 +2735,13 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .dash-kpi-strip { scrollbar-width: none; }
 .dash-kpi-strip::-webkit-scrollbar { display: none; }
 
-/* Chips hijos desktop: llenan su columna, sin inline min-width */
-.dash-kpi-strip .kpi-chip,
-.dash-kpi-strip .kpi-chip-fact {
+/* Chips hijos desktop: llenan su columna grid */
+.dash-kpi-strip .kpi-chip {
   min-width: 0 !important;
   width: 100%;
 }
 
-/* Valor de facturación desktop: puede hacer wrap si es largo */
-.kpi-chip-fact .kpi-chip-fact-val {
-  white-space: normal;
-  word-break: break-all;
-}
-
-/* ── Grid KPI del tab General: mismo tratamiento mobile ── */
+/* ── Grid KPI del tab General: sin desborde ── */
 .dash-kpi-row-gen > div {
   min-width: 0;
 }
@@ -2771,33 +2765,17 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
     margin-bottom: 12px;
   }
 
-  /* Chips: no se encojen, ancho mínimo fijo */
+  /* Chips: 4 chips, caben sin scroll en una pantalla normal.
+     Si la pantalla es muy estrecha, scrollea. */
   .dash-kpi-strip .kpi-chip {
-    flex: 0 0 auto;
-    min-width: 72px !important;
-    max-width: 90px !important;
-    padding: 7px 10px !important;
+    flex: 1 1 0;          /* reparte el espacio disponible */
+    min-width: 70px;      /* mínimo para que el número sea legible */
+    padding: 8px 10px !important;
   }
 
-  /* Chip Facturación: un poco más ancho (valor numérico largo) */
-  .dash-kpi-strip .kpi-chip-fact {
-    flex: 0 0 auto;
-    min-width: 100px !important;
-    max-width: 120px !important;
-    padding: 7px 10px !important;
-  }
-
-  /* Número de cada chip: tamaño reducido */
+  /* Número de cada chip: compacto */
   .dash-kpi-strip .kpi-chip-num {
-    font-size: 18px !important;
-  }
-
-  /* Valor de Facturación: aún más pequeño y con wrap */
-  .dash-kpi-strip .kpi-chip-fact-val {
-    font-size: 13px !important;
-    white-space: normal !important;
-    word-break: break-all !important;
-    line-height: 1.2 !important;
+    font-size: 20px !important;
   }
 
   /* Etiqueta: legible pero compacta */
@@ -2806,18 +2784,16 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
     white-space: normal !important;
   }
 
-  /* Sub-etiqueta, barra y meta: ocultos en móvil */
-  .dash-kpi-strip .kpi-chip-sub,
-  .dash-kpi-strip .kpi-chip-bar {
+  /* Sub-etiqueta: oculta en móvil */
+  .dash-kpi-strip .kpi-chip-sub {
     display: none !important;
   }
 
-  /* ── Grid KPI del tab General: 2+3 filas en móvil ── */
+  /* ── Grid KPI del tab General: 2 cols en móvil ── */
   .dash-kpi-row-gen {
     grid-template-columns: 1fr 1fr !important;
-    grid-template-rows: auto auto !important;
   }
-  /* El chip Facturación ocupa la fila 1 completa */
+  /* Facturación (último chip) ocupa fila completa */
   .dash-kpi-row-gen > div:last-child {
     grid-column: 1 / -1;
   }
