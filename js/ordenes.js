@@ -737,6 +737,12 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
       <div class="etapa-body" id="eb-${k}">
         <div class="etapa-actions" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           ${acc}
+          <button class="btn btn-ghost btn-sm" style="display:flex;align-items:center;gap:5px;color:#92400E;border-color:#FCD34D;background:#FFFBEB"
+            data-eid="${eid}" data-placa="${escapeHtml(ordenActual?.placa||'')}"
+            onclick="abrirModalSolicitudRepuesto(${ordenActual?.id||0},+this.dataset.eid,this.dataset.placa)">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            Pedir repuesto
+          </button>
         </div>
         <div class="timestamps">
           <div class="ts-chip">Inicio: <strong>${e.inicio?formatTS(e.inicio):'—'}</strong></div>

@@ -151,9 +151,14 @@ async function abrirModalSolicitudRepuesto(ordenId, etapaId, placa) {
         <button class="modal-close" onclick="document.getElementById('modal-sol-multi').remove()">✕</button>
       </div>
       <div class="modal-body">
-        <div style="font-size:12px;color:#92400E;margin-bottom:14px;padding:8px 12px;background:#FEF3C7;border-radius:6px;border:1px solid #FDE68A">
-          ⏸ La etapa se pausará hasta que el jefe entregue los repuestos.
-        </div>
+        ${esJefe()
+          ? `<div style="font-size:12px;color:#1E40AF;margin-bottom:14px;padding:8px 12px;background:#EFF6FF;border-radius:6px;border:1px solid #BFDBFE">
+              📦 Se registrará la solicitud. La etapa <strong>no se pausará</strong> — el mecánico continúa trabajando.
+            </div>`
+          : `<div style="font-size:12px;color:#92400E;margin-bottom:14px;padding:8px 12px;background:#FEF3C7;border-radius:6px;border:1px solid #FDE68A">
+              ⏸ La etapa se pausará hasta que el jefe entregue los repuestos.
+            </div>`
+        }
         <div id="sol-items-cont">${_solItems.map(i => _renderSolItem(i)).join('')}</div>
         <button type="button" class="btn btn-ghost btn-sm" onclick="_agregarSolItem()" style="width:100%;margin-top:2px;margin-bottom:4px">
           + Agregar otro repuesto
@@ -218,18 +223,20 @@ async function enviarSolicitudRepuesto(ordenId, etapaId) {
       }
     }
 
-    // Pausar etapa activa
-    if (etapaId) {
-      await api(`/etapas?id=eq.${etapaId}`, 'PATCH', {
-        pausado: true, pausa_inicio: new Date().toISOString()
-      }).catch(() => {});
-    } else {
-      // Sin etapa específica: buscar etapas activas de este mecánico en esta orden y pausarlas
-      const activas = await api(`/etapas?orden_id=eq.${ordenId}&fin=is.null&pausado=eq.false&inicio=not.is.null&select=id`).catch(()=>[]) || [];
-      for (const e of activas) {
-        await api(`/etapas?id=eq.${e.id}`, 'PATCH', {
+    // Pausar etapa activa — solo si quien solicita es mecánico (no jefe/gerente)
+    if (!esJefe()) {
+      if (etapaId) {
+        await api(`/etapas?id=eq.${etapaId}`, 'PATCH', {
           pausado: true, pausa_inicio: new Date().toISOString()
         }).catch(() => {});
+      } else {
+        // Sin etapa específica: buscar etapas activas de este mecánico en esta orden y pausarlas
+        const activas = await api(`/etapas?orden_id=eq.${ordenId}&fin=is.null&pausado=eq.false&inicio=not.is.null&select=id`).catch(()=>[]) || [];
+        for (const e of activas) {
+          await api(`/etapas?id=eq.${e.id}`, 'PATCH', {
+            pausado: true, pausa_inicio: new Date().toISOString()
+          }).catch(() => {});
+        }
       }
     }
 
