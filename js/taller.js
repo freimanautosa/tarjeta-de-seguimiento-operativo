@@ -576,56 +576,73 @@ function _tvMostrarOverlay(orden, etapasOrden, badge, esVerde, aprobadas) {
   }, 1000);
 }
 
-// Estado persistente del scroll — sobrevive entre refrescos del taller
-window._tvScrollDir      = window._tvScrollDir      ?? 1;    // 1=bajar, -1=subir
-window._tvScrollLastTime = null;
+// ── Autoscroll perpetuo — se inicia UNA sola vez ─────────
+window._tvScrollDir      = window._tvScrollDir ?? 1;
+window._tvScrollPausado  = false;
+window._tvScrollRunning  = false;
 
 function _iniciarScrollTaller() {
-  if (window._tallerScrollRAF)     cancelAnimationFrame(window._tallerScrollRAF);
-  if (window._tallerScrollTimeout) clearTimeout(window._tallerScrollTimeout);
-  window._tvScrollLastTime = null; // reset timing tras rebuild del DOM
+  if (window._tvScrollRunning) return; // ya corre, no reiniciar
+  window._tvScrollRunning = true;
 
   const PX_PER_SEC = 35;
   const PAUSE_TOP  = 4000;
   const PAUSE_BOT  = 3000;
+  let lastTime = null;
+  let enPausa  = false;
 
   const step = (ts) => {
-    if (!document.getElementById('taller-contenido')) return;
-    const tw = document.querySelector('.tv-table-wrap');
-    if (!tw) return;
-    const maxScroll = tw.scrollHeight - tw.clientHeight;
-    if (maxScroll <= 20) { window._tallerScrollRAF = requestAnimationFrame(step); return; }
+    // Si la pantalla taller no está activa, esperar y reintentar
+    if (!document.getElementById('taller-contenido') ||
+        document.getElementById('tv-activate-screen')) {
+      window._tvScrollRunning = false;
+      return;
+    }
 
-    if (window._tvScrollLastTime === null) window._tvScrollLastTime = ts;
-    const delta = (ts - window._tvScrollLastTime) / 1000;
-    window._tvScrollLastTime = ts;
+    // En pausa (cambio de orden o pausa en extremo) — solo seguir el RAF
+    if (window._tvScrollPausado) {
+      lastTime = null;
+      requestAnimationFrame(step);
+      return;
+    }
+
+    const tw = document.querySelector('.tv-table-wrap');
+    if (!tw) { requestAnimationFrame(step); return; }
+    const maxScroll = tw.scrollHeight - tw.clientHeight;
+
+    // Sin contenido suficiente para scrollear
+    if (maxScroll <= 20) { lastTime = null; requestAnimationFrame(step); return; }
+
+    if (lastTime === null) lastTime = ts;
+    const delta = Math.min((ts - lastTime) / 1000, 0.1); // cap delta para evitar saltos
+    lastTime = ts;
 
     tw.scrollTop += window._tvScrollDir * PX_PER_SEC * delta;
 
+    // Llegó abajo
     if (window._tvScrollDir === 1 && tw.scrollTop >= maxScroll - 2) {
       tw.scrollTop = maxScroll;
-      window._tvScrollLastTime = null;
-      window._tvScrollDir = -1; // persistir dirección
-      window._tallerScrollTimeout = setTimeout(() => {
-        window._tallerScrollRAF = requestAnimationFrame(step);
-      }, PAUSE_BOT);
-      return;
+      lastTime = null;
+      window._tvScrollDir = -1;
+      window._tvScrollPausado = true;
+      setTimeout(() => { window._tvScrollPausado = false; }, PAUSE_BOT);
     }
-    if (window._tvScrollDir === -1 && tw.scrollTop <= 2) {
+    // Llegó arriba
+    else if (window._tvScrollDir === -1 && tw.scrollTop <= 2) {
       tw.scrollTop = 0;
-      window._tvScrollLastTime = null;
-      window._tvScrollDir = 1; // persistir dirección
-      window._tallerScrollTimeout = setTimeout(() => {
-        window._tallerScrollRAF = requestAnimationFrame(step);
-      }, PAUSE_TOP);
-      return;
+      lastTime = null;
+      window._tvScrollDir = 1;
+      window._tvScrollPausado = true;
+      setTimeout(() => { window._tvScrollPausado = false; }, PAUSE_TOP);
     }
-    window._tallerScrollRAF = requestAnimationFrame(step);
+
+    requestAnimationFrame(step);
   };
 
-  window._tallerScrollTimeout = setTimeout(() => {
-    window._tallerScrollRAF = requestAnimationFrame(step);
-  }, 1000); // pequeño delay inicial tras rebuild
+  // Pausa inicial de 4s antes de empezar
+  window._tvScrollPausado = true;
+  setTimeout(() => { window._tvScrollPausado = false; }, PAUSE_TOP);
+  requestAnimationFrame(step);
 }
 
 async function cargarPantallaTaller() {
@@ -988,14 +1005,15 @@ async function cargarPantallaTaller() {
       });
     }, 1000);
 
+    // ── Iniciar scroll perpetuo (solo si no está corriendo) ──
+    _iniciarScrollTaller();
+
     // ── Animación cuando hay cambio en una orden ─────────────
     if (ordenCambiada) {
-      // Detener scroll temporalmente para que la fila sea visible
-      if (window._tallerScrollRAF)  { cancelAnimationFrame(window._tallerScrollRAF); window._tallerScrollRAF = null; }
-      if (window._tallerScrollTimeout) { clearTimeout(window._tallerScrollTimeout); window._tallerScrollTimeout = null; }
-
+      // Pausar scroll para que la fila sea visible durante la animación
       const tw = cont.querySelector('.tv-table-wrap');
       if (tw) tw.scrollTop = 0;
+      window._tvScrollPausado = true;
 
       setTimeout(() => {
         const rowEl = document.getElementById(`tv-row-${ordenCambiada.id}`);
@@ -1005,13 +1023,9 @@ async function cargarPantallaTaller() {
           rowEl.classList.add('tv-row-alert');
           setTimeout(() => rowEl.classList.remove('tv-row-alert'), 3200);
         }
-        // Retomar autoscroll después de 3s (terminada la animación)
-        window._tallerScrollTimeout = setTimeout(() => _iniciarScrollTaller(), 3000);
+        // Reanudar scroll tras la animación (3s)
+        setTimeout(() => { window._tvScrollPausado = false; }, 3000);
       }, 80);
-      // NO mostrar overlay — quitado por pedido del usuario
-    } else {
-      // Sin cambio: iniciar/continuar autoscroll normal
-      _iniciarScrollTaller();
     }
 
   } catch(e) {
