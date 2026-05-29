@@ -2018,15 +2018,25 @@ async function eliminarFoto(fotoId, url) {
 async function guardarNovedad(eid) {
   const motivo = document.getElementById(`nmot-${eid}`)?.value?.trim();
   if (!motivo) { toast('El motivo es obligatorio', 'err'); return; }
+  const tipo        = document.getElementById(`ntype-${eid}`)?.value;
+  const responsable = document.getElementById(`nresp-${eid}`)?.value;
+  const valorRaw    = parseFloat(document.getElementById(`nvalor-${eid}`)?.value);
+  const valor       = valorRaw > 0 ? valorRaw : null;
+
   try {
-    await api('/novedades', 'POST', { 
-      orden_id: ordenActual.id, etapa_id: eid, 
-      tipo: document.getElementById(`ntype-${eid}`).value, 
-      responsable: document.getElementById(`nresp-${eid}`).value, 
-      motivo, desde: new Date().toISOString(),
-      valor: parseFloat(document.getElementById(`nvalor-${eid}`)?.value) || null
-    }, { Prefer: 'return=minimal' });
-    toast('Novedad registrada ✓');
+    // Si tipo es Detenido, pausar la etapa primero
+    if (tipo === 'Detenido') {
+      await api(`/etapas?id=eq.${eid}`, 'PATCH', {
+        pausado: true, pausa_inicio: new Date().toISOString()
+      });
+    }
+
+    const payload = { orden_id: ordenActual.id, etapa_id: eid, tipo, responsable, motivo, desde: new Date().toISOString() };
+    if (valor !== null) payload.valor = valor;
+
+    await api('/novedades', 'POST', payload, { Prefer: 'return=minimal' });
+    toast(tipo === 'Detenido' ? 'Etapa pausada y novedad registrada ✓' : 'Novedad registrada ✓');
+
     const input = document.getElementById(`nmot-${eid}`);
     if (input) input.value = '';
     const vinput = document.getElementById(`nvalor-${eid}`);
