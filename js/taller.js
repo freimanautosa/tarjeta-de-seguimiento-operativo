@@ -464,6 +464,12 @@ async function _activarPantallaTaller() {
   const screen = document.getElementById('tv-activate-screen');
   if (screen) screen.remove();
 
+  // Resetear estado de scroll de paneles para evitar pausado:true heredado
+  window._tvPanelScroll = {
+    listos:      { dir: 1, pausado: false },
+    programadas: { dir: 1, pausado: false }
+  };
+
   cargarPantallaTaller();
   iniciarRelojTaller();
   setInterval(() => { if (sesion?.perfil === 'taller') cargarPantallaTaller(); }, 10000);
@@ -667,8 +673,8 @@ function _iniciarScrollTaller() {
     }
 
     // ── Panel listos y programadas (scroll independiente, más lento) ──
-    _scrollPanel('tv-panel-listos',      window._tvPanelScroll.listos,      0.4, 3000);
-    _scrollPanel('tv-panel-programadas', window._tvPanelScroll.programadas, 0.4, 3000);
+    _scrollPanel('tv-panel-listos',      window._tvPanelScroll.listos,      0.8, 3000);
+    _scrollPanel('tv-panel-programadas', window._tvPanelScroll.programadas, 0.8, 3000);
 
     // ── Tabla principal ──
     if (!window._tvScrollPausado) {
