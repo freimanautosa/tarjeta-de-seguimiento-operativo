@@ -948,7 +948,7 @@ async function crearOrdenDesdeCotizacion(cot) {
     propietario:     cot.nombre_cliente  || null,
     telefono:        cot.telefono_cliente || null,
     aseguradora:     cot.aseguradora     || null,
-    tipo_cliente:    cot.tipo_cliente    || null,
+    tipo_cliente:    (cot.tipo_cliente === 'persona' ? 'particular' : cot.tipo_cliente) || null,
     nivel_dano:      cot.nivel_dano      || null,
     cotizacion_url:  cot.url_pdf         || null,
     cotizacion_id:   cot.id,
