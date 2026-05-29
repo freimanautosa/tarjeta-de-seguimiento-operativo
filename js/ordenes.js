@@ -2651,14 +2651,18 @@ async function cargarMecanicosVista() {
              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
            </button>` : ''}`;
 
-      return `<div style="display:grid;grid-template-columns:20px 160px 90px 1fr auto;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--gris-borde);background:white;transition:background .1s" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
-        ${indicador}
-        <div style="display:flex;align-items:center;gap:7px;min-width:0">
+      const rolLabel = esJefeTaller ? 'Jefe de taller' : escapeHtml(ROL_LABEL[m.rol]||m.rol||'—');
+      return `<div class="op-row" style="display:grid;grid-template-columns:20px 160px 90px 1fr auto;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--gris-borde);background:white;transition:background .1s" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
+        <span class="op-col-dot">${indicador}</span>
+        <div class="op-col-nombre" style="display:flex;align-items:center;gap:7px;min-width:0">
           <div style="width:26px;height:26px;border-radius:50%;background:${esJefeTaller ? '#1E3A5F' : (ocupado ? 'var(--azul)' : '#94A3B8')};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:white;flex-shrink:0">${escapeHtml(m.nombre.charAt(0).toUpperCase())}</div>
-          <span style="font-size:12.5px;font-weight:${esJefeTaller?'700':'600'};color:var(--texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(m.nombre)}</span>
+          <div style="min-width:0">
+            <span style="font-size:12.5px;font-weight:${esJefeTaller?'700':'600'};color:var(--texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">${escapeHtml(m.nombre)}</span>
+            <span class="op-rol-mobile" style="display:none;font-size:10px;color:var(--gris-mid)">${rolLabel}</span>
+          </div>
         </div>
-        <span style="font-size:10.5px;color:var(--gris-mid);white-space:nowrap">${esJefeTaller ? 'Jefe de taller' : escapeHtml(ROL_LABEL[m.rol]||m.rol||'—')}</span>
-        ${estadoHtml}
+        <span class="op-col-rol" style="font-size:10.5px;color:var(--gris-mid);white-space:nowrap">${rolLabel}</span>
+        <div class="op-col-estado">${estadoHtml}</div>
         <div style="display:flex;gap:3px;flex-shrink:0">${acciones}</div>
       </div>`;
     };

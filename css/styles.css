@@ -2315,6 +2315,42 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   .cal-orden { font-size: 9px; padding: 2px 4px; border-left-width: 2px; }
   .cal-orden-meta { display: none; }
   .cal-mas   { font-size: 9px; }
+  /* Calendar nav compacto en móvil */
+  .cal-shell  { padding: 10px 8px; }
+  .cal-mes-titulo { font-size: 13px; }
+  .cal-nav    { margin-bottom: 8px; }
+  .cal-leyenda { flex-wrap: wrap; gap: 4px; font-size: 10px; margin-bottom: 8px; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   OPERARIOS — MOBILE
+══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Cabecera de la tabla: ocultar columnas Rol y Estado */
+  #pag-mecanicos [style*="grid-template-columns:20px 160px 90px"] {
+    grid-template-columns: 16px 1fr auto !important;
+    gap: 8px !important;
+    padding: 6px 10px !important;
+  }
+  /* Filas de operarios: misma simplificación */
+  .op-row {
+    grid-template-columns: 16px 1fr auto !important;
+    gap: 8px !important;
+    padding: 8px 10px !important;
+  }
+  /* Ocultar columnas Rol y Estado en móvil */
+  .op-col-rol    { display: none !important; }
+  .op-col-estado { display: none !important; }
+  /* Mostrar rol debajo del nombre */
+  .op-rol-mobile { display: block !important; }
+  /* Ajustar nombre para que no desborde */
+  .op-col-nombre { min-width: 0; overflow: hidden; }
+}
+
+@media (max-width: 480px) {
+  .op-row { padding: 7px 8px !important; }
+  /* Calendariodías: solo abreviar más */
+  .cal-head { font-size: 8px !important; padding: 4px 1px !important; }
 }
 
 /* ═══════════════════════════════════════════════════════════
