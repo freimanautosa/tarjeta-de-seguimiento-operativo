@@ -347,7 +347,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   cursor: pointer;
   color: var(--texto);
 }
-.content { flex: 1; padding: 24px 28px; max-width: 1200px; width: 100%; margin: 0 auto; }
+.content { flex: 1; padding: 24px 28px; width: 100%; }
 
 /* BOTTOM NAV (mobile) */
 .bottom-nav {
@@ -1553,7 +1553,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   .hamburger { display: flex !important; align-items: center; justify-content: center; }
 
   /* Content padding tablet */
-  .content { padding: 18px 20px; max-width: 960px; margin: 0 auto; }
+  .content { padding: 18px 20px; }
 
   /* Topbar tablet */
   .topbar { padding: 0 20px; }

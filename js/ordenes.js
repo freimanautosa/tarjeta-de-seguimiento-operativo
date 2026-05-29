@@ -2592,82 +2592,103 @@ async function cargarMecanicosVista() {
       porRol[rol].push(m);
     });
 
-    const tarjetaMec = (m) => {
+    // Fila compacta por operario
+    const filaOp = (m, esJefeTaller = false) => {
       const etapas = etapasActivas.filter(e => e.mecanico_id === m.id);
       const ocupado = etapas.length > 0;
-      const etapsHtml = etapas.length
-        ? etapas.map(e => {
-            const ord   = ordenes.find(o => o.id === e.orden_id);
-            const color = srvColor[e.servicio] || '#6B7280';
-            const mins  = e.inicio ? Math.round((new Date() - new Date(e.inicio)) / 60000) : 0;
-            const dur   = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins/60)}h ${mins%60}m` : `${Math.floor(mins/1440)}d`;
-            return `<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--gris-borde)">
-              <div style="width:3px;height:28px;background:${color};border-radius:99px;flex-shrink:0"></div>
-              <div style="flex:1;min-width:0">
-                <div style="font-size:11.5px;font-weight:600;color:var(--texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(e.etapa)||'—'}</div>
-                <div style="font-size:10px;color:var(--gris-mid);font-family:'DM Mono',monospace">${escapeHtml(ord?.placa)||'—'} · ${[ord?.marca,ord?.linea].filter(Boolean).map(escapeHtml).join(' ')||'—'}</div>
-              </div>
-              <span style="font-size:10px;color:${color};font-family:'DM Mono',monospace;font-weight:700;flex-shrink:0;background:${color}18;padding:2px 6px;border-radius:4px">${dur}</span>
-            </div>`;
-          }).join('')
-        : `<div style="font-size:11px;color:var(--gris-mid);padding:8px 0;text-align:center;font-style:italic">Libre</div>`;
+      const primeraEtapa = etapas[0];
+      const ord = primeraEtapa ? ordenes.find(o => o.id === primeraEtapa.orden_id) : null;
+      const color = primeraEtapa ? (srvColor[primeraEtapa.servicio] || '#6B7280') : null;
+      const mins = primeraEtapa?.inicio ? Math.round((new Date() - new Date(primeraEtapa.inicio)) / 60000) : 0;
+      const dur = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins/60)}h ${mins%60}m` : `${Math.floor(mins/1440)}d`;
 
-      return `<div style="background:white;border:1.5px solid ${ocupado ? 'var(--azul-light)' : 'var(--gris-borde)'};border-radius:9px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:box-shadow .15s">
-        <div style="padding:10px 13px;border-bottom:1px solid var(--gris-borde);display:flex;align-items:center;gap:9px;background:${ocupado ? 'var(--azul-light)' : 'var(--gris-bg)'}">
-          <div style="width:32px;height:32px;border-radius:50%;background:${ocupado ? 'var(--azul)' : '#CBD5E1'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:white;flex-shrink:0">${escapeHtml(m.nombre.charAt(0).toUpperCase())}</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:13px;color:var(--texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(m.nombre)}</div>
-            <div style="display:flex;align-items:center;gap:6px;margin-top:1px">
-              ${ocupado
-                ? `<span style="font-size:10px;font-weight:700;color:var(--azul);background:rgba(30,58,95,.1);border-radius:4px;padding:1px 5px">${etapas.length} etapa${etapas.length!==1?'s':''}</span>`
-                : `<span style="font-size:10px;color:var(--gris-mid)">Libre</span>`}
-              ${m.telegram_chat_id
-                ? `<span style="font-size:10px;color:#059669">✓ TG</span>`
-                : `<span style="font-size:10px;color:#D97706">⚠ Sin TG</span>`}
-            </div>
-          </div>
-          <div style="display:flex;gap:3px;flex-shrink:0">
-            <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirCambiarPassMecanico(${m.id},'${escapeHtml(m.nombre)}')" title="Contraseña">
-              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            </button>
-            ${esGerente ? `
-            <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirModalOperario(${JSON.stringify(m).replace(/"/g,'&quot;')})" title="Editar">
-              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
-            <button class="btn btn-ghost btn-xs" style="color:var(--rojo)" onclick="event.stopPropagation();eliminarOperario(${m.id},'${escapeHtml(m.nombre)}')" title="Desactivar">
-              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-            </button>` : ''}
-          </div>
+      const indicador = ocupado
+        ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#22C55E;flex-shrink:0;box-shadow:0 0 0 2px #DCFCE7"></span>`
+        : `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#D1D5DB;flex-shrink:0"></span>`;
+
+      const estadoHtml = ocupado
+        ? `<div style="display:flex;align-items:center;gap:6px;min-width:0">
+            <div style="width:3px;height:16px;background:${color};border-radius:99px;flex-shrink:0"></div>
+            <span style="font-size:11.5px;color:var(--texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">${escapeHtml(primeraEtapa.etapa)||'—'}</span>
+            ${ord?.placa ? `<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--gris-mid);flex-shrink:0">${escapeHtml(ord.placa)}</span>` : ''}
+            ${etapas.length > 1 ? `<span style="font-size:10px;color:var(--gris-mid);flex-shrink:0">+${etapas.length-1}</span>` : ''}
+            <span style="font-size:10px;font-weight:700;color:${color};background:${color}18;padding:1px 5px;border-radius:3px;font-family:'DM Mono',monospace;flex-shrink:0">${dur}</span>
+          </div>`
+        : `<span style="font-size:11.5px;color:var(--gris-mid);font-style:italic">Libre</span>`;
+
+      const acciones = esJefeTaller
+        ? `<button class="btn btn-ghost btn-xs" onclick="abrirCambiarPassJefe()" title="Cambiar contraseña">
+             <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+           </button>`
+        : `<button class="btn btn-ghost btn-xs" onclick="abrirCambiarPassMecanico(${m.id},'${escapeHtml(m.nombre)}')" title="Contraseña">
+             <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+           </button>
+           ${esGerente ? `
+           <button class="btn btn-ghost btn-xs" onclick="abrirModalOperario(${JSON.stringify(m).replace(/"/g,'&quot;')})" title="Editar">
+             <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+           </button>
+           <button class="btn btn-ghost btn-xs" style="color:var(--rojo)" onclick="eliminarOperario(${m.id},'${escapeHtml(m.nombre)}')" title="Desactivar">
+             <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+           </button>` : ''}`;
+
+      return `<div style="display:grid;grid-template-columns:20px 160px 90px 1fr auto;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--gris-borde);background:white;transition:background .1s" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
+        ${indicador}
+        <div style="display:flex;align-items:center;gap:7px;min-width:0">
+          <div style="width:26px;height:26px;border-radius:50%;background:${esJefeTaller ? '#1E3A5F' : (ocupado ? 'var(--azul)' : '#94A3B8')};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:white;flex-shrink:0">${escapeHtml(m.nombre.charAt(0).toUpperCase())}</div>
+          <span style="font-size:12.5px;font-weight:${esJefeTaller?'700':'600'};color:var(--texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(m.nombre)}</span>
         </div>
-        <div style="padding:0 13px 6px">${etapsHtml}</div>
+        <span style="font-size:10.5px;color:var(--gris-mid);white-space:nowrap">${esJefeTaller ? 'Jefe de taller' : escapeHtml(ROL_LABEL[m.rol]||m.rol||'—')}</span>
+        ${estadoHtml}
+        <div style="display:flex;gap:3px;flex-shrink:0">${acciones}</div>
       </div>`;
     };
+
+    // Leer datos del jefe desde config
+    const cfgJefe = await api('/configuracion?clave=in.(jefe_nombre,jefe_cedula)').catch(() => []) || [];
+    const jefeNombre = cfgJefe.find(c => c.clave === 'jefe_nombre')?.valor || 'Jefe de Taller';
+    const jefeMock = { id: 0, nombre: jefeNombre, rol: 'jefe', telegram_chat_id: null };
 
     const totalActivos = mecsData.filter(m => etapasActivas.some(e => e.mecanico_id === m.id)).length;
 
     cont.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:8px">
           <span style="font-size:13px;font-weight:700;color:var(--texto)">${mecsData.length} operario${mecsData.length!==1?'s':''}</span>
-          <span style="font-size:11px;color:var(--azul);background:var(--azul-light);padding:2px 8px;border-radius:20px;font-weight:700">${totalActivos} activo${totalActivos!==1?'s':''}</span>
+          <span style="font-size:11px;color:#059669;background:#DCFCE7;padding:2px 8px;border-radius:20px;font-weight:700">${totalActivos} activo${totalActivos!==1?'s':''}</span>
+          <span style="font-size:11px;color:var(--gris-mid);background:var(--gris-bg);padding:2px 8px;border-radius:20px">${mecsData.length - totalActivos} libre${mecsData.length-totalActivos!==1?'s':''}</span>
         </div>
         ${esGerente ? `
-        <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <div style="display:flex;gap:7px">
           <button class="btn btn-primary btn-sm" onclick="abrirModalOperario(null)" style="display:flex;align-items:center;gap:5px">
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo
           </button>
           <button class="btn btn-ghost btn-sm" onclick="abrirGestionRoles()" style="color:#7C3AED;border-color:#DDD6FE">Roles</button>
-          <button class="btn btn-ghost btn-sm" onclick="abrirCambiarPassJefe()" style="color:var(--azul)">Pass jefe</button>
         </div>` : ''}
       </div>
-      ${Object.entries(porRol).map(([rol, mecs]) => `
-        <div style="margin-bottom:18px">
-          <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gris-mid);font-family:'DM Mono',monospace;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--gris-borde)">${escapeHtml(rol)} <span style="opacity:.6">(${mecs.length})</span></div>
-          <div class="ops-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
-            ${mecs.map(tarjetaMec).join('')}
-          </div>
+
+      <div style="border:1.5px solid var(--gris-borde);border-radius:10px;overflow:hidden">
+        <!-- Cabecera -->
+        <div style="display:grid;grid-template-columns:20px 160px 90px 1fr auto;align-items:center;gap:10px;padding:6px 12px;background:#F8F9FB;border-bottom:1.5px solid var(--gris-borde)">
+          <span></span>
+          <span style="font-size:10px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:.07em">Nombre</span>
+          <span style="font-size:10px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:.07em">Rol</span>
+          <span style="font-size:10px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:.07em">Estado actual</span>
+          <span></span>
         </div>
-      `).join('')}
+
+        <!-- Jefe de taller -->
+        <div style="background:#F0F4FF;border-bottom:1.5px solid var(--gris-borde)">
+          ${filaOp(jefeMock, true)}
+        </div>
+
+        <!-- Operarios agrupados por rol -->
+        ${Object.entries(porRol).map(([rol, mecs]) => `
+          <div style="background:var(--gris-bg);padding:4px 12px;border-bottom:1px solid var(--gris-borde)">
+            <span style="font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--gris-mid);font-family:'DM Mono',monospace">${escapeHtml(rol)} (${mecs.length})</span>
+          </div>
+          ${mecs.map(m => filaOp(m)).join('')}
+        `).join('')}
+      </div>
     `;
   } catch(e) {
     cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
