@@ -2330,7 +2330,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 /* Cabecera */
 .op-header {
   display: grid;
-  grid-template-columns: 20px 1fr 110px 1fr auto;
+  grid-template-columns: 20px 1fr 110px 1fr 88px;
   align-items: center;
   gap: 10px;
   padding: 6px 12px;
@@ -2346,7 +2346,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 /* Fila */
 .op-row {
   display: grid;
-  grid-template-columns: 20px 1fr 110px 1fr auto;
+  grid-template-columns: 20px 1fr 110px 1fr 88px;
   align-items: center;
   gap: 10px;
   padding: 7px 12px;
@@ -2377,7 +2377,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .op-col-estado { min-width: 0; }
 
 /* Acciones */
-.op-col-acc { display: flex; gap: 3px; flex-shrink: 0; }
+.op-col-acc { display: flex; gap: 3px; justify-content: flex-end; }
 
 /* Rol inline debajo del nombre (solo móvil) */
 .op-rol-mobile {
