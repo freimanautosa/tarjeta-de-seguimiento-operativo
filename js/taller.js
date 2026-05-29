@@ -255,7 +255,7 @@ function montarTaller() {
         scrollbar-width:none;
       }
       .tv-panel-list::-webkit-scrollbar { display:none; }
-      #tv-panel-listos { max-height:28vh; }
+      #tv-panel-listos { height:16vh; flex:none; }
       .tv-panel-item {
         border-radius:.4vw;padding:.55vh .8vw;
         display:flex;align-items:center;gap:.6vw;
