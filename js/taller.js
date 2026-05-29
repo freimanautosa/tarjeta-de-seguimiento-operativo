@@ -244,9 +244,11 @@ function montarTaller() {
         padding:.7vh 1.2vw;border-bottom:1.5px solid #D1D5DB;flex-shrink:0;
       }
       .tv-panel-list {
-        flex:1;overflow:hidden;padding:.4vh .5vw;
+        flex:1;overflow-y:auto;padding:.4vh .5vw;
         display:flex;flex-direction:column;gap:.35vh;
+        scrollbar-width:none;
       }
+      .tv-panel-list::-webkit-scrollbar { display:none; }
       .tv-panel-item {
         border-radius:.4vw;padding:.55vh .8vw;
         display:flex;align-items:center;gap:.6vw;
@@ -581,65 +583,73 @@ window._tvScrollDir      = window._tvScrollDir ?? 1;
 window._tvScrollPausado  = false;
 window._tvScrollRunning  = false;
 
+// Estado independiente para cada panel lateral
+window._tvPanelScroll = window._tvPanelScroll ?? {
+  listos:      { dir: 1, pausado: false },
+  programadas: { dir: 1, pausado: false }
+};
+
+function _scrollPanel(id, state, pxPerSec, pauseMs) {
+  const el = document.getElementById(id);
+  if (!el || state.pausado) return;
+  const max = el.scrollHeight - el.clientHeight;
+  if (max <= 5) return;
+  el.scrollTop += state.dir * pxPerSec;
+  if (state.dir === 1 && el.scrollTop >= max - 1) {
+    el.scrollTop = max; state.dir = -1; state.pausado = true;
+    setTimeout(() => { state.pausado = false; }, pauseMs);
+  } else if (state.dir === -1 && el.scrollTop <= 1) {
+    el.scrollTop = 0; state.dir = 1; state.pausado = true;
+    setTimeout(() => { state.pausado = false; }, pauseMs);
+  }
+}
+
 function _iniciarScrollTaller() {
-  if (window._tvScrollRunning) return; // ya corre, no reiniciar
+  if (window._tvScrollRunning) return;
   window._tvScrollRunning = true;
 
   const PX_PER_SEC = 35;
   const PAUSE_TOP  = 4000;
   const PAUSE_BOT  = 3000;
   let lastTime = null;
-  let enPausa  = false;
 
   const step = (ts) => {
-    // Si la pantalla taller no está activa, esperar y reintentar
     if (!document.getElementById('taller-contenido') ||
         document.getElementById('tv-activate-screen')) {
       window._tvScrollRunning = false;
       return;
     }
 
-    // En pausa (cambio de orden o pausa en extremo) — solo seguir el RAF
-    if (window._tvScrollPausado) {
-      lastTime = null;
-      requestAnimationFrame(step);
-      return;
-    }
+    // ── Panel listos y programadas (scroll independiente, más lento) ──
+    _scrollPanel('tv-panel-listos',      window._tvPanelScroll.listos,      0.4, 3000);
+    _scrollPanel('tv-panel-programadas', window._tvPanelScroll.programadas, 0.4, 3000);
 
-    const tw = document.querySelector('.tv-table-wrap');
-    if (!tw) { requestAnimationFrame(step); return; }
-    const maxScroll = tw.scrollHeight - tw.clientHeight;
-
-    // Sin contenido suficiente para scrollear
-    if (maxScroll <= 20) { lastTime = null; requestAnimationFrame(step); return; }
-
-    if (lastTime === null) lastTime = ts;
-    const delta = Math.min((ts - lastTime) / 1000, 0.1); // cap delta para evitar saltos
-    lastTime = ts;
-
-    tw.scrollTop += window._tvScrollDir * PX_PER_SEC * delta;
-
-    // Llegó abajo
-    if (window._tvScrollDir === 1 && tw.scrollTop >= maxScroll - 2) {
-      tw.scrollTop = maxScroll;
-      lastTime = null;
-      window._tvScrollDir = -1;
-      window._tvScrollPausado = true;
-      setTimeout(() => { window._tvScrollPausado = false; }, PAUSE_BOT);
-    }
-    // Llegó arriba
-    else if (window._tvScrollDir === -1 && tw.scrollTop <= 2) {
-      tw.scrollTop = 0;
-      lastTime = null;
-      window._tvScrollDir = 1;
-      window._tvScrollPausado = true;
-      setTimeout(() => { window._tvScrollPausado = false; }, PAUSE_TOP);
-    }
+    // ── Tabla principal ──
+    if (!window._tvScrollPausado) {
+      const tw = document.querySelector('.tv-table-wrap');
+      if (tw) {
+        const maxScroll = tw.scrollHeight - tw.clientHeight;
+        if (maxScroll > 20) {
+          if (lastTime === null) lastTime = ts;
+          const delta = Math.min((ts - lastTime) / 1000, 0.1);
+          lastTime = ts;
+          tw.scrollTop += window._tvScrollDir * PX_PER_SEC * delta;
+          if (window._tvScrollDir === 1 && tw.scrollTop >= maxScroll - 2) {
+            tw.scrollTop = maxScroll; lastTime = null;
+            window._tvScrollDir = -1; window._tvScrollPausado = true;
+            setTimeout(() => { window._tvScrollPausado = false; }, PAUSE_BOT);
+          } else if (window._tvScrollDir === -1 && tw.scrollTop <= 2) {
+            tw.scrollTop = 0; lastTime = null;
+            window._tvScrollDir = 1; window._tvScrollPausado = true;
+            setTimeout(() => { window._tvScrollPausado = false; }, PAUSE_TOP);
+          }
+        } else { lastTime = null; }
+      }
+    } else { lastTime = null; }
 
     requestAnimationFrame(step);
   };
 
-  // Pausa inicial de 4s antes de empezar
   window._tvScrollPausado = true;
   setTimeout(() => { window._tvScrollPausado = false; }, PAUSE_TOP);
   requestAnimationFrame(step);
@@ -971,12 +981,12 @@ async function cargarPantallaTaller() {
           <div class="tv-panel-right">
             <div class="tv-panel-section">
               <div class="tv-panel-title">Listos hoy</div>
-              <div class="tv-panel-list">${panelListosHtml}</div>
+              <div class="tv-panel-list" id="tv-panel-listos">${panelListosHtml}</div>
             </div>
             <div class="tv-panel-divider"></div>
             <div class="tv-panel-section">
               <div class="tv-panel-title" style="color:#6366F1">Programadas · ${ordenesProgramadas.length}</div>
-              <div class="tv-panel-list" style="gap:.3vh">${progHtml}</div>
+              <div class="tv-panel-list" id="tv-panel-programadas" style="gap:.3vh">${progHtml}</div>
             </div>
           </div>
         </div>
