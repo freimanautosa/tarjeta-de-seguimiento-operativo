@@ -853,23 +853,54 @@ async function cargarPantallaTaller() {
       });
     }, 1000);
 
-    // ── Auto-scroll tabla cuando hay muchas órdenes ──────────
-    if (window._tallerScrollInterval) clearInterval(window._tallerScrollInterval);
+    // ── Auto-scroll fluido con requestAnimationFrame ─────────
+    if (window._tallerScrollRAF) cancelAnimationFrame(window._tallerScrollRAF);
+    if (window._tallerScrollTimeout) clearTimeout(window._tallerScrollTimeout);
     const tableWrap = cont.querySelector('.tv-table-wrap');
     if (tableWrap) {
-      let scrollDir = 1; // 1=abajo, -1=arriba
-      let pausa = 0;
-      window._tallerScrollInterval = setInterval(() => {
-        if (pausa > 0) { pausa--; return; }
+      const PX_PER_SEC = 40;   // velocidad: píxeles por segundo
+      const PAUSE_TOP  = 5000; // pausa en ms arriba antes de bajar
+      const PAUSE_BOT  = 3000; // pausa en ms abajo antes de subir
+      let lastTime = null;
+      let dir = 1; // 1 = bajar, -1 = subir
+
+      const step = (ts) => {
+        if (!document.getElementById('taller-contenido')) return; // pantalla desmontada
         const maxScroll = tableWrap.scrollHeight - tableWrap.clientHeight;
-        if (maxScroll <= 10) return; // no necesita scroll
-        tableWrap.scrollTop += scrollDir * 1.5;
-        if (tableWrap.scrollTop >= maxScroll - 2) {
-          scrollDir = -1; pausa = 40; // pausa 4s abajo
-        } else if (tableWrap.scrollTop <= 0) {
-          scrollDir = 1; pausa = 60; // pausa 6s arriba
+        if (maxScroll <= 20) { window._tallerScrollRAF = requestAnimationFrame(step); return; }
+
+        if (lastTime === null) { lastTime = ts; }
+        const delta = (ts - lastTime) / 1000; // segundos transcurridos
+        lastTime = ts;
+
+        tableWrap.scrollTop += dir * PX_PER_SEC * delta;
+
+        if (dir === 1 && tableWrap.scrollTop >= maxScroll - 2) {
+          tableWrap.scrollTop = maxScroll;
+          lastTime = null;
+          window._tallerScrollTimeout = setTimeout(() => {
+            dir = -1;
+            window._tallerScrollRAF = requestAnimationFrame(step);
+          }, PAUSE_BOT);
+          return;
         }
-      }, 100);
+        if (dir === -1 && tableWrap.scrollTop <= 2) {
+          tableWrap.scrollTop = 0;
+          lastTime = null;
+          window._tallerScrollTimeout = setTimeout(() => {
+            dir = 1;
+            window._tallerScrollRAF = requestAnimationFrame(step);
+          }, PAUSE_TOP);
+          return;
+        }
+
+        window._tallerScrollRAF = requestAnimationFrame(step);
+      };
+
+      // Esperar 5s antes de empezar a hacer scroll
+      window._tallerScrollTimeout = setTimeout(() => {
+        window._tallerScrollRAF = requestAnimationFrame(step);
+      }, PAUSE_TOP);
     }
 
     // Overlay por cambio de etapa
