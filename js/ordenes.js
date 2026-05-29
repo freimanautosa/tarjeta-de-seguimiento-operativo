@@ -30,7 +30,7 @@ async function cargarOrdenes() {
   try {
     let query;
     if (filtroEstado === 'Activa') {
-      query = `/ordenes?or=(estado.eq.Activa,estado.is.null)&or=(pulmon.eq.false,pulmon.is.null)&order=creado_en.desc&limit=100`;
+      query = `/ordenes?or=(estado.eq.Activa,estado.is.null)&pulmon=not.eq.true&order=creado_en.desc&limit=100`;
     } else if (filtroEstado === 'Programada') {
       query = `/ordenes?estado=eq.Programada&order=fecha_programada.asc&limit=100`;
     } else {
@@ -2219,6 +2219,7 @@ async function _desactivarPulmon() {
     _setPulmonUI(false, ordenActual.pulmon_tipo || '');
     toast('Pulmón desactivado ✓');
     _refrescarCapacidad();
+    cargarOrdenesPulmon(); // refrescar lista pulmón para que desaparezca
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }
 
