@@ -38,19 +38,22 @@ function montarTaller() {
         30%,70%{background:rgba(245,158,11,.07)}
       }
       @keyframes tv-row-shake {
-        0%  { transform:translateX(0);    outline:3px solid transparent; background:transparent; }
-        5%  { transform:translateX(-4px); outline:3px solid #F59E0B; background:rgba(251,191,36,.12); }
-        10% { transform:translateX( 4px); outline:3px solid #F59E0B; background:rgba(251,191,36,.18); }
-        15% { transform:translateX(-3px); outline:3px solid #2563EB; background:rgba(37,99,235,.12); }
-        20% { transform:translateX( 3px); outline:3px solid #2563EB; background:rgba(37,99,235,.12); }
-        25% { transform:translateX(-2px); outline:3px solid #2563EB; background:rgba(37,99,235,.10); }
-        30% { transform:translateX( 2px); outline:3px solid #2563EB; background:rgba(37,99,235,.08); }
-        40% { transform:translateX(0);    outline:3px solid #2563EB; background:rgba(37,99,235,.06); }
-        65% { transform:translateX(0);    outline:3px solid rgba(37,99,235,.4); background:rgba(37,99,235,.04); }
-        100%{ transform:translateX(0);    outline:3px solid transparent; background:transparent; }
+        0%   { transform:translateX(0)    scale(1);    background:transparent;             box-shadow:none; }
+        4%   { transform:translateX(-6px) scale(1.01); background:rgba(245,158,11,.25);    box-shadow:0 0 0 3px #F59E0B; }
+        8%   { transform:translateX( 6px) scale(1.01); background:rgba(245,158,11,.30);    box-shadow:0 0 0 3px #F59E0B; }
+        12%  { transform:translateX(-5px) scale(1.01); background:rgba(37,99,235,.22);     box-shadow:0 0 0 3px #3B82F6; }
+        16%  { transform:translateX( 5px) scale(1.01); background:rgba(37,99,235,.22);     box-shadow:0 0 0 3px #3B82F6; }
+        20%  { transform:translateX(-3px) scale(1);    background:rgba(37,99,235,.18);     box-shadow:0 0 0 3px #3B82F6; }
+        24%  { transform:translateX( 3px) scale(1);    background:rgba(37,99,235,.18);     box-shadow:0 0 0 3px #3B82F6; }
+        30%  { transform:translateX(0)    scale(1);    background:rgba(37,99,235,.14);     box-shadow:0 0 0 2px #3B82F6; }
+        55%  { transform:translateX(0)    scale(1);    background:rgba(37,99,235,.08);     box-shadow:0 0 0 1px rgba(59,130,246,.5); }
+        100% { transform:translateX(0)    scale(1);    background:transparent;             box-shadow:none; }
+      }
+      tr.tv-row-alert td:first-child {
+        border-left: 4px solid #F59E0B !important;
       }
       .tv-row-alert {
-        animation: tv-row-shake 2.4s ease-out forwards !important;
+        animation: tv-row-shake 3s cubic-bezier(.36,.07,.19,.97) forwards !important;
         position: relative;
         z-index: 2;
       }
@@ -645,16 +648,49 @@ async function cargarPantallaTaller() {
       setTimeout(() => _tvMostrarOverlay(oLst, ets, '✓ LISTO PARA ENTREGA', true, aprobadas), 600);
     }
 
-    // ── Sonido para nueva etapa activa ───────────────────────
+    // ── Detectar cambios: inicio, fin o cambio de etapa ─────
+    // Snapshot completo: orden_id → { activas: Set<id>, finalizadas: Set<id> }
     const snapshotNuevo = {};
-    etapasActivas.forEach(e => { snapshotNuevo[e.orden_id] = e.id; });
-    let ordenCambiada = null; let badgeOverlay = 'ETAPA ACTUALIZADA';
-    Object.entries(snapshotNuevo).forEach(([oid, eid]) => {
-      if (_tallerGridSnapshot.size && window._tvSnapshotEtapas?.[oid] && window._tvSnapshotEtapas[oid] !== eid) {
-        ordenCambiada = ordenesEnGrid.find(o => o.id === parseInt(oid));
+    etapasActivas.forEach(e => {
+      if (!snapshotNuevo[e.orden_id]) snapshotNuevo[e.orden_id] = { act: new Set(), fin: 0 };
+      snapshotNuevo[e.orden_id].act.add(e.id);
+    });
+    etapasTodas.forEach(e => {
+      if (e.fin) {
+        if (!snapshotNuevo[e.orden_id]) snapshotNuevo[e.orden_id] = { act: new Set(), fin: 0 };
+        snapshotNuevo[e.orden_id].fin++;
       }
     });
-    window._tvSnapshotEtapas = snapshotNuevo;
+
+    let ordenCambiada = null;
+    const prevSnap = window._tvSnapshotCompleto || {};
+
+    if (Object.keys(prevSnap).length) { // no primera carga
+      for (const [oidStr, cur] of Object.entries(snapshotNuevo)) {
+        const oid = parseInt(oidStr);
+        const prev = prevSnap[oidStr];
+        if (!prev) {
+          // nueva orden con actividad
+          ordenCambiada = ordenesEnGrid.find(o => o.id === oid);
+          break;
+        }
+        // cambio en activas (inicio/cambio de etapa)
+        const actCambiaron = cur.act.size !== prev.act.size ||
+          [...cur.act].some(id => !prev.act.has(id));
+        // nueva etapa finalizada
+        const finCambio = cur.fin !== prev.fin;
+        if (actCambiaron || finCambio) {
+          ordenCambiada = ordenesEnGrid.find(o => o.id === oid);
+          break;
+        }
+      }
+    }
+
+    window._tvSnapshotCompleto = snapshotNuevo;
+    // snapshot legacy para compatibilidad
+    const snapshotLegacy = {};
+    etapasActivas.forEach(e => { snapshotLegacy[e.orden_id] = e.id; });
+    window._tvSnapshotEtapas = snapshotLegacy;
     _tallerGridSnapshot = new Set(ordenesEnGrid.map(o => o.id));
 
     // ── Render fila de tabla ─────────────────────────────────
@@ -873,74 +909,30 @@ async function cargarPantallaTaller() {
       });
     }, 1000);
 
-    // ── Auto-scroll fluido con requestAnimationFrame ─────────
-    if (window._tallerScrollRAF) cancelAnimationFrame(window._tallerScrollRAF);
-    if (window._tallerScrollTimeout) clearTimeout(window._tallerScrollTimeout);
-    const tableWrap = cont.querySelector('.tv-table-wrap');
-    if (tableWrap) {
-      const PX_PER_SEC = 40;   // velocidad: píxeles por segundo
-      const PAUSE_TOP  = 5000; // pausa en ms arriba antes de bajar
-      const PAUSE_BOT  = 3000; // pausa en ms abajo antes de subir
-      let lastTime = null;
-      let dir = 1; // 1 = bajar, -1 = subir
-
-      const step = (ts) => {
-        if (!document.getElementById('taller-contenido')) return; // pantalla desmontada
-        const maxScroll = tableWrap.scrollHeight - tableWrap.clientHeight;
-        if (maxScroll <= 20) { window._tallerScrollRAF = requestAnimationFrame(step); return; }
-
-        if (lastTime === null) { lastTime = ts; }
-        const delta = (ts - lastTime) / 1000; // segundos transcurridos
-        lastTime = ts;
-
-        tableWrap.scrollTop += dir * PX_PER_SEC * delta;
-
-        if (dir === 1 && tableWrap.scrollTop >= maxScroll - 2) {
-          tableWrap.scrollTop = maxScroll;
-          lastTime = null;
-          window._tallerScrollTimeout = setTimeout(() => {
-            dir = -1;
-            window._tallerScrollRAF = requestAnimationFrame(step);
-          }, PAUSE_BOT);
-          return;
-        }
-        if (dir === -1 && tableWrap.scrollTop <= 2) {
-          tableWrap.scrollTop = 0;
-          lastTime = null;
-          window._tallerScrollTimeout = setTimeout(() => {
-            dir = 1;
-            window._tallerScrollRAF = requestAnimationFrame(step);
-          }, PAUSE_TOP);
-          return;
-        }
-
-        window._tallerScrollRAF = requestAnimationFrame(step);
-      };
-
-      // Esperar 5s antes de empezar a hacer scroll
-      window._tallerScrollTimeout = setTimeout(() => {
-        window._tallerScrollRAF = requestAnimationFrame(step);
-      }, PAUSE_TOP);
-    }
+    // Auto-scroll removido — las órdenes con cambio suben al top
 
     // Animación + scroll al top para orden cambiada
     if (ordenCambiada) {
-      // Scroll al top para asegurar que se vea
+      // Scroll al top para que la fila sea visible
       const tw = cont.querySelector('.tv-table-wrap');
-      if (tw) { tw.scrollTop = 0; }
+      if (tw) tw.scrollTop = 0;
 
-      // Aplicar animación shake+highlight a la fila
-      const rowEl = document.getElementById(`tv-row-${ordenCambiada.id}`);
-      if (rowEl) {
-        rowEl.classList.remove('tv-row-alert');
-        void rowEl.offsetWidth; // force reflow para reiniciar animación
-        rowEl.classList.add('tv-row-alert');
-      }
+      // Pequeño delay para que el DOM esté pintado antes de animar
+      setTimeout(() => {
+        const rowEl = document.getElementById(`tv-row-${ordenCambiada.id}`);
+        if (rowEl) {
+          rowEl.classList.remove('tv-row-alert');
+          void rowEl.offsetWidth; // force reflow
+          rowEl.classList.add('tv-row-alert');
+          // Quitar clase tras la animación para que pueda dispararse de nuevo
+          setTimeout(() => rowEl.classList.remove('tv-row-alert'), 3200);
+        }
+      }, 80);
 
       // Overlay solo si no hay entregadas/listas
       if (!nuevasEntregadas.length && !nuevasListas.length) {
         const ets = etapasTodas.filter(e => e.orden_id === ordenCambiada.id);
-        setTimeout(() => _tvMostrarOverlay(ordenCambiada, ets, 'ETAPA ACTUALIZADA', false, aprobadas), 400);
+        setTimeout(() => _tvMostrarOverlay(ordenCambiada, ets, 'ETAPA ACTUALIZADA', false, aprobadas), 500);
       }
     }
 
