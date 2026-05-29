@@ -65,6 +65,12 @@ function montarTaller() {
         from{opacity:0;transform:translateX(1vw)}
         to{opacity:1;transform:translateX(0)}
       }
+      @keyframes row-slide-in {
+        from{opacity:0;transform:translateX(-1.5vw)}
+        to{opacity:1;transform:translateX(0)}
+      }
+      .tv-row-new td { animation:row-slide-in .45s ease forwards; }
+      .tv-panel-item-new { animation:slide-in-right .45s ease forwards; }
       #pag-taller {
         background:#FFFFFF;height:100vh;overflow:hidden;
         display:flex;flex-direction:column;font-size:1vw;
@@ -698,6 +704,8 @@ async function cargarPantallaTaller() {
   const cont = document.getElementById('taller-contenido');
   if (!cont || document.getElementById('tv-activate-screen')) return;
 
+  const _primeraLlamada = _tallerGridSnapshot.size === 0;
+
   try {
     const hoy    = new Date(); hoy.setHours(0,0,0,0);
     const manana = new Date(hoy); manana.setDate(manana.getDate()+1);
@@ -750,6 +758,11 @@ async function cargarPantallaTaller() {
     const creadasHoy  = ordenesEnGrid.filter(o => { const f = new Date(o.ingreso_en || o.creado_en); return f >= hoy && f < manana; });
     const entregarHoy = ordenesEnGrid.filter(o => o.fecha_entrega_1?.split('T')[0] === hoyISO || o.fecha_entrega_2?.split('T')[0] === hoyISO);
     const enProceso   = ordenesEnGrid.filter(o => etapasActivas.some(e => e.orden_id === o.id));
+
+    // En primera carga: pre-poblar caché para no disparar sonidos por órdenes ya existentes
+    if (_primeraLlamada) {
+      entregadasHoy.forEach(o => _tallerOrdenesNotificadas.add('ent_'+o.id));
+    }
 
     // ── Sonido para nuevas entregas ──────────────────────────
     const nuevasEntregadas = entregadasHoy.filter(o => !_tallerOrdenesNotificadas.has('ent_'+o.id));
@@ -960,91 +973,191 @@ async function cargarPantallaTaller() {
       return fa < fb ? -1 : fa > fb ? 1 : 0;
     });
 
-    // ── Render completo ──────────────────────────────────────
-    const filasHtml = ordenesOrdenadas.map(renderFila).join('');
+    // ── Primer render: construir shell completo ──────────────
+    if (_primeraLlamada) {
+      const filasHtml = ordenesOrdenadas.map(renderFila).join('');
+      const panelListosHtmlInner = panelItems.length
+        ? panelItems.map(({orden, tipo}) => {
+            const hora = tipo==='entregado' ? _tvHoraStr(orden.entregada_en) : '';
+            const statusTxt = tipo==='listo' ? 'Listo para entrega' : '✓ Entregado';
+            return `<div class="tv-panel-item ${tipo}" data-orden-id="${orden.id}" onclick="_tvVerDetalle(${orden.id})">
+              <div class="tv-panel-dot ${tipo}"></div>
+              <div class="tv-panel-info">
+                <div class="tv-panel-placa">${orden.placa}</div>
+                <div class="tv-panel-status ${tipo}">${statusTxt}</div>
+              </div>
+              ${hora ? `<div class="tv-panel-time">${hora}</div>` : ''}
+            </div>`;
+          }).join('')
+        : '<div class="tv-panel-empty">Sin terminados hoy</div>';
 
-    cont.innerHTML = `
-      <div class="tv-shell">
-        <div class="tv-header">
-          <div class="tv-brand">
-            <div class="tv-brand-dot"></div>
-            <span class="tv-brand-name">Freimanautos · Sistema Operativo</span>
+      cont.innerHTML = `
+        <div class="tv-shell">
+          <div class="tv-header">
+            <div class="tv-brand">
+              <div class="tv-brand-dot"></div>
+              <span class="tv-brand-name">Freimanautos · Sistema Operativo</span>
+            </div>
+            <div id="taller-reloj" class="tv-clock"></div>
+            <div id="taller-fecha" class="tv-date"></div>
           </div>
-          <div id="taller-reloj" class="tv-clock"></div>
-          <div id="taller-fecha" class="tv-date"></div>
-        </div>
 
-        <div class="tv-kpi-strip" style="grid-template-columns:repeat(5,1fr)">
-          <div class="tv-kpi">
-            <div class="tv-kpi-num" style="color:#1E40AF">${ordenesActivas.length}</div>
-            <div class="tv-kpi-label">Órdenes<br>activas</div>
-          </div>
-          <div class="tv-kpi">
-            <div class="tv-kpi-num" style="color:#15803D">${entregadasHoy.length}</div>
-            <div class="tv-kpi-label">Entregadas<br>hoy</div>
-          </div>
-          <div class="tv-kpi">
-            <div class="tv-kpi-num" style="color:#1E40AF">${creadasHoy.length}</div>
-            <div class="tv-kpi-label">Ingresaron<br>hoy</div>
-          </div>
-          <div class="tv-kpi">
-            <div class="tv-kpi-num" style="color:#B45309">${enProceso.length}</div>
-            <div class="tv-kpi-label">En proceso<br>ahora</div>
-          </div>
-          <div class="tv-kpi">
-            <div class="tv-kpi-num" style="color:#4338CA">${ordenesProgramadas.length}</div>
-            <div class="tv-kpi-label">Programadas</div>
-          </div>
-        </div>
-
-        <div class="tv-body">
-          <div class="tv-list-wrap">
-            <div class="tv-table-wrap">
-              <table class="tv-table">
-                <thead class="tv-thead">
-                  <tr>
-                    <th class="tv-col-placa">Placa</th>
-                    <th class="tv-col-etapas">Etapas del proceso</th>
-                    <th class="tv-col-tec">Técnico</th>
-                    <th class="tv-col-timer">Tiempo</th>
-                    <th class="tv-col-entrega">Entrega</th>
-                    <th class="tv-col-estado">Estado</th>
-                  </tr>
-                </thead>
-                <tbody class="tv-tbody">
-                  ${filasHtml || `<tr><td colspan="6" style="text-align:center;padding:3vh;color:#D1D5DB;font-size:.8vw;letter-spacing:.1em">SIN ÓRDENES ACTIVAS</td></tr>`}
-                </tbody>
-              </table>
+          <div class="tv-kpi-strip" style="grid-template-columns:repeat(5,1fr)">
+            <div class="tv-kpi">
+              <div class="tv-kpi-num" id="tv-kpi-activas" style="color:#1E40AF">${ordenesActivas.length}</div>
+              <div class="tv-kpi-label">Órdenes<br>activas</div>
+            </div>
+            <div class="tv-kpi">
+              <div class="tv-kpi-num" id="tv-kpi-entregadas" style="color:#15803D">${entregadasHoy.length}</div>
+              <div class="tv-kpi-label">Entregadas<br>hoy</div>
+            </div>
+            <div class="tv-kpi">
+              <div class="tv-kpi-num" id="tv-kpi-creadas" style="color:#1E40AF">${creadasHoy.length}</div>
+              <div class="tv-kpi-label">Ingresaron<br>hoy</div>
+            </div>
+            <div class="tv-kpi">
+              <div class="tv-kpi-num" id="tv-kpi-proceso" style="color:#B45309">${enProceso.length}</div>
+              <div class="tv-kpi-label">En proceso<br>ahora</div>
+            </div>
+            <div class="tv-kpi">
+              <div class="tv-kpi-num" id="tv-kpi-programadas" style="color:#4338CA">${ordenesProgramadas.length}</div>
+              <div class="tv-kpi-label">Programadas</div>
             </div>
           </div>
 
-          <div class="tv-panel-right">
-            <div class="tv-panel-section">
-              <div class="tv-panel-title">Listos hoy</div>
-              <div class="tv-panel-list" id="tv-panel-listos">${panelListosHtml}</div>
+          <div class="tv-body">
+            <div class="tv-list-wrap">
+              <div class="tv-table-wrap">
+                <table class="tv-table">
+                  <thead class="tv-thead">
+                    <tr>
+                      <th class="tv-col-placa">Placa</th>
+                      <th class="tv-col-etapas">Etapas del proceso</th>
+                      <th class="tv-col-tec">Técnico</th>
+                      <th class="tv-col-timer">Tiempo</th>
+                      <th class="tv-col-entrega">Entrega</th>
+                      <th class="tv-col-estado">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody class="tv-tbody">
+                    ${filasHtml || `<tr><td colspan="6" style="text-align:center;padding:3vh;color:#D1D5DB;font-size:.8vw;letter-spacing:.1em">SIN ÓRDENES ACTIVAS</td></tr>`}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div class="tv-panel-divider"></div>
-            <div class="tv-panel-section">
-              <div class="tv-panel-title" style="color:#6366F1">Programadas · ${ordenesProgramadas.length}</div>
-              <div class="tv-panel-list" id="tv-panel-programadas" style="gap:.3vh">${progHtml}</div>
+
+            <div class="tv-panel-right">
+              <div class="tv-panel-section">
+                <div class="tv-panel-title">Listos hoy</div>
+                <div class="tv-panel-list" id="tv-panel-listos">${panelListosHtmlInner}</div>
+              </div>
+              <div class="tv-panel-divider"></div>
+              <div class="tv-panel-section">
+                <div class="tv-panel-title" id="tv-prog-title" style="color:#6366F1">Programadas · ${ordenesProgramadas.length}</div>
+                <div class="tv-panel-list" id="tv-panel-programadas" style="gap:.3vh">${progHtml}</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="tv-watermark">
-        <img src="icons/Icono_Redondo_Fondo_Taller.png"
-          style="width:100%;height:100%;object-fit:contain;opacity:0.06" alt="">
-      </div>
-    `;
+        <div class="tv-watermark">
+          <img src="icons/Icono_Redondo_Fondo_Taller.png"
+            style="width:100%;height:100%;object-fit:contain;opacity:0.06" alt="">
+        </div>
+      `;
 
-    // Guardar referencias globales
+      iniciarRelojTaller();
+      _iniciarScrollTaller();
+
+    } else {
+      // ── Actualización incremental: solo tocar lo que cambió ──
+
+      // KPIs
+      const upd = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+      upd('tv-kpi-activas',    ordenesActivas.length);
+      upd('tv-kpi-entregadas', entregadasHoy.length);
+      upd('tv-kpi-creadas',    creadasHoy.length);
+      upd('tv-kpi-proceso',    enProceso.length);
+      upd('tv-kpi-programadas',ordenesProgramadas.length);
+      upd('tv-prog-title',     `Programadas · ${ordenesProgramadas.length}`);
+
+      // Diff de filas de tabla
+      const tbody = cont.querySelector('.tv-tbody');
+      if (tbody) {
+        const deseadasIds = new Set(ordenesOrdenadas.map(o => o.id));
+
+        // Eliminar filas obsoletas
+        [...tbody.querySelectorAll('tr[id^="tv-row-"]')].forEach(tr => {
+          if (!deseadasIds.has(parseInt(tr.id.replace('tv-row-','')))) tr.remove();
+        });
+
+        // Insertar nuevas filas con animación slide-in
+        ordenesOrdenadas.forEach((orden, idx) => {
+          if (!document.getElementById(`tv-row-${orden.id}`)) {
+            const tmp = document.createElement('tbody');
+            tmp.innerHTML = renderFila(orden);
+            const newTr = tmp.firstElementChild;
+            newTr.classList.add('tv-row-new');
+            tbody.insertBefore(newTr, tbody.children[idx] || null);
+            setTimeout(() => newTr.classList.remove('tv-row-new'), 500);
+          }
+        });
+
+        if (tbody.children.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:3vh;color:#D1D5DB;font-size:.8vw;letter-spacing:.1em">SIN ÓRDENES ACTIVAS</td></tr>`;
+        }
+      }
+
+      // Diff del panel Listos hoy
+      const panelListos = document.getElementById('tv-panel-listos');
+      if (panelListos) {
+        const actualesIds = new Set(
+          [...panelListos.querySelectorAll('[data-orden-id]')].map(el => parseInt(el.dataset.ordenId))
+        );
+        const deseadosIds = new Set(panelItems.map(({orden}) => orden.id));
+
+        // Eliminar los que ya no aplican
+        panelListos.querySelectorAll('[data-orden-id]').forEach(el => {
+          if (!deseadosIds.has(parseInt(el.dataset.ordenId))) el.remove();
+        });
+
+        // Insertar nuevos al tope con animación
+        panelItems.forEach(({orden, tipo}) => {
+          if (!actualesIds.has(orden.id)) {
+            const hora = tipo==='entregado' ? _tvHoraStr(orden.entregada_en) : '';
+            const statusTxt = tipo==='listo' ? 'Listo para entrega' : '✓ Entregado';
+            const div = document.createElement('div');
+            div.className = `tv-panel-item ${tipo} tv-panel-item-new`;
+            div.dataset.ordenId = orden.id;
+            div.onclick = () => _tvVerDetalle(orden.id);
+            div.innerHTML = `
+              <div class="tv-panel-dot ${tipo}"></div>
+              <div class="tv-panel-info">
+                <div class="tv-panel-placa">${orden.placa}</div>
+                <div class="tv-panel-status ${tipo}">${statusTxt}</div>
+              </div>
+              ${hora ? `<div class="tv-panel-time">${hora}</div>` : ''}`;
+            panelListos.insertBefore(div, panelListos.firstChild);
+            setTimeout(() => div.classList.remove('tv-panel-item-new'), 500);
+          }
+        });
+
+        const isEmpty = !panelListos.querySelector('[data-orden-id]');
+        const hasEmpty = panelListos.querySelector('.tv-panel-empty');
+        if (isEmpty && !hasEmpty) panelListos.innerHTML = '<div class="tv-panel-empty">Sin terminados hoy</div>';
+        if (!isEmpty && hasEmpty) hasEmpty.remove();
+      }
+
+      // Panel programadas: reemplazar completo (pequeño, cambia poco)
+      const panelProg = document.getElementById('tv-panel-programadas');
+      if (panelProg) panelProg.innerHTML = progHtml;
+    }
+
+    // ── Referencias globales ─────────────────────────────────
     window._tvEtapasTodas    = etapasTodas;
     window._tvOrdenesActivas = ordenesActivas;
     window._tvEntregadasHoy  = entregadasHoy;
     window._tvAprobadas      = aprobadas;
-
-    iniciarRelojTaller();
 
     // Timers en vivo
     if (window._tallerTimerInterval) clearInterval(window._tallerTimerInterval);
@@ -1055,12 +1168,11 @@ async function cargarPantallaTaller() {
       });
     }, 1000);
 
-    // ── Iniciar scroll perpetuo (solo si no está corriendo) ──
+    // Scroll perpetuo (solo arranca si no está corriendo)
     _iniciarScrollTaller();
 
     // ── Animación cuando hay cambio en una orden ─────────────
     if (ordenCambiada) {
-      // Pausar scroll para que la fila sea visible durante la animación
       const tw = cont.querySelector('.tv-table-wrap');
       if (tw) tw.scrollTop = 0;
       window._tvScrollPausado = true;
@@ -1073,7 +1185,6 @@ async function cargarPantallaTaller() {
           rowEl.classList.add('tv-row-alert');
           setTimeout(() => rowEl.classList.remove('tv-row-alert'), 3200);
         }
-        // Reanudar scroll tras la animación (3s)
         setTimeout(() => { window._tvScrollPausado = false; }, 3000);
       }, 80);
     }
