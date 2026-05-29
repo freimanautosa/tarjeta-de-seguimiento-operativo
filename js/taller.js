@@ -200,17 +200,19 @@ function montarTaller() {
         padding:.2vh .5vw;border-radius:.3vw;
         font-size:.62vw;font-weight:700;white-space:nowrap;border:1px solid transparent;
       }
-      .chip-approved { background:#DCFCE7;color:#15803D;border-color:#BBF7D0; }
-      .chip-done     { background:#F0FDF4;color:#16A34A;border-color:#D1FAE5; }
-      .chip-active   { background:#FEF3C7;color:#B45309;border-color:#FDE68A; }
-      .chip-waiting  { background:#FFFBEB;color:#D97706;border-color:#FDE68A; }
-      .chip-pending  { background:#F3F4F6;color:#6B7280;border-color:#E5E7EB; }
+      .chip-approved  { background:#DCFCE7;color:#15803D;border-color:#BBF7D0; }
+      .chip-done      { background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE; } /* azul = espera calidad */
+      .chip-reproceso { background:#FEF2F2;color:#DC2626;border-color:#FECACA; }
+      .chip-active    { background:#FEF3C7;color:#B45309;border-color:#FDE68A; }
+      .chip-waiting   { background:#FFFBEB;color:#D97706;border-color:#FDE68A; }
+      .chip-pending   { background:#F3F4F6;color:#6B7280;border-color:#E5E7EB; }
       .chip-dot { width:.45vw;height:.45vw;border-radius:50%;flex-shrink:0; }
-      .chip-dot.approved { background:#22C55E; }
-      .chip-dot.done     { background:#4ADE80; }
-      .chip-dot.active   { background:#F59E0B; }
-      .chip-dot.waiting  { background:transparent;border:.8px solid #F59E0B; }
-      .chip-dot.pending  { background:transparent;border:.8px solid #D1D5DB; }
+      .chip-dot.approved  { background:#22C55E; }
+      .chip-dot.done      { background:#3B82F6; }
+      .chip-dot.reproceso { background:#EF4444; }
+      .chip-dot.active    { background:#F59E0B; }
+      .chip-dot.waiting   { background:transparent;border:.8px solid #F59E0B; }
+      .chip-dot.pending   { background:transparent;border:.8px solid #D1D5DB; }
 
       .tv-tec { font-size:.75vw;color:#374151; }
       .tv-timer-val {
@@ -604,21 +606,27 @@ async function cargarPantallaTaller() {
     );
 
     // ── Clasificar órdenes ───────────────────────────────────
-    // Una orden está "lista" solo cuando TODAS sus etapas tienen fin Y calidad aprobada (última aprobación)
+    // "Lista" = TODAS las etapas finalizadas Y todas con aprobación de calidad aprobada
     const ordenesListas = ordenesActivas.filter(o => {
       const ets = etapasTodas.filter(e => e.orden_id === o.id);
-      return ets.length > 0 && ets.every(e => e.fin) && ets.every(e => aprobadas.has(e.id));
+      if (!ets.length) return false;
+      const todasFinalizadas  = ets.every(e => e.fin);
+      const todasAprobadas    = ets.every(e => aprobadas.has(e.id));
+      return todasFinalizadas && todasAprobadas;
     });
     const listasIds = new Set(ordenesListas.map(o => o.id));
 
     const ordenesEnGrid = ordenesActivas.filter(o => {
-      // Nunca mostrar órdenes programadas en el grid, sin importar el estado en DB
       if (o.estado === 'Programada') return false;
       if (o.fecha_programada && o.fecha_programada > hoyISO) return false;
-      if (listasIds.has(o.id)) return false;
+      if (listasIds.has(o.id)) return false; // ya en panel "listos"
       const ets = etapasTodas.filter(e => e.orden_id === o.id);
       if (!ets.length) return true;
-      return ets.some(e => !e.fin);
+      // Mostrar en grid si: tiene etapas sin fin, O si todas tienen fin pero
+      // alguna AÚN NO tiene calidad aprobada (esperando revisión del jefe)
+      const hayPendientes   = ets.some(e => !e.fin);
+      const esperandoCalidad = ets.every(e => e.fin) && !ets.every(e => aprobadas.has(e.id));
+      return hayPendientes || esperandoCalidad;
     });
 
     const creadasHoy  = ordenesEnGrid.filter(o => { const f = new Date(o.ingreso_en || o.creado_en); return f >= hoy && f < manana; });
@@ -725,8 +733,11 @@ async function cargarPantallaTaller() {
         const active     = !!e.inicio && !e.fin;
         const prevDone   = idx > 0 && !!etsOrden[idx-1]?.fin;
         const waiting    = !done && !active && prevDone;
-        const cls        = isApproved ? 'approved' : done ? 'done' : active ? 'active' : waiting ? 'waiting' : 'pending';
-        const label      = isApproved ? `${e.etapa} ✓✓` : done ? `${e.etapa} ✓` : active ? `${e.etapa} ●` : waiting ? `${e.etapa} →` : e.etapa;
+        // ¿Tiene la última aprobación como rechazado?
+        const ultAprob = aprobacionesTodas.find(a => a.etapa_id === e.id);
+        const esReproceso = done && ultAprob?.estado === 'rechazado';
+        const cls   = isApproved ? 'approved' : esReproceso ? 'reproceso' : done ? 'done' : active ? 'active' : waiting ? 'waiting' : 'pending';
+        const label = isApproved ? `${e.etapa} ✓✓` : esReproceso ? `${e.etapa} ✗` : done ? `${e.etapa} ⏳` : active ? `${e.etapa} ●` : waiting ? `${e.etapa} →` : e.etapa;
         return `<span class="chip chip-${cls}"><span class="chip-dot ${cls}"></span>${label||'—'}</span>`;
       }).join('');
 
@@ -764,10 +775,26 @@ async function cargarPantallaTaller() {
     }
 
     // ── Panel derecho: Listos hoy ────────────────────────────
+    // Deduplicar por id (una orden no puede aparecer dos veces)
+    const _panelSeen = new Set();
     const panelItems = [
       ...ordenesListas.map(o  => ({ orden:o, tipo:'listo'    })),
       ...entregadasHoy.map(o  => ({ orden:o, tipo:'entregado' }))
-    ];
+    ].filter(({ orden }) => {
+      if (_panelSeen.has(orden.id)) return false;
+      _panelSeen.add(orden.id);
+      return true;
+    });
+
+    // Si una orden que estaba en "listos" fue rechazada, quitarla del cache
+    // para que cuando se re-apruebe pueda notificar de nuevo
+    const listasActualesIds = new Set(ordenesListas.map(o => o.id));
+    [..._tallerOrdenesNotificadas].forEach(key => {
+      if (key.startsWith('lst_')) {
+        const id = parseInt(key.replace('lst_', ''));
+        if (!listasActualesIds.has(id)) _tallerOrdenesNotificadas.delete(key);
+      }
+    });
     const panelListosHtml = panelItems.length
       ? panelItems.map(({orden, tipo}) => {
           const hora = tipo === 'entregado' ? _tvHoraStr(orden.entregada_en) : '';
