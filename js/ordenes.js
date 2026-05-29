@@ -3999,6 +3999,10 @@ function resetNuevaOrden() {
   cerrarSugerenciasPlaca();
   fotosIngresoPendientes = [];
   if (typeof renderPreviewIngreso === 'function') renderPreviewIngreso();
+  // Limpiar daños del vehículo
+  document.querySelectorAll('.dano-cb').forEach(cb => { cb.checked = false; });
+  const tipoCarEl = document.getElementById('n-tipo-carroceria');
+  if (tipoCarEl) tipoCarEl.value = '';
   // Reset wizard al paso 1
   _resetWizard();
 }
