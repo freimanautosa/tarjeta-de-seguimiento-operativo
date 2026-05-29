@@ -255,6 +255,7 @@ function montarTaller() {
         scrollbar-width:none;
       }
       .tv-panel-list::-webkit-scrollbar { display:none; }
+      #tv-panel-listos { max-height:28vh; }
       .tv-panel-item {
         border-radius:.4vw;padding:.55vh .8vw;
         display:flex;align-items:center;gap:.6vw;
@@ -1099,44 +1100,25 @@ async function cargarPantallaTaller() {
         });
       }
 
-      // Diff del panel Listos hoy
+      // Panel Listos hoy: reemplazar completo preservando posición de scroll
       const panelListos = document.getElementById('tv-panel-listos');
       if (panelListos) {
-        const actualesIds = new Set(
-          [...panelListos.querySelectorAll('[data-orden-id]')].map(el => parseInt(el.dataset.ordenId))
-        );
-        const deseadosIds = new Set(panelItems.map(({orden}) => orden.id));
-
-        // Eliminar los que ya no aplican
-        panelListos.querySelectorAll('[data-orden-id]').forEach(el => {
-          if (!deseadosIds.has(parseInt(el.dataset.ordenId))) el.remove();
-        });
-
-        // Insertar nuevos al tope con animación
-        panelItems.forEach(({orden, tipo}) => {
-          if (!actualesIds.has(orden.id)) {
-            const hora = tipo==='entregado' ? _tvHoraStr(orden.entregada_en) : '';
-            const statusTxt = tipo==='listo' ? 'Listo para entrega' : '✓ Entregado';
-            const div = document.createElement('div');
-            div.className = `tv-panel-item ${tipo} tv-panel-item-new`;
-            div.dataset.ordenId = orden.id;
-            div.onclick = () => _tvVerDetalle(orden.id);
-            div.innerHTML = `
-              <div class="tv-panel-dot ${tipo}"></div>
-              <div class="tv-panel-info">
-                <div class="tv-panel-placa">${orden.placa}</div>
-                <div class="tv-panel-status ${tipo}">${statusTxt}</div>
-              </div>
-              ${hora ? `<div class="tv-panel-time">${hora}</div>` : ''}`;
-            panelListos.insertBefore(div, panelListos.firstChild);
-            setTimeout(() => div.classList.remove('tv-panel-item-new'), 500);
-          }
-        });
-
-        const isEmpty = !panelListos.querySelector('[data-orden-id]');
-        const hasEmpty = panelListos.querySelector('.tv-panel-empty');
-        if (isEmpty && !hasEmpty) panelListos.innerHTML = '<div class="tv-panel-empty">Sin terminados hoy</div>';
-        if (!isEmpty && hasEmpty) hasEmpty.remove();
+        const scrollPos = panelListos.scrollTop;
+        panelListos.innerHTML = panelItems.length
+          ? panelItems.map(({orden, tipo}) => {
+              const hora = tipo==='entregado' ? _tvHoraStr(orden.entregada_en) : '';
+              const statusTxt = tipo==='listo' ? 'Listo para entrega' : '✓ Entregado';
+              return `<div class="tv-panel-item ${tipo}" data-orden-id="${orden.id}" onclick="_tvVerDetalle(${orden.id})">
+                <div class="tv-panel-dot ${tipo}"></div>
+                <div class="tv-panel-info">
+                  <div class="tv-panel-placa">${orden.placa}</div>
+                  <div class="tv-panel-status ${tipo}">${statusTxt}</div>
+                </div>
+                ${hora ? `<div class="tv-panel-time">${hora}</div>` : ''}
+              </div>`;
+            }).join('')
+          : '<div class="tv-panel-empty">Sin terminados hoy</div>';
+        panelListos.scrollTop = scrollPos;
       }
 
       // Panel programadas: reemplazar completo (pequeño, cambia poco)
