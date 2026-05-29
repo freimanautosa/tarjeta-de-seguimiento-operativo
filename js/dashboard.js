@@ -167,9 +167,9 @@ async function cargarDashboardMes() {
       const pctOrd  = metaMes?.meta_ordenes  ? Math.min(Math.round((ordenesMes.length / metaMes.meta_ordenes) * 100), 100) : null;
 
       const chip = (num, label, sub, color, bg, onclick) =>
-        `<div class="kpi-chip" onclick="${onclick}" style="background:${bg};border:1px solid ${bg === 'white' ? 'var(--gris-borde)' : 'transparent'};border-radius:9px;padding:8px 12px;cursor:${onclick ? 'pointer' : 'default'};text-align:center;transition:opacity .15s" onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">
-          <div class="kpi-chip-num" style="font-size:22px;font-weight:800;color:${color};line-height:1;font-family:'DM Mono',monospace">${num}</div>
-          <div class="kpi-chip-label" style="font-size:10px;font-weight:600;color:${color};opacity:.75;margin-top:3px;white-space:nowrap">${label}</div>
+        `<div class="kpi-chip" onclick="${onclick}" style="background:${bg};border:1px solid ${bg === 'white' ? 'var(--gris-borde)' : 'transparent'};border-radius:8px;padding:6px 10px;cursor:${onclick ? 'pointer' : 'default'};text-align:center;transition:opacity .15s" onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">
+          <div class="kpi-chip-num" style="font-size:17px;font-weight:800;color:${color};line-height:1;font-family:'DM Mono',monospace">${num}</div>
+          <div class="kpi-chip-label" style="font-size:10px;font-weight:600;color:${color};opacity:.75;margin-top:2px;white-space:nowrap">${label}</div>
           ${sub ? `<div class="kpi-chip-sub" style="font-size:9px;color:${color};opacity:.5;white-space:nowrap">${sub}</div>` : ''}
         </div>`;
 
@@ -241,11 +241,11 @@ async function cargarDashboardMes() {
       const rC = { Alto:'#DC2626', Medio:'#D97706', Bajo:'#059669' };
       const rB = { Alto:'#FEE2E2', Medio:'#FEF3C7', Bajo:'#E6F5EF' };
       const barColor = riesgo === 'Alto' ? '#DC2626' : riesgo === 'Medio' ? '#D97706' : srvC;
-      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id})" onmouseenter="this.style.background='var(--gris-bg)'" onmouseleave="this.style.background=''">
+      return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id})" onmouseenter="this.style.background='var(--gris-bg)'" onmouseleave="this.style.background=''">
         <div style="width:3px;align-self:stretch;border-radius:99px;background:${barColor};flex-shrink:0"></div>
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px">
-            <span style="font-family:'DM Mono',monospace;font-size:15px;font-weight:800;color:var(--texto);letter-spacing:.5px">${escapeHtml(o.placa)}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:800;color:var(--texto);letter-spacing:.5px">${escapeHtml(o.placa)}</span>
             <span style="font-size:11px;font-weight:700;color:${diasTaller>10?'#DC2626':diasTaller>5?'#D97706':'var(--gris-mid)'}">${diasTaller}d</span>
           </div>
           <div style="font-size:11px;color:var(--gris-mid)">${[o.marca,o.linea].filter(Boolean).map(escapeHtml).join(' ')||'—'}</div>
@@ -339,7 +339,7 @@ async function cargarDashboardMes() {
             <div>
               <div style="font-size:12px;font-weight:700;color:var(--texto);margin-bottom:1px">Repuestos pendientes</div>
               <div style="font-size:10px;color:var(--gris-mid);margin-bottom:12px">Solicitudes activas</div>
-              <div style="font-size:40px;font-weight:800;color:${solicitudesPend.length>0?'#DC2626':'#059669'};line-height:1">${solicitudesPend.length}</div>
+              <div style="font-size:26px;font-weight:800;color:${solicitudesPend.length>0?'#DC2626':'#059669'};line-height:1">${solicitudesPend.length}</div>
               <div style="font-size:11px;font-weight:600;color:${solicitudesPend.length>0?'#DC2626':'#059669'};margin-top:6px">${solicitudesPend.length>0?'Atención requerida':'Todo al día'}</div>
               ${solicitudesPend.length>0?`<div style="font-size:10px;color:var(--gris-mid);margin-top:3px">${solicitudesPend.length} ${solicitudesPend.length===1?'solicitud pendiente':'solicitudes pendientes'}</div>`:'<div style="font-size:10px;color:var(--gris-mid);margin-top:3px">Sin pendientes</div>'}
             </div>
@@ -509,11 +509,11 @@ async function cargarDashboard() {
           const sC     = srv ? srvColor[srv]||'#6B7280' : '#9CA3AF';
           const sB     = srv ? srvBg[srv]||'#F3F4F6'   : '#F3F4F6';
           const tec    = ea?.tecnico || null;
-          return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id})" onmouseenter="this.style.background='var(--gris-bg)'" onmouseleave="this.style.background=''">
+          return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--gris-borde);cursor:pointer" onclick="abrirOrden(${o.id})" onmouseenter="this.style.background='var(--gris-bg)'" onmouseleave="this.style.background=''">
             <div style="width:3px;align-self:stretch;border-radius:99px;background:${vencida?'#DC2626':sC};flex-shrink:0"></div>
             <div style="flex:1;min-width:0">
               <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px">
-                <span style="font-family:'DM Mono',monospace;font-size:15px;font-weight:800;color:var(--texto);letter-spacing:.5px">${escapeHtml(o.placa)}</span>
+                <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:800;color:var(--texto);letter-spacing:.5px">${escapeHtml(o.placa)}</span>
                 <span style="font-size:11px;font-weight:700;color:${diasTaller>10?'#DC2626':diasTaller>5?'#D97706':'var(--gris-mid)'}">${diasTaller}d</span>
               </div>
               <div style="font-size:11px;color:var(--gris-mid)">${escapeHtml([o.marca,o.linea].filter(Boolean).join(' ')||'—')}</div>
