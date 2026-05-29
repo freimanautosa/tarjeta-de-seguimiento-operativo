@@ -9,29 +9,13 @@ let _cotEmpresasCache = [];        // cache de empresas cargadas
 
 // ── Tipo de cliente ──────────────────────────────────────
 function _cotSelTipo(tipo) {
-  const btnP  = document.getElementById('cntc-persona');
-  const btnE  = document.getElementById('cntc-empresa');
   const wrapP = document.getElementById('cn-wrap-persona');
   const wrapE = document.getElementById('cn-wrap-empresa');
-  const hid   = document.getElementById('cn-tipo-cliente');
-  if (!btnP || !btnE) return;
-
-  const activo   = 'border:1.5px solid var(--azul);background:var(--azul);color:white';
-  const inactivo = 'border:1.5px solid var(--gris-borde);background:white;color:var(--gris-texto)';
-
-  if (tipo === 'persona') {
-    btnP.setAttribute('style', btnP.getAttribute('style').replace(/border:[^;]+;background:[^;]+;color:[^;]+/, activo));
-    btnE.setAttribute('style', btnE.getAttribute('style').replace(/border:[^;]+;background:[^;]+;color:[^;]+/, inactivo));
-    if (wrapP) wrapP.style.display = '';
-    if (wrapE) wrapE.style.display = 'none';
-  } else {
-    btnP.setAttribute('style', btnP.getAttribute('style').replace(/border:[^;]+;background:[^;]+;color:[^;]+/, inactivo));
-    btnE.setAttribute('style', btnE.getAttribute('style').replace(/border:[^;]+;background:[^;]+;color:[^;]+/, activo));
-    if (wrapP) wrapP.style.display = 'none';
-    if (wrapE) wrapE.style.display = '';
-    _cotCargarEmpresas();
-  }
-  if (hid) hid.value = tipo;
+  const sel   = document.getElementById('cn-tipo-cliente');
+  if (wrapP) wrapP.style.display = tipo === 'persona' ? '' : 'none';
+  if (wrapE) wrapE.style.display = tipo === 'empresa' ? '' : 'none';
+  if (sel && sel.value !== tipo) sel.value = tipo;
+  if (tipo === 'empresa') _cotCargarEmpresas();
 }
 
 // ── Cargar empresas en caché ─────────────────────────────

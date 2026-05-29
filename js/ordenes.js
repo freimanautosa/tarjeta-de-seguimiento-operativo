@@ -3050,20 +3050,19 @@ async function cargarVehiculos() {
 
       return Object.entries(grupos).map(([periodo, gVehiculos]) => {
         const cuadros = gVehiculos.map(v => {
-          const info  = v.info;
-          const ots   = v.ordenes;
+          const info   = v.info;
+          const ots    = v.ordenes;
           const activo = ots.some(o => o.estado === 'Activa');
-          const borde  = activo ? 'var(--azul)' : 'var(--gris-borde)';
           const vehiculo = [info.marca, info.linea, info.modelo].filter(Boolean).map(escapeHtml).join(' ');
           const ultimaOT = ots[0];
-          const col = estadoColor[ultimaOT?.estado] || '#6B7280';
+          const badgeCol = activo ? '#2563EB' : '#6B7280';
 
           return `<div onclick="abrirOrden(${ultimaOT?.id});navJefe('detalle')"
-            style="background:white;border:1.5px solid ${borde};border-radius:8px;padding:9px 11px;cursor:pointer;transition:box-shadow .15s,border-color .15s;min-width:0"
-            onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
+            style="background:white;border:1.5px solid var(--gris-borde);border-radius:8px;padding:9px 11px;cursor:pointer;transition:box-shadow .15s,border-color .15s;min-width:0"
+            onmouseover="this.style.borderColor='#9AA3B0';this.style.boxShadow='0 3px 10px rgba(0,0,0,0.07)'" onmouseout="this.style.borderColor='';this.style.boxShadow=''">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:4px">
               <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:800;color:var(--texto);letter-spacing:.05em">${escapeHtml(info.placa||'—')}</span>
-              <span style="font-size:9px;font-weight:700;color:${col};background:${col}15;padding:1px 5px;border-radius:3px">${ots.length} OT${ots.length!==1?'s':''}</span>
+              <span style="font-size:9px;font-weight:700;color:${badgeCol};background:${badgeCol}18;padding:1px 6px;border-radius:3px">${ots.length} OT${ots.length!==1?'s':''}</span>
             </div>
             <div style="font-size:10.5px;color:var(--gris-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${vehiculo || '—'}</div>
             ${info.propietario ? `<div style="font-size:10.5px;font-weight:600;color:var(--gris-texto);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(info.propietario)}</div>` : ''}
