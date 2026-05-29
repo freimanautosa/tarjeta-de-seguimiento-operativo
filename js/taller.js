@@ -576,46 +576,46 @@ function _tvMostrarOverlay(orden, etapasOrden, badge, esVerde, aprobadas) {
   }, 1000);
 }
 
-function _iniciarScrollTaller(cont) {
-  if (window._tallerScrollRAF)    cancelAnimationFrame(window._tallerScrollRAF);
+// Estado persistente del scroll — sobrevive entre refrescos del taller
+window._tvScrollDir      = window._tvScrollDir      ?? 1;    // 1=bajar, -1=subir
+window._tvScrollLastTime = null;
+
+function _iniciarScrollTaller() {
+  if (window._tallerScrollRAF)     cancelAnimationFrame(window._tallerScrollRAF);
   if (window._tallerScrollTimeout) clearTimeout(window._tallerScrollTimeout);
+  window._tvScrollLastTime = null; // reset timing tras rebuild del DOM
 
-  const tableWrap = cont?.querySelector('.tv-table-wrap') || document.querySelector('.tv-table-wrap');
-  if (!tableWrap) return;
-
-  const PX_PER_SEC = 35;   // píxeles por segundo
-  const PAUSE_TOP  = 4000; // ms de pausa arriba
-  const PAUSE_BOT  = 3000; // ms de pausa abajo
-  let lastTime = null;
-  let dir = 1; // 1=bajar, -1=subir
+  const PX_PER_SEC = 35;
+  const PAUSE_TOP  = 4000;
+  const PAUSE_BOT  = 3000;
 
   const step = (ts) => {
     if (!document.getElementById('taller-contenido')) return;
-    const tableWrapNow = document.querySelector('.tv-table-wrap');
-    if (!tableWrapNow) return;
-    const maxScroll = tableWrapNow.scrollHeight - tableWrapNow.clientHeight;
+    const tw = document.querySelector('.tv-table-wrap');
+    if (!tw) return;
+    const maxScroll = tw.scrollHeight - tw.clientHeight;
     if (maxScroll <= 20) { window._tallerScrollRAF = requestAnimationFrame(step); return; }
 
-    if (lastTime === null) { lastTime = ts; }
-    const delta = (ts - lastTime) / 1000;
-    lastTime = ts;
+    if (window._tvScrollLastTime === null) window._tvScrollLastTime = ts;
+    const delta = (ts - window._tvScrollLastTime) / 1000;
+    window._tvScrollLastTime = ts;
 
-    tableWrapNow.scrollTop += dir * PX_PER_SEC * delta;
+    tw.scrollTop += window._tvScrollDir * PX_PER_SEC * delta;
 
-    if (dir === 1 && tableWrapNow.scrollTop >= maxScroll - 2) {
-      tableWrapNow.scrollTop = maxScroll;
-      lastTime = null;
+    if (window._tvScrollDir === 1 && tw.scrollTop >= maxScroll - 2) {
+      tw.scrollTop = maxScroll;
+      window._tvScrollLastTime = null;
+      window._tvScrollDir = -1; // persistir dirección
       window._tallerScrollTimeout = setTimeout(() => {
-        dir = -1;
         window._tallerScrollRAF = requestAnimationFrame(step);
       }, PAUSE_BOT);
       return;
     }
-    if (dir === -1 && tableWrapNow.scrollTop <= 2) {
-      tableWrapNow.scrollTop = 0;
-      lastTime = null;
+    if (window._tvScrollDir === -1 && tw.scrollTop <= 2) {
+      tw.scrollTop = 0;
+      window._tvScrollLastTime = null;
+      window._tvScrollDir = 1; // persistir dirección
       window._tallerScrollTimeout = setTimeout(() => {
-        dir = 1;
         window._tallerScrollRAF = requestAnimationFrame(step);
       }, PAUSE_TOP);
       return;
@@ -623,10 +623,9 @@ function _iniciarScrollTaller(cont) {
     window._tallerScrollRAF = requestAnimationFrame(step);
   };
 
-  // Esperar 4s antes de empezar
   window._tallerScrollTimeout = setTimeout(() => {
     window._tallerScrollRAF = requestAnimationFrame(step);
-  }, PAUSE_TOP);
+  }, 1000); // pequeño delay inicial tras rebuild
 }
 
 async function cargarPantallaTaller() {
@@ -1007,12 +1006,12 @@ async function cargarPantallaTaller() {
           setTimeout(() => rowEl.classList.remove('tv-row-alert'), 3200);
         }
         // Retomar autoscroll después de 3s (terminada la animación)
-        window._tallerScrollTimeout = setTimeout(() => _iniciarScrollTaller(cont), 3000);
+        window._tallerScrollTimeout = setTimeout(() => _iniciarScrollTaller(), 3000);
       }, 80);
       // NO mostrar overlay — quitado por pedido del usuario
     } else {
       // Sin cambio: iniciar/continuar autoscroll normal
-      _iniciarScrollTaller(cont);
+      _iniciarScrollTaller();
     }
 
   } catch(e) {
