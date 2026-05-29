@@ -576,6 +576,59 @@ function _tvMostrarOverlay(orden, etapasOrden, badge, esVerde, aprobadas) {
   }, 1000);
 }
 
+function _iniciarScrollTaller(cont) {
+  if (window._tallerScrollRAF)    cancelAnimationFrame(window._tallerScrollRAF);
+  if (window._tallerScrollTimeout) clearTimeout(window._tallerScrollTimeout);
+
+  const tableWrap = cont?.querySelector('.tv-table-wrap') || document.querySelector('.tv-table-wrap');
+  if (!tableWrap) return;
+
+  const PX_PER_SEC = 35;   // píxeles por segundo
+  const PAUSE_TOP  = 4000; // ms de pausa arriba
+  const PAUSE_BOT  = 3000; // ms de pausa abajo
+  let lastTime = null;
+  let dir = 1; // 1=bajar, -1=subir
+
+  const step = (ts) => {
+    if (!document.getElementById('taller-contenido')) return;
+    const tableWrapNow = document.querySelector('.tv-table-wrap');
+    if (!tableWrapNow) return;
+    const maxScroll = tableWrapNow.scrollHeight - tableWrapNow.clientHeight;
+    if (maxScroll <= 20) { window._tallerScrollRAF = requestAnimationFrame(step); return; }
+
+    if (lastTime === null) { lastTime = ts; }
+    const delta = (ts - lastTime) / 1000;
+    lastTime = ts;
+
+    tableWrapNow.scrollTop += dir * PX_PER_SEC * delta;
+
+    if (dir === 1 && tableWrapNow.scrollTop >= maxScroll - 2) {
+      tableWrapNow.scrollTop = maxScroll;
+      lastTime = null;
+      window._tallerScrollTimeout = setTimeout(() => {
+        dir = -1;
+        window._tallerScrollRAF = requestAnimationFrame(step);
+      }, PAUSE_BOT);
+      return;
+    }
+    if (dir === -1 && tableWrapNow.scrollTop <= 2) {
+      tableWrapNow.scrollTop = 0;
+      lastTime = null;
+      window._tallerScrollTimeout = setTimeout(() => {
+        dir = 1;
+        window._tallerScrollRAF = requestAnimationFrame(step);
+      }, PAUSE_TOP);
+      return;
+    }
+    window._tallerScrollRAF = requestAnimationFrame(step);
+  };
+
+  // Esperar 4s antes de empezar
+  window._tallerScrollTimeout = setTimeout(() => {
+    window._tallerScrollRAF = requestAnimationFrame(step);
+  }, PAUSE_TOP);
+}
+
 async function cargarPantallaTaller() {
   const cont = document.getElementById('taller-contenido');
   if (!cont || document.getElementById('tv-activate-screen')) return;
@@ -936,31 +989,30 @@ async function cargarPantallaTaller() {
       });
     }, 1000);
 
-    // Auto-scroll removido — las órdenes con cambio suben al top
-
-    // Animación + scroll al top para orden cambiada
+    // ── Animación cuando hay cambio en una orden ─────────────
     if (ordenCambiada) {
-      // Scroll al top para que la fila sea visible
+      // Detener scroll temporalmente para que la fila sea visible
+      if (window._tallerScrollRAF)  { cancelAnimationFrame(window._tallerScrollRAF); window._tallerScrollRAF = null; }
+      if (window._tallerScrollTimeout) { clearTimeout(window._tallerScrollTimeout); window._tallerScrollTimeout = null; }
+
       const tw = cont.querySelector('.tv-table-wrap');
       if (tw) tw.scrollTop = 0;
 
-      // Pequeño delay para que el DOM esté pintado antes de animar
       setTimeout(() => {
         const rowEl = document.getElementById(`tv-row-${ordenCambiada.id}`);
         if (rowEl) {
           rowEl.classList.remove('tv-row-alert');
-          void rowEl.offsetWidth; // force reflow
+          void rowEl.offsetWidth;
           rowEl.classList.add('tv-row-alert');
-          // Quitar clase tras la animación para que pueda dispararse de nuevo
           setTimeout(() => rowEl.classList.remove('tv-row-alert'), 3200);
         }
+        // Retomar autoscroll después de 3s (terminada la animación)
+        window._tallerScrollTimeout = setTimeout(() => _iniciarScrollTaller(cont), 3000);
       }, 80);
-
-      // Overlay solo si no hay entregadas/listas
-      if (!nuevasEntregadas.length && !nuevasListas.length) {
-        const ets = etapasTodas.filter(e => e.orden_id === ordenCambiada.id);
-        setTimeout(() => _tvMostrarOverlay(ordenCambiada, ets, 'ETAPA ACTUALIZADA', false, aprobadas), 500);
-      }
+      // NO mostrar overlay — quitado por pedido del usuario
+    } else {
+      // Sin cambio: iniciar/continuar autoscroll normal
+      _iniciarScrollTaller(cont);
     }
 
   } catch(e) {
