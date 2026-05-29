@@ -255,7 +255,8 @@ function montarTaller() {
         scrollbar-width:none;
       }
       .tv-panel-list::-webkit-scrollbar { display:none; }
-      #tv-panel-listos { height:16vh; flex:none; }
+      #tv-section-listos { flex:0 0 auto; max-height:35vh; }
+      #tv-section-listos .tv-panel-list { flex:1; }
       .tv-panel-item {
         border-radius:.4vw;padding:.55vh .8vw;
         display:flex;align-items:center;gap:.6vw;
@@ -1055,7 +1056,7 @@ async function cargarPantallaTaller() {
             </div>
 
             <div class="tv-panel-right">
-              <div class="tv-panel-section">
+              <div class="tv-panel-section" id="tv-section-listos">
                 <div class="tv-panel-title">Listos hoy</div>
                 <div class="tv-panel-list" id="tv-panel-listos">${panelListosHtmlInner}</div>
               </div>
