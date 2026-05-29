@@ -474,6 +474,45 @@ function _tvSonar() {
   } catch(e) { console.warn('Sound error:', e); }
 }
 
+// ── Anuncio de voz con Web Speech API ────────────────────
+function _tvAnunciarPlaca(orden) {
+  if (!window.speechSynthesis) return;
+
+  // Formatear placa para que el TTS la lea letra por letra con pausas
+  // Ej: "GKX673" → "G, K, X, 6, 7, 3"
+  const placa = (orden.placa || '').toUpperCase();
+  const placaLetra = placa.split('').join(', ');
+
+  const msg = `Atención. El vehículo con placa ${placaLetra}, está listo para ser entregado al cliente.`;
+
+  // Cancelar cualquier anuncio previo
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(msg);
+  utterance.lang  = 'es-CO';
+  utterance.rate  = 0.88;   // un poco más lento para mayor claridad
+  utterance.pitch = 1;
+  utterance.volume = 1;
+
+  // Seleccionar voz en español si está disponible
+  const voces = window.speechSynthesis.getVoices();
+  const vozEs = voces.find(v => v.lang.startsWith('es') && !v.name.toLowerCase().includes('google'))
+             || voces.find(v => v.lang.startsWith('es'));
+  if (vozEs) utterance.voice = vozEs;
+
+  // Si las voces aún no cargaron, esperar e intentar de nuevo
+  if (!voces.length) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      const v2 = window.speechSynthesis.getVoices().find(v => v.lang.startsWith('es'));
+      if (v2) utterance.voice = v2;
+      window.speechSynthesis.speak(utterance);
+    };
+    return;
+  }
+
+  window.speechSynthesis.speak(utterance);
+}
+
 function iniciarRelojTaller() {
   function tick() {
     const reloj = document.getElementById('taller-reloj');
@@ -722,7 +761,7 @@ async function cargarPantallaTaller() {
       setTimeout(() => _tvMostrarOverlay(oEnt, ets, '✓ ORDEN ENTREGADA', true, aprobadas), 600);
     }
 
-    // ── Sonido para nuevas listas ────────────────────────────
+    // ── Sonido + voz para nuevas listas ─────────────────────
     const nuevasListas = ordenesListas.filter(o =>
       !_tallerOrdenesNotificadas.has('lst_'+o.id) &&
       (_tallerGridSnapshot.size === 0 || _tallerGridSnapshot.has(o.id))
@@ -730,9 +769,10 @@ async function cargarPantallaTaller() {
     if (nuevasListas.length && !nuevasEntregadas.length) {
       nuevasListas.forEach(o => _tallerOrdenesNotificadas.add('lst_'+o.id));
       _tvSonar();
-      const oLst = nuevasListas[0];
-      const ets  = etapasTodas.filter(e => e.orden_id === oLst.id);
-      setTimeout(() => _tvMostrarOverlay(oLst, ets, '✓ LISTO PARA ENTREGA', true, aprobadas), 600);
+      // Anuncio de voz para cada orden lista
+      nuevasListas.forEach((o, idx) => {
+        setTimeout(() => _tvAnunciarPlaca(o), idx * 4500);
+      });
     }
 
     // ── Detectar cambios: inicio, fin o cambio de etapa ─────
