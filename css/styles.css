@@ -2969,10 +2969,17 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
    REDUCCIÓN GLOBAL DE TAMAÑOS — formularios y tarjetas
 ══════════════════════════════════════════════════════════ */
 
-/* Formulario nueva cotización: padding más compacto */
-#pag-cotizacion-nueva .card { padding: 20px !important; }
-.form-section { padding-bottom: 16px; margin-bottom: 16px; }
-.form-section-titulo { font-size: 13px !important; margin-bottom: 12px !important; }
+/* ── Formulario cotización: compacto ── */
+#pag-cotizacion-nueva .card              { padding: 14px 16px !important; }
+#pag-cotizacion-nueva .form-section      { padding-bottom: 10px !important; margin-bottom: 10px !important; border-bottom: 1px solid var(--gris-borde); }
+#pag-cotizacion-nueva .form-section:last-of-type { border-bottom: none; }
+#pag-cotizacion-nueva .form-section-titulo { font-size: 11px !important; margin-bottom: 8px !important; letter-spacing: .8px; }
+#pag-cotizacion-nueva .field             { margin-bottom: 0 !important; }
+#pag-cotizacion-nueva .field label       { font-size: 10px !important; margin-bottom: 4px !important; }
+#pag-cotizacion-nueva .field input,
+#pag-cotizacion-nueva .field select      { padding: 6px 9px !important; font-size: 13px !important; }
+#pag-cotizacion-nueva .grid-2            { gap: 8px !important; }
+#pag-cotizacion-nueva .back-btn          { margin-bottom: 10px !important; }
 
 /* Cotizaciones lista: max-width centrado */
 #pag-cotizaciones { max-width: 860px; margin: 0 auto; }
