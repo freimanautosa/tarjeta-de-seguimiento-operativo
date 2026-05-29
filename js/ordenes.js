@@ -2233,7 +2233,8 @@ async function cambiarEstado(v) {
     await api(`/ordenes?id=eq.${ordenActual.id}`, 'PATCH', patch);
     ordenActual.estado = v;
     toast(`Estado: ${v} ✓`);
-    cargarOrdenes();
+    if (filtroEstado === null) await cargarOrdenesPulmon();
+    else await cargarOrdenes();
     if (ordenActual) abrirOrden(ordenActual.id);
   } catch(e) { toast('Error: ' + e.message, 'err'); }
 }

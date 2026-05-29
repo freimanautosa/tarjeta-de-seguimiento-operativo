@@ -748,7 +748,8 @@ async function cargarPantallaTaller() {
 
     const ordenesEnGrid = ordenesActivas.filter(o => {
       if (o.estado === 'Programada') return false;
-      if (o.fecha_programada && o.fecha_programada > hoyISO) return false;
+      // Ocultar solo si aún no llegó al taller (sin ingreso_en) y su fecha es futura
+      if (o.fecha_programada && o.fecha_programada > hoyISO && !o.ingreso_en) return false;
       if (listasIds.has(o.id)) return false; // ya en panel "listos"
       const ets = etapasTodas.filter(e => e.orden_id === o.id);
       if (!ets.length) return true;
