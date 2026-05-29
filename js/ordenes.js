@@ -251,6 +251,14 @@ async function abrirOrden(id) {
   document.getElementById('topbar-title').textContent = 'Detalle de Orden';
   const detalleCont = document.getElementById('detalle-contenido');
   if (!detalleCont) return;
+
+  // Guardar qué etapas están abiertas y qué inputs tienen foco
+  // para no interrumpir al usuario si ya estaba viendo el detalle
+  const etapasAbiertas = new Set(
+    [...document.querySelectorAll('.etapa-body.open')].map(el => el.id)
+  );
+  const focusedId = document.activeElement?.id || null;
+
   detalleCont.innerHTML = '<div class="loading-state">Cargando...</div>';
 
   try {
@@ -610,6 +618,15 @@ async function abrirOrden(id) {
           </div>` : ''}
         </div>
       </div>`;
+
+    // Restaurar etapas que estaban abiertas antes del re-render
+    if (etapasAbiertas.size) {
+      etapasAbiertas.forEach(bodyId => {
+        const el = document.getElementById(bodyId);
+        if (el) el.classList.add('open');
+      });
+    }
+
   } catch(e) {
     detalleCont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
   }
@@ -4562,6 +4579,9 @@ function _tickRefresh() {
   if (!sesion) return;                 // no hay sesión activa
   if (document.hidden) return;        // pestaña oculta
   if (_hayModalAbierto()) return;     // usuario en un modal
+  // No refrescar si el usuario está escribiendo/editando en algún input
+  const focused = document.activeElement;
+  if (focused && ['INPUT','TEXTAREA','SELECT'].includes(focused.tagName)) return;
 
   const pag = _paginaActiva();
 
