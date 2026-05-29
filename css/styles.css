@@ -2732,8 +2732,8 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 
 /* ── Strip base (desktop) ── */
 .dash-kpi-strip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
   margin-bottom: 14px;
 }
@@ -2742,10 +2742,10 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .dash-kpi-strip { scrollbar-width: none; }
 .dash-kpi-strip::-webkit-scrollbar { display: none; }
 
-/* Chips hijos desktop: llenan su columna grid */
+/* Chips hijos desktop: tamaño fijo, no se estiran */
 .dash-kpi-strip .kpi-chip {
-  min-width: 0 !important;
-  width: 100%;
+  flex: 0 0 auto;
+  width: 140px;
 }
 
 /* ── Grid KPI del tab General: sin desborde ── */
