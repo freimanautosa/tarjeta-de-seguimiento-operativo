@@ -2237,63 +2237,83 @@ async function cargarMecanicos() {
 function montarJefe() {
   const sidebarNav = document.getElementById('sidebar-nav');
   if (sidebarNav) {
+    // Estado guardado de grupos abiertos/cerrados
+    const _grupAbiertos = JSON.parse(localStorage.getItem('nav_grupos') || '{"operaciones":true,"comercial":true,"clientes":false,"analisis":false}');
+
+    const _toggleGrupo = (id) => {
+      _grupAbiertos[id] = !_grupAbiertos[id];
+      localStorage.setItem('nav_grupos', JSON.stringify(_grupAbiertos));
+      const cont = document.getElementById('nav-grupo-' + id);
+      const chevron = document.getElementById('nav-chevron-' + id);
+      if (cont) cont.style.display = _grupAbiertos[id] ? 'block' : 'none';
+      if (chevron) chevron.style.transform = _grupAbiertos[id] ? 'rotate(0deg)' : 'rotate(-90deg)';
+    };
+    window._navToggleGrupo = _toggleGrupo;
+
+    const _grupoHeader = (id, label) => `
+      <button onclick="_navToggleGrupo('${id}')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px 4px;background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.35);font-family:'DM Mono',monospace;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;transition:color .15s" onmouseover="this.style.color='rgba(255,255,255,0.6)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">
+        <span class="nav-section-label" style="padding:0;margin:0;font-size:10px;letter-spacing:2px">${label}</span>
+        <svg id="nav-chevron-${id}" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="flex-shrink:0;transition:transform .2s;transform:rotate(${_grupAbiertos[id]?'0':'-90'}deg)"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div id="nav-grupo-${id}" style="display:${_grupAbiertos[id]?'block':'none'};overflow:hidden">`;
+
     sidebarNav.innerHTML = `
-      <!-- ── OPERACIONES ── -->
-      <div class="nav-section-label">Operaciones</div>
-      <button class="nav-item" id="nav-dashboard" onclick="navJefe('dashboard')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        <span class="nav-label">Estado del taller</span>
-      </button>
-      <button class="nav-item active" id="nav-ordenes" onclick="navJefe('ordenes')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-        <span class="nav-label">Órdenes</span>
-      </button>
-      <button class="nav-item" id="nav-nueva" onclick="navJefe('nueva')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
-        <span class="nav-label">Nueva orden</span>
-      </button>
-      <button class="nav-item" id="nav-calendario" onclick="navJefe('calendario')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <span class="nav-label">Calendario</span>
-      </button>
-      <button class="nav-item" id="nav-mecanicos" onclick="navJefe('mecanicos')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-        <span class="nav-label">Operarios</span>
-      </button>
+      ${_grupoHeader('operaciones','Operaciones')}
+        <button class="nav-item" id="nav-dashboard" onclick="navJefe('dashboard')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span class="nav-label">Estado del taller</span>
+        </button>
+        <button class="nav-item active" id="nav-ordenes" onclick="navJefe('ordenes')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          <span class="nav-label">Órdenes</span>
+        </button>
+        <button class="nav-item" id="nav-nueva" onclick="navJefe('nueva')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+          <span class="nav-label">Nueva orden</span>
+        </button>
+        <button class="nav-item" id="nav-calendario" onclick="navJefe('calendario')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span class="nav-label">Calendario</span>
+        </button>
+        <button class="nav-item" id="nav-mecanicos" onclick="navJefe('mecanicos')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          <span class="nav-label">Operarios</span>
+        </button>
+      </div>
 
-      <!-- ── COMERCIAL ── -->
-      <div class="nav-section-label">Comercial</div>
-      <button class="nav-item" id="nav-cotizaciones" onclick="navJefe('cotizaciones')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-        <span class="nav-label">Cotizaciones</span>
-      </button>
-      <button class="nav-item" id="nav-repuestos" onclick="navJefe('repuestos')" style="position:relative">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-        <span class="nav-label">Repuestos</span>
-        <span id="badge-repuestos" style="display:none;position:absolute;top:6px;right:8px;background:var(--rojo);color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;line-height:16px;text-align:center">0</span>
-      </button>
-      <button class="nav-item" id="nav-vehiculos" onclick="navJefe('vehiculos')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>
-        <span class="nav-label">Ingresos</span>
-      </button>
+      ${_grupoHeader('comercial','Comercial')}
+        <button class="nav-item" id="nav-cotizaciones" onclick="navJefe('cotizaciones')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+          <span class="nav-label">Cotizaciones</span>
+        </button>
+        <button class="nav-item" id="nav-repuestos" onclick="navJefe('repuestos')" style="position:relative">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+          <span class="nav-label">Repuestos</span>
+          <span id="badge-repuestos" style="display:none;position:absolute;top:6px;right:8px;background:var(--rojo);color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;line-height:16px;text-align:center">0</span>
+        </button>
+        <button class="nav-item" id="nav-vehiculos" onclick="navJefe('vehiculos')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>
+          <span class="nav-label">Ingresos</span>
+        </button>
+      </div>
 
-      <!-- ── CLIENTES ── -->
-      <div class="nav-section-label">Clientes</div>
-      <button class="nav-item" id="nav-flotillas" onclick="navJefe('flotillas')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-        <span class="nav-label">Flotillas</span>
-      </button>
-      <button class="nav-item" id="nav-aseguradoras" onclick="navJefe('aseguradoras')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        <span class="nav-label">Aseguradoras</span>
-      </button>
+      ${_grupoHeader('clientes','Clientes')}
+        <button class="nav-item" id="nav-flotillas" onclick="navJefe('flotillas')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          <span class="nav-label">Flotillas</span>
+        </button>
+        <button class="nav-item" id="nav-aseguradoras" onclick="navJefe('aseguradoras')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span class="nav-label">Aseguradoras</span>
+        </button>
+      </div>
 
-      <!-- ── ANÁLISIS ── -->
-      <div class="nav-section-label">Análisis</div>
-      <button class="nav-item" id="nav-reportes" onclick="navJefe('reportes')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        <span class="nav-label">Reportes</span>
-      </button>
+      ${_grupoHeader('analisis','Análisis')}
+        <button class="nav-item" id="nav-reportes" onclick="navJefe('reportes')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span class="nav-label">Reportes</span>
+        </button>
+      </div>
     `;
   }
 
