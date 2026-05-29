@@ -91,7 +91,7 @@ function _buildOrdenRow(o, etapas) {
   return `<tr class="ord-row" onclick="abrirOrden(${o.id})" data-search="${escapeHtml(searchStr)}">
     <td>
       <div class="ord-placa">${escapeHtml(o.placa)}</div>
-      <div class="ord-ot">${formatOT(o.id)}${contactAlert}</div>
+      <div class="ord-ot">${formatOT(o.id, o.estado)}${contactAlert}</div>
     </td>
     <td>
       <div class="ord-veh-nombre">${[o.marca,o.linea].filter(Boolean).map(escapeHtml).join(' ') || '—'}</div>
@@ -167,7 +167,7 @@ async function cargarOrdenesPulmon() {
       return `<tr class="ord-row" onclick="abrirOrden(${o.id})" data-search="${escapeHtml(searchStr)}">
         <td>
           <div class="ord-placa">${escapeHtml(o.placa)}</div>
-          <div class="ord-ot">${formatOT(o.id)}</div>
+          <div class="ord-ot">${formatOT(o.id, o.estado)}</div>
         </td>
         <td>
           <div class="ord-veh-nombre">${[o.marca,o.linea].filter(Boolean).map(escapeHtml).join(' ') || '—'}</div>
@@ -265,12 +265,12 @@ async function abrirOrden(id) {
     ordenActual = orden;
 
     const total = etapas.length;
-    const comp = etapas.filter(e => e.fin).length;
-    const pct = total ? Math.round((comp / total) * 100) : 0;
-
     // Calidad: verificar si todas las etapas completadas tienen aprobación
     const _ultAprobPorEtapa = {};
-    aprobaciones.forEach(a => { if (!_ultAprobPorEtapa[a.etapa_id]) _ultAprobPorEtapa[a.etapa_id] = a.estado; });
+    aprobaciones.forEach(a => { _ultAprobPorEtapa[a.etapa_id] = a.estado; }); // última aprobación por etapa
+    // Una etapa cuenta como completada solo si tiene fin Y su última aprobación no es 'rechazado'
+    const comp = etapas.filter(e => e.fin && _ultAprobPorEtapa[e.id] !== 'rechazado').length;
+    const pct = total ? Math.round((comp / total) * 100) : 0;
     const todasCalidadAprobada = total > 0 && comp === total &&
       etapas.every(e => _ultAprobPorEtapa[e.id] === 'aprobado');
     const circ = 2 * Math.PI * 22;
@@ -385,7 +385,7 @@ async function abrirOrden(id) {
               <div>
                 <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
                   <div class="detalle-placa">${escapeHtml(orden.placa)}</div>
-                  <div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--gris-mid);letter-spacing:.5px">${formatOT(orden.id)}</div>
+                  <div style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--gris-mid);letter-spacing:.5px">${formatOT(orden.id, orden.estado)}</div>
                 </div>
                 <div class="detalle-vehiculo">${[orden.marca,orden.linea,orden.modelo,orden.color].filter(Boolean).map(escapeHtml).join(' · ')}</div>
               </div>
@@ -620,8 +620,10 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
   const k = kid(eid);
   const nombre = e.etapa || '—';
   const esPausado = e.pausado && !e.fin;
-  const badge = !e.inicio ? 'Pendiente' : (e.fin ? 'Completada' : esPausado ? 'Pausado' : 'En proceso');
-  const bCls  = !e.inicio ? 'pendiente'  : (e.fin ? 'completada' : esPausado ? 'pendiente' : 'iniciada');
+  const ultAprobEtapa = aprobaciones.filter(a => a.etapa_id === eid).slice(-1)[0];
+  const esReproceso   = e.fin && ultAprobEtapa?.estado === 'rechazado';
+  const badge = !e.inicio ? 'Pendiente' : (e.fin ? (esReproceso ? 'Reproceso' : 'Completada') : esPausado ? 'Pausado' : 'En proceso');
+  const bCls  = !e.inicio ? 'pendiente'  : (e.fin ? (esReproceso ? 'pendiente' : 'completada') : esPausado ? 'pendiente' : 'iniciada');
   const eFotos = fotos.filter(f => f.etapa_id === eid);
   const eNovs = novedades.filter(n => n.etapa_id === eid);
   const aprobEtapa = aprobaciones.filter(a => a.etapa_id === eid);
@@ -738,14 +740,22 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
           <div class="field etapa-campo-tec"><label>Técnico asignado</label>
             <select id="tec-${k}" onchange="asignarMecanico(${eid},'${k}')">
               <option value="">— Sin asignar —</option>
-              ${mecanicos.filter(m=>!['taller','repuestos','Asesor Previsora'].includes(m.rol)).map(m=>`<option value="${m.id}" ${e.mecanico_id===m.id?'selected':''}>${escapeHtml(m.nombre)}</option>`).join('')}
+              ${(() => {
+                const _srvRoles = { latoneria:['latonero','tot'], pintura:['pintor','tot'], mecanica:['mecanico','tot'], adicionales:['detailing','mecanico','latonero','pintor','tot'] };
+                const _rolesValidos = _srvRoles[e.servicio] || null;
+                return mecanicos
+                  .filter(m => !['taller','repuestos','Asesor Previsora'].includes(m.rol))
+                  .filter(m => !_rolesValidos || _rolesValidos.includes(m.rol))
+                  .map(m=>`<option value="${m.id}" ${e.mecanico_id===m.id?'selected':''}>${escapeHtml(m.nombre)}</option>`)
+                  .join('');
+              })()}
             </select>
           </div>
-          <div class="field etapa-campo-sm"><label>H. Facturadas</label>
-            <input id="hf-${k}" type="number" step="0.5" value="${e.horas_facturadas||''}" placeholder="0" onblur="patchHoras(${eid},'${k}')">
+          <div class="field etapa-campo-sm"><label>${e.servicio==='pintura'?'Piezas a pintar':'H. Facturadas'}</label>
+            <input id="hf-${k}" type="number" step="${e.servicio==='pintura'?'1':'0.5'}" value="${e.horas_facturadas||''}" placeholder="0" onblur="patchHoras(${eid},'${k}')">
           </div>
-          <div class="field etapa-campo-sm"><label>H. Adicionales</label>
-            <input id="ha-${k}" type="number" step="0.5" value="${e.horas_adicionales||''}" placeholder="0" onblur="patchHoras(${eid},'${k}')">
+          <div class="field etapa-campo-sm"><label>${e.servicio==='pintura'?'Piezas adic.':'H. Adicionales'}</label>
+            <input id="ha-${k}" type="number" step="${e.servicio==='pintura'?'1':'0.5'}" value="${e.horas_adicionales||''}" placeholder="0" onblur="patchHoras(${eid},'${k}')">
           </div>
           <div class="field etapa-campo-sm"><label>Valor COP</label>
             <input id="val-${k}" type="number" step="1000" value="${e.valor||''}" placeholder="0"
@@ -3910,6 +3920,7 @@ async function guardarEdicionOrden() {
       vin:             vin,
       propietario:     document.getElementById('ed-propietario')?.value.trim() || null,
       telefono:        document.getElementById('ed-telefono')?.value.trim() || null,
+      cedula_cliente:  document.getElementById('ed-cedula')?.value.trim()   || null,
       correo_cliente:  document.getElementById('ed-correo')?.value.trim()   || null,
       tipo_cliente:    tipoPersona === 'empresa' ? 'empresa' : (tipoCliente || null),
       aseguradora:     aseguradora,

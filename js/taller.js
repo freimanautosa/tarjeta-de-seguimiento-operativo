@@ -749,8 +749,17 @@ async function cargarPantallaTaller() {
 
     const panelHtml = panelListosHtml; // alias para compatibilidad
 
+    // ── Ordenar: activas primero (con etapa en curso), luego el resto por entrega ──
+    const ordenesOrdenadas = [...ordenesEnGrid].sort((a, b) => {
+      const aActiva = etapasActivas.some(e => e.orden_id === a.id) ? 0 : 1;
+      const bActiva = etapasActivas.some(e => e.orden_id === b.id) ? 0 : 1;
+      if (aActiva !== bActiva) return aActiva - bActiva;
+      const fa = a.fecha_entrega_1 || '9999', fb = b.fecha_entrega_1 || '9999';
+      return fa < fb ? -1 : fa > fb ? 1 : 0;
+    });
+
     // ── Render completo ──────────────────────────────────────
-    const filasHtml = ordenesEnGrid.map(renderFila).join('');
+    const filasHtml = ordenesOrdenadas.map(renderFila).join('');
 
     cont.innerHTML = `
       <div class="tv-shell">
@@ -843,6 +852,25 @@ async function cargarPantallaTaller() {
         if (el) el.textContent = (e.pausado ? '⏸ ' : '') + _tvTimerStr(e);
       });
     }, 1000);
+
+    // ── Auto-scroll tabla cuando hay muchas órdenes ──────────
+    if (window._tallerScrollInterval) clearInterval(window._tallerScrollInterval);
+    const tableWrap = cont.querySelector('.tv-table-wrap');
+    if (tableWrap) {
+      let scrollDir = 1; // 1=abajo, -1=arriba
+      let pausa = 0;
+      window._tallerScrollInterval = setInterval(() => {
+        if (pausa > 0) { pausa--; return; }
+        const maxScroll = tableWrap.scrollHeight - tableWrap.clientHeight;
+        if (maxScroll <= 10) return; // no necesita scroll
+        tableWrap.scrollTop += scrollDir * 1.5;
+        if (tableWrap.scrollTop >= maxScroll - 2) {
+          scrollDir = -1; pausa = 40; // pausa 4s abajo
+        } else if (tableWrap.scrollTop <= 0) {
+          scrollDir = 1; pausa = 60; // pausa 6s arriba
+        }
+      }, 100);
+    }
 
     // Overlay por cambio de etapa
     if (ordenCambiada && !nuevasEntregadas.length && !nuevasListas.length) {
