@@ -240,15 +240,21 @@ async function enviarSolicitudRepuesto(ordenId, etapaId) {
       }
     }
 
-    // Notificación N8N
+    // Notificación N8N — incluye IDs extra de Telegram (configurables en n8n)
     const resumen = items.map(i => `${i.repuesto} (x${i.unidades})`).join(', ');
+    // Leer IDs adicionales desde config en Supabase (opcional — si no existen, se ignoran)
+    const extraIds = await Promise.all([
+      api('/configuracion?clave=eq.telegram_repuesto_extra_1').then(r => r?.[0]?.valor || null).catch(() => null),
+      api('/configuracion?clave=eq.telegram_repuesto_extra_2').then(r => r?.[0]?.valor || null).catch(() => null),
+    ]);
     fetch(N8N_REPUESTO, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         evento: 'repuesto_solicitado', solicitado_por: sesion.nombre,
         repuesto: resumen, placa: orden?.placa || '',
         marca: orden?.marca || '', modelo: orden?.linea || '',
-        vin: orden?.vin || '', orden_id: ordenId
+        vin: orden?.vin || '', orden_id: ordenId,
+        extra_chat_ids: extraIds.filter(Boolean)   // IDs adicionales
       })
     }).catch(() => {});
 

@@ -347,7 +347,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   cursor: pointer;
   color: var(--texto);
 }
-.content { flex: 1; padding: 28px; max-width: 1280px; width: 100%; }
+.content { flex: 1; padding: 24px 28px; max-width: 1200px; width: 100%; margin: 0 auto; }
 
 /* BOTTOM NAV (mobile) */
 .bottom-nav {
@@ -1553,7 +1553,7 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   .hamburger { display: flex !important; align-items: center; justify-content: center; }
 
   /* Content padding tablet */
-  .content { padding: 20px 22px; max-width: 960px; }
+  .content { padding: 18px 20px; max-width: 960px; margin: 0 auto; }
 
   /* Topbar tablet */
   .topbar { padding: 0 20px; }
@@ -1724,16 +1724,16 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 }
 
 /* COTIZACIONES */
-.cot-card { background:white; border:1px solid var(--gris-borde); border-radius:10px; padding:16px 20px; margin-bottom:10px; transition:box-shadow 0.16s var(--ease-out), border-color 0.16s var(--ease-out), transform 0.16s var(--ease-out); box-shadow: var(--shadow-sm); }
-.cot-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.08); border-color: #C5CBD5; transform: translateY(-1px); }
-.cot-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:10px; }
-.cot-placa { font-family:'DM Mono',monospace; font-size:18px; font-weight:500; color:var(--azul); letter-spacing:1px; }
-.cot-codigo { font-family:'DM Mono',monospace; font-size:11px; color:var(--gris-mid); margin-top:2px; }
-.cot-cliente { font-size:13px; color:var(--gris-texto); margin-top:4px; }
-.cot-card-mid { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px; }
-.cot-chip { font-size:12px; color:var(--gris-mid); }
+.cot-card { background:white; border:1px solid var(--gris-borde); border-radius:9px; padding:11px 14px; margin-bottom:7px; transition:box-shadow 0.16s var(--ease-out), border-color 0.16s var(--ease-out), transform 0.16s var(--ease-out); box-shadow: var(--shadow-sm); }
+.cot-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.07); border-color: #C5CBD5; transform: translateY(-1px); }
+.cot-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:7px; }
+.cot-placa { font-family:'DM Mono',monospace; font-size:15px; font-weight:700; color:var(--azul); letter-spacing:1px; }
+.cot-codigo { font-family:'DM Mono',monospace; font-size:10px; color:var(--gris-mid); margin-top:1px; }
+.cot-cliente { font-size:12px; color:var(--gris-texto); margin-top:3px; }
+.cot-card-mid { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
+.cot-chip { font-size:11px; color:var(--gris-mid); }
 .cot-chip strong { color:var(--texto); }
-.cot-card-bot { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.cot-card-bot { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
 .badge-cot-pendiente { background:var(--amarillo-bg); color:var(--amarillo); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
 .badge-cot-aprobada  { background:var(--verde-bg); color:var(--verde); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
 .badge-cot-rechazada { background:var(--rojo-bg); color:var(--rojo); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
@@ -1759,12 +1759,12 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .btn-del-row:hover { background:var(--rojo-bg); border-color:var(--rojo); color:var(--rojo); }
 
 /* ── RESUMEN DE TOTALES ─────────────────────────────────── */
-.cot-resumen { background:var(--gris-bg); border-radius:10px; border:1px solid var(--gris-borde); padding:16px 20px; }
-.cot-res-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; font-size:14px; border-top:1px solid var(--gris-borde); }
+.cot-resumen { background:var(--gris-bg); border-radius:8px; border:1px solid var(--gris-borde); padding:12px 16px; }
+.cot-res-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; font-size:13px; border-top:1px solid var(--gris-borde); }
 .cot-res-row:first-child { border-top:none; }
-.cot-res-subtotal { font-weight:700; font-size:15px; color:var(--texto); border-top:2px solid var(--gris-borde) !important; margin-top:4px; padding-top:10px !important; }
+.cot-res-subtotal { font-weight:700; font-size:13.5px; color:var(--texto); border-top:2px solid var(--gris-borde) !important; margin-top:3px; padding-top:8px !important; }
 .cot-res-subtotal span:last-child { font-family:'DM Mono',monospace; }
-.cot-res-total { font-weight:800; font-size:16px; color:white; background:var(--azul); border-radius:8px; padding:10px 14px !important; margin-top:6px; border-top:none !important; }
+.cot-res-total { font-weight:700; font-size:14px; color:white; background:var(--azul); border-radius:7px; padding:8px 12px !important; margin-top:5px; border-top:none !important; }
 .cot-res-total span:last-child { font-family:'DM Mono',monospace; }
 
 /* ══════════════════════════════════════════════════════════
@@ -2209,8 +2209,10 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   background: white;
   border: 1px solid var(--gris-borde);
   border-radius: var(--radio);
-  padding: 18px;
+  padding: 16px;
   box-shadow: var(--shadow-sm);
+  max-width: 920px;
+  margin: 0 auto;
 }
 .cal-grid {
   display: grid;
@@ -2233,8 +2235,8 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 }
 .cal-cell {
   background: white;
-  min-height: 132px;
-  padding: 8px;
+  min-height: 86px;
+  padding: 6px;
   vertical-align: top;
   display: flex;
   flex-direction: column;
@@ -2950,12 +2952,105 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
   font-weight: 700;
 }
 
-/* Nueva orden — limitar ancho */
+/* Nueva orden — limitar ancho y centrar */
 .no-card {
   max-width: 860px;
+  margin: 0 auto;
 }
 
 @media (max-width: 560px) {
   .rep-opciones { gap: 5px; }
   .rep-opcion { font-size: 12px; padding: 6px 11px; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   REDUCCIÓN GLOBAL DE TAMAÑOS — formularios y tarjetas
+══════════════════════════════════════════════════════════ */
+
+/* Formulario nueva cotización: padding más compacto */
+#pag-cotizacion-nueva .card { padding: 20px !important; }
+.form-section { padding-bottom: 16px; margin-bottom: 16px; }
+.form-section-titulo { font-size: 13px !important; margin-bottom: 12px !important; }
+
+/* Cotizaciones lista: max-width centrado */
+#pag-cotizaciones { max-width: 860px; margin: 0 auto; }
+
+/* Repuestos: densidad mejorada */
+#rep-contenido, #repuestos-jefe-contenido { max-width: 1100px; margin: 0 auto; }
+.solicitud-card { padding: 11px 13px; margin-bottom: 7px; }
+
+/* Flotillas y aseguradoras: max-width */
+#pag-flotillas, #pag-aseguradoras { max-width: 1100px; margin: 0 auto; }
+
+/* Aseguradoras KPI: más compacto */
+.aseg-kpi-card { padding: 10px 14px !important; }
+.aseg-kpi-num  { font-size: 22px !important; }
+.aseg-kpi-label { font-size: 11px !important; }
+
+/* Operarios: max-width centrado */
+#pag-mecanicos { max-width: 1100px; margin: 0 auto; }
+
+/* Ingresos/Vehículos: max-width */
+#pag-vehiculos { max-width: 1100px; margin: 0 auto; }
+
+/* ══════════════════════════════════════════════════════════
+   MÓVIL ADICIONAL — secciones que faltaban
+══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Cotizaciones lista */
+  .cot-card-mid { gap: 8px; }
+  .cot-placa    { font-size: 14px; }
+
+  /* Cotizaciones form */
+  #pag-cotizacion-nueva .card { padding: 16px !important; }
+  .cot-table-wrap { margin-bottom: 8px; }
+  .cot-resumen    { padding: 10px 12px; }
+
+  /* Detalle de orden: panel lateral debajo del contenido */
+  .detalle-grid { grid-template-columns: 1fr; }
+  .detalle-sidebar { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+  .sidebar-card  { flex: 1 1 calc(50% - 4px); min-width: 240px; }
+
+  /* Repuestos: tabla scroll */
+  .rep-tabla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Aseguradoras KPI strip: 3 columnas en tablet */
+  .aseg-kpi-strip { grid-template-columns: repeat(3,1fr) !important; gap: 8px !important; }
+
+  /* Flotillas grid: 1 col */
+  .flot-grid { grid-template-columns: 1fr !important; }
+
+  /* Búsqueda y filtros en páginas */
+  .busqueda-row { flex-wrap: wrap; gap: 8px; }
+  .busqueda-row input { min-width: 0; flex: 1 1 100%; }
+
+  /* Operarios grid: 1 col en móvil */
+  .ops-grid { grid-template-columns: 1fr !important; }
+
+  /* Wizard: compacto */
+  #wizard-s1 .no-seccion { padding: 14px 15px; }
+}
+
+@media (max-width: 480px) {
+
+  /* Cotizaciones form: 1 columna */
+  #pag-cotizacion-nueva .grid-2 { grid-template-columns: 1fr !important; }
+
+  /* Sidebar cards detalle: 1 columna */
+  .detalle-sidebar { flex-direction: column; }
+  .sidebar-card    { flex: 1 1 100%; min-width: 0; }
+
+  /* Aseguradoras KPI: 2 cols */
+  .aseg-kpi-strip { grid-template-columns: repeat(2,1fr) !important; }
+
+  /* Nueva orden: secciones más compactas */
+  .no-seccion { padding: 12px 14px !important; gap: 10px !important; }
+
+  /* Topbar actions: ocultar texto largo */
+  .topbar-actions .btn span { display: none; }
+
+  /* Calendario: 1 col imposible, pero reducir aún más */
+  .cal-cell { min-height: 44px; padding: 3px 2px; }
+  .cal-shell { padding: 10px 8px; }
 }

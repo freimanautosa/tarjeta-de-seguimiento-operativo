@@ -1338,14 +1338,121 @@ async function agregarNuevaEmpresaNueva() {
   } catch(e) { toast('Error: '+e.message,'err'); }
 }
 
-async function agregarNuevaAsegNueva() {
-  const nombre = prompt('Nombre de la nueva aseguradora:')?.trim();
-  if (!nombre) return;
-  try {
-    await api('/aseguradoras', 'POST', { nombre, activo: true }, { Prefer:'return=minimal' });
-    toast('Aseguradora agregada ✓');
-    await recargarListasNuevaOrden();
-  } catch(e) { toast('Error: '+e.message,'err'); }
+function agregarNuevaAsegNueva() {
+  // Eliminar modal previo
+  document.getElementById('modal-nueva-aseg')?.remove();
+
+  // Contador de contactos
+  let _contactoIdx = 0;
+
+  const m = document.createElement('div');
+  m.id = 'modal-nueva-aseg';
+  m.className = 'modal-overlay show';
+  m.innerHTML = `
+    <div class="modal" style="max-width:560px">
+      <div class="modal-header">
+        <div class="modal-titulo">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Nueva aseguradora
+        </div>
+        <button class="modal-close" onclick="document.getElementById('modal-nueva-aseg').remove()">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="display:flex;flex-direction:column;gap:12px">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field" style="margin:0"><label>Nombre *</label><input id="naseg-nombre" placeholder="HDI Seguros, Sura..."></div>
+          <div class="field" style="margin:0"><label>NIT</label><input id="naseg-nit" placeholder="900123456-7"></div>
+          <div class="field" style="margin:0"><label>Teléfono</label><input id="naseg-tel" type="tel" placeholder="6011234567"></div>
+          <div class="field" style="margin:0"><label>Correo</label><input id="naseg-mail" type="email" placeholder="contacto@aseguradora.com"></div>
+          <div class="field" style="margin:0;grid-column:1/-1"><label>Dirección</label><input id="naseg-dir" placeholder="Cra 7 #32-16, Bogotá"></div>
+          <div class="field" style="margin:0"><label>Valor hora estadía (COP)</label><input id="naseg-hora" type="number" min="0" placeholder="0" style="font-family:'DM Mono',monospace"></div>
+        </div>
+
+        <div style="border-top:1px solid var(--gris-borde);padding-top:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <span style="font-size:11px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:.5px">Contactos</span>
+            <button class="btn btn-ghost btn-xs" onclick="_nasegAgregarContacto()" style="display:flex;align-items:center;gap:4px">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Agregar contacto
+            </button>
+          </div>
+          <div id="naseg-contactos-wrap" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+
+        <div id="naseg-error" style="display:none;background:var(--rojo-bg);color:var(--rojo);border-radius:6px;padding:9px 12px;font-size:13px"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="document.getElementById('modal-nueva-aseg').remove()">Cancelar</button>
+        <button class="btn btn-primary" id="naseg-btn-save" onclick="_guardarNuevaAsegModal()">Guardar aseguradora</button>
+      </div>
+    </div>`;
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
+
+  // Agregar primer contacto vacío
+  window._nasegContactoIdx = 0;
+  window._nasegAgregarContacto = function() {
+    const wrap = document.getElementById('naseg-contactos-wrap');
+    if (!wrap) return;
+    const idx = window._nasegContactoIdx++;
+    const div = document.createElement('div');
+    div.id = `naseg-contacto-${idx}`;
+    div.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:7px;align-items:end;background:var(--gris-bg);border-radius:7px;padding:8px 10px';
+    div.innerHTML = `
+      <div class="field" style="margin:0"><label style="font-size:10px">Nombre</label><input placeholder="Carlos López" style="font-size:13px"></div>
+      <div class="field" style="margin:0"><label style="font-size:10px">Teléfono</label><input placeholder="3001234567" style="font-size:13px"></div>
+      <div class="field" style="margin:0"><label style="font-size:10px">Correo</label><input placeholder="carlos@seg.com" style="font-size:13px"></div>
+      <button class="btn btn-ghost btn-xs" style="color:var(--rojo);flex-shrink:0;margin-bottom:0" onclick="document.getElementById('naseg-contacto-${idx}').remove()" title="Quitar">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>`;
+    wrap.appendChild(div);
+  };
+  window._nasegAgregarContacto();
+
+  window._guardarNuevaAsegModal = async function() {
+    const nombre = document.getElementById('naseg-nombre')?.value.trim();
+    const errEl  = document.getElementById('naseg-error');
+    if (!nombre) { errEl.textContent = 'El nombre es obligatorio.'; errEl.style.display = 'block'; return; }
+    errEl.style.display = 'none';
+    const btn = document.getElementById('naseg-btn-save');
+    if (btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
+
+    // Recoger contactos
+    const contactos = [];
+    document.querySelectorAll('#naseg-contactos-wrap > div').forEach(div => {
+      const inputs = div.querySelectorAll('input');
+      const n = inputs[0]?.value.trim();
+      const t = inputs[1]?.value.trim();
+      const c = inputs[2]?.value.trim();
+      if (n || t || c) contactos.push({ nombre: n, telefono: t, correo: c });
+    });
+
+    const body = {
+      nombre,
+      activo: true,
+      nit:       document.getElementById('naseg-nit')?.value.trim() || null,
+      telefono:  document.getElementById('naseg-tel')?.value.trim() || null,
+      correo:    document.getElementById('naseg-mail')?.value.trim() || null,
+      direccion: document.getElementById('naseg-dir')?.value.trim() || null,
+      valor_hora: parseFloat(document.getElementById('naseg-hora')?.value) || null,
+      contactos: contactos.length ? JSON.stringify(contactos) : null,
+    };
+
+    try {
+      await api('/aseguradoras', 'POST', body, { Prefer:'return=minimal' });
+      toast('Aseguradora creada ✓');
+      document.getElementById('modal-nueva-aseg').remove();
+      await recargarListasNuevaOrden();
+    } catch(e) {
+      errEl.textContent = 'Error: ' + e.message;
+      errEl.style.display = 'block';
+      if (btn) { btn.disabled = false; btn.textContent = 'Guardar aseguradora'; }
+    }
+  };
+
+  setTimeout(() => document.getElementById('naseg-nombre')?.focus(), 80);
 }
 
 async function agregarNuevaFlotNueva() {
@@ -2131,21 +2238,19 @@ function montarJefe() {
   const sidebarNav = document.getElementById('sidebar-nav');
   if (sidebarNav) {
     sidebarNav.innerHTML = `
+      <!-- ── OPERACIONES ── -->
+      <div class="nav-section-label">Operaciones</div>
       <button class="nav-item" id="nav-dashboard" onclick="navJefe('dashboard')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         <span class="nav-label">Estado del taller</span>
       </button>
       <button class="nav-item active" id="nav-ordenes" onclick="navJefe('ordenes')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-        <span class="nav-label">Todas las órdenes</span>
+        <span class="nav-label">Órdenes</span>
       </button>
       <button class="nav-item" id="nav-nueva" onclick="navJefe('nueva')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
         <span class="nav-label">Nueva orden</span>
-      </button>
-      <button class="nav-item" id="nav-cotizaciones" onclick="navJefe('cotizaciones')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
-        <span class="nav-label">Cotizaciones</span>
       </button>
       <button class="nav-item" id="nav-calendario" onclick="navJefe('calendario')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -2155,15 +2260,25 @@ function montarJefe() {
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
         <span class="nav-label">Operarios</span>
       </button>
+
+      <!-- ── COMERCIAL ── -->
+      <div class="nav-section-label">Comercial</div>
+      <button class="nav-item" id="nav-cotizaciones" onclick="navJefe('cotizaciones')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+        <span class="nav-label">Cotizaciones</span>
+      </button>
       <button class="nav-item" id="nav-repuestos" onclick="navJefe('repuestos')" style="position:relative">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
         <span class="nav-label">Repuestos</span>
         <span id="badge-repuestos" style="display:none;position:absolute;top:6px;right:8px;background:var(--rojo);color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;line-height:16px;text-align:center">0</span>
       </button>
-      <button class="nav-item" id="nav-reportes" onclick="navJefe('reportes')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        <span class="nav-label">Reportes</span>
+      <button class="nav-item" id="nav-vehiculos" onclick="navJefe('vehiculos')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>
+        <span class="nav-label">Ingresos</span>
       </button>
+
+      <!-- ── CLIENTES ── -->
+      <div class="nav-section-label">Clientes</div>
       <button class="nav-item" id="nav-flotillas" onclick="navJefe('flotillas')">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
         <span class="nav-label">Flotillas</span>
@@ -2172,9 +2287,12 @@ function montarJefe() {
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <span class="nav-label">Aseguradoras</span>
       </button>
-      <button class="nav-item" id="nav-vehiculos" onclick="navJefe('vehiculos')">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/><circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/></svg>
-        <span class="nav-label">Ingresos</span>
+
+      <!-- ── ANÁLISIS ── -->
+      <div class="nav-section-label">Análisis</div>
+      <button class="nav-item" id="nav-reportes" onclick="navJefe('reportes')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span class="nav-label">Reportes</span>
       </button>
     `;
   }
@@ -2466,69 +2584,90 @@ async function cargarMecanicosVista() {
     const srvColor = { latoneria:'#DC2626', pintura:'#D97706', mecanica:'#2563EB', adicionales:'#059669' };
     const esGerente = sesion?.perfil === 'gerente';
 
-    cont.innerHTML = `
-      ${esGerente ? `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-        <button class="btn btn-primary btn-sm" onclick="abrirModalOperario(null)" style="display:flex;align-items:center;gap:6px">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nuevo Operario
-        </button>
-        <button class="btn btn-ghost btn-sm" onclick="abrirGestionRoles()" style="color:#7C3AED;display:flex;align-items:center;gap:6px;border-color:#DDD6FE">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
-          Gestionar Roles
-        </button>
-        <button class="btn btn-ghost btn-sm" onclick="abrirCambiarPassJefe()" style="color:var(--azul);display:flex;align-items:center;gap:6px">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-          Contraseña del Jefe
-        </button>
-      </div>` : ''}
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">
-        ${mecsData.map(m => {
-          const etapas = etapasActivas.filter(e => e.mecanico_id === m.id);
-          const etapsHtml = etapas.length
-            ? etapas.map(e => {
-                const ord = ordenes.find(o => o.id === e.orden_id);
-                const color = srvColor[e.servicio] || '#6B7280';
-                const mins  = e.inicio ? Math.round((new Date() - new Date(e.inicio)) / 60000) : 0;
-                const dur   = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins/60)}h ${mins%60}m` : `${Math.floor(mins/1440)}d`;
-                return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--gris-borde)">
-                  <div style="width:3px;height:32px;background:${color};border-radius:99px;flex-shrink:0"></div>
-                  <div style="flex:1;min-width:0">
-                    <div style="font-size:12px;font-weight:600;color:var(--texto)">${escapeHtml(e.etapa)||'—'}</div>
-                    <div style="font-size:11px;color:var(--gris-mid);font-family:'DM Mono',monospace">${escapeHtml(ord?.placa)||'—'} · ${[ord?.marca,ord?.linea].filter(Boolean).map(escapeHtml).join(' ')||'—'}</div>
-                  </div>
-                  <div style="font-size:11px;color:var(--gris-mid);font-family:'DM Mono',monospace;flex-shrink:0">${dur}</div>
-                </div>`;
-              }).join('')
-            : `<div style="font-size:12px;color:var(--gris-mid);padding:12px 0;text-align:center">Sin etapas activas</div>`;
+    // Agrupar por rol
+    const porRol = {};
+    mecsData.forEach(m => {
+      const rol = ROL_LABEL[m.rol] || m.rol || 'Técnico';
+      if (!porRol[rol]) porRol[rol] = [];
+      porRol[rol].push(m);
+    });
 
-          return `<div style="background:white;border:1px solid var(--gris-borde);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05)">
-            <div style="padding:12px 16px;border-bottom:1px solid var(--gris-borde);display:flex;align-items:center;gap:10px">
-              <div style="width:36px;height:36px;border-radius:50%;background:var(--azul-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:var(--azul);flex-shrink:0">${escapeHtml(m.nombre.charAt(0).toUpperCase())}</div>
+    const tarjetaMec = (m) => {
+      const etapas = etapasActivas.filter(e => e.mecanico_id === m.id);
+      const ocupado = etapas.length > 0;
+      const etapsHtml = etapas.length
+        ? etapas.map(e => {
+            const ord   = ordenes.find(o => o.id === e.orden_id);
+            const color = srvColor[e.servicio] || '#6B7280';
+            const mins  = e.inicio ? Math.round((new Date() - new Date(e.inicio)) / 60000) : 0;
+            const dur   = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins/60)}h ${mins%60}m` : `${Math.floor(mins/1440)}d`;
+            return `<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--gris-borde)">
+              <div style="width:3px;height:28px;background:${color};border-radius:99px;flex-shrink:0"></div>
               <div style="flex:1;min-width:0">
-                <div style="font-weight:600;font-size:14px">${escapeHtml(m.nombre)}</div>
-                <div style="font-size:11px;color:var(--gris-mid)">${escapeHtml(ROL_LABEL[m.rol] || m.rol || 'Técnico')} · ${etapas.length} etapa${etapas.length!==1?'s':''} activa${etapas.length!==1?'s':''}</div>
-                ${m.telegram_chat_id
-                  ? `<div style="font-size:10px;color:#059669;font-family:'DM Mono',monospace;margin-top:1px">✓ Telegram configurado</div>`
-                  : `<div style="font-size:10px;color:#D97706;margin-top:1px">⚠ Sin Telegram</div>`}
+                <div style="font-size:11.5px;font-weight:600;color:var(--texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(e.etapa)||'—'}</div>
+                <div style="font-size:10px;color:var(--gris-mid);font-family:'DM Mono',monospace">${escapeHtml(ord?.placa)||'—'} · ${[ord?.marca,ord?.linea].filter(Boolean).map(escapeHtml).join(' ')||'—'}</div>
               </div>
-              <div style="display:flex;gap:4px;flex-shrink:0">
-                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirCambiarPassMecanico(${m.id},'${escapeHtml(m.nombre)}')" title="Cambiar contraseña">
-                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                </button>
-                ${esGerente ? `
-                <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirModalOperario(${JSON.stringify(m).replace(/"/g,'&quot;')})" title="Editar">
-                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </button>
-                <button class="btn btn-ghost btn-xs" style="color:var(--rojo)" onclick="event.stopPropagation();eliminarOperario(${m.id},'${escapeHtml(m.nombre)}')" title="Desactivar">
-                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                </button>` : ''}
-              </div>
+              <span style="font-size:10px;color:${color};font-family:'DM Mono',monospace;font-weight:700;flex-shrink:0;background:${color}18;padding:2px 6px;border-radius:4px">${dur}</span>
+            </div>`;
+          }).join('')
+        : `<div style="font-size:11px;color:var(--gris-mid);padding:8px 0;text-align:center;font-style:italic">Libre</div>`;
+
+      return `<div style="background:white;border:1.5px solid ${ocupado ? 'var(--azul-light)' : 'var(--gris-borde)'};border-radius:9px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:box-shadow .15s">
+        <div style="padding:10px 13px;border-bottom:1px solid var(--gris-borde);display:flex;align-items:center;gap:9px;background:${ocupado ? 'var(--azul-light)' : 'var(--gris-bg)'}">
+          <div style="width:32px;height:32px;border-radius:50%;background:${ocupado ? 'var(--azul)' : '#CBD5E1'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:white;flex-shrink:0">${escapeHtml(m.nombre.charAt(0).toUpperCase())}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px;color:var(--texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(m.nombre)}</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:1px">
+              ${ocupado
+                ? `<span style="font-size:10px;font-weight:700;color:var(--azul);background:rgba(30,58,95,.1);border-radius:4px;padding:1px 5px">${etapas.length} etapa${etapas.length!==1?'s':''}</span>`
+                : `<span style="font-size:10px;color:var(--gris-mid)">Libre</span>`}
+              ${m.telegram_chat_id
+                ? `<span style="font-size:10px;color:#059669">✓ TG</span>`
+                : `<span style="font-size:10px;color:#D97706">⚠ Sin TG</span>`}
             </div>
-            <div style="padding:0 16px 8px">${etapsHtml}</div>
-          </div>`;
-        }).join('')}
+          </div>
+          <div style="display:flex;gap:3px;flex-shrink:0">
+            <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirCambiarPassMecanico(${m.id},'${escapeHtml(m.nombre)}')" title="Contraseña">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </button>
+            ${esGerente ? `
+            <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirModalOperario(${JSON.stringify(m).replace(/"/g,'&quot;')})" title="Editar">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="btn btn-ghost btn-xs" style="color:var(--rojo)" onclick="event.stopPropagation();eliminarOperario(${m.id},'${escapeHtml(m.nombre)}')" title="Desactivar">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </button>` : ''}
+          </div>
+        </div>
+        <div style="padding:0 13px 6px">${etapsHtml}</div>
+      </div>`;
+    };
+
+    const totalActivos = mecsData.filter(m => etapasActivas.some(e => e.mecanico_id === m.id)).length;
+
+    cont.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;font-weight:700;color:var(--texto)">${mecsData.length} operario${mecsData.length!==1?'s':''}</span>
+          <span style="font-size:11px;color:var(--azul);background:var(--azul-light);padding:2px 8px;border-radius:20px;font-weight:700">${totalActivos} activo${totalActivos!==1?'s':''}</span>
+        </div>
+        ${esGerente ? `
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="abrirModalOperario(null)" style="display:flex;align-items:center;gap:5px">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nuevo
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="abrirGestionRoles()" style="color:#7C3AED;border-color:#DDD6FE">Roles</button>
+          <button class="btn btn-ghost btn-sm" onclick="abrirCambiarPassJefe()" style="color:var(--azul)">Pass jefe</button>
+        </div>` : ''}
       </div>
+      ${Object.entries(porRol).map(([rol, mecs]) => `
+        <div style="margin-bottom:18px">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gris-mid);font-family:'DM Mono',monospace;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--gris-borde)">${escapeHtml(rol)} <span style="opacity:.6">(${mecs.length})</span></div>
+          <div class="ops-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
+            ${mecs.map(tarjetaMec).join('')}
+          </div>
+        </div>
+      `).join('')}
     `;
   } catch(e) {
     cont.innerHTML = `<div class="empty-state">Error: ${e.message}</div>`;
@@ -2897,71 +3036,63 @@ async function cargarVehiculos() {
 
       const estadoColor = { Activa:'#2563EB', Entregada:'#059669', Archivada:'#6B7280', Programada:'#7C3AED' };
 
-      return lista.map((v, idx) => {
-        const info = v.info;
-        const ots  = v.ordenes;
+      // Agrupar por mes/año de la orden más reciente
+      const grupos = {};
+      lista.forEach(v => {
+        const ultima = v.ordenes[0]; // ya viene desc por creado_en
+        const d = ultima?.creado_en ? new Date(ultima.creado_en) : null;
+        const key = d
+          ? d.toLocaleDateString('es-CO',{month:'long',year:'numeric'})
+          : 'Sin fecha';
+        if (!grupos[key]) grupos[key] = [];
+        grupos[key].push(v);
+      });
 
-        const otsHtml = ots.map(o => {
-          const col = estadoColor[o.estado] || '#6B7280';
-          const fecha = o.creado_en ? new Date(o.creado_en).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'2-digit'}) : '—';
-          return `<span onclick="abrirOrden(${o.id});navJefe('detalle')"
-            style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;padding:3px 8px;border-radius:6px;border:1px solid ${col}30;background:${col}0d;transition:background .15s"
-            onmouseover="this.style.background='${col}20'" onmouseout="this.style.background='${col}0d'">
-            <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${col}">OT-${String(o.id).padStart(4,'0')}</span>
-            <span style="font-size:10px;color:${col};opacity:.7">${fecha}</span>
-            <span style="font-size:10px;font-weight:600;color:${col}">${o.estado||''}</span>
-          </span>`;
+      return Object.entries(grupos).map(([periodo, gVehiculos]) => {
+        const cuadros = gVehiculos.map(v => {
+          const info  = v.info;
+          const ots   = v.ordenes;
+          const activo = ots.some(o => o.estado === 'Activa');
+          const borde  = activo ? 'var(--azul)' : 'var(--gris-borde)';
+          const vehiculo = [info.marca, info.linea, info.modelo].filter(Boolean).map(escapeHtml).join(' ');
+          const ultimaOT = ots[0];
+          const col = estadoColor[ultimaOT?.estado] || '#6B7280';
+
+          return `<div onclick="abrirOrden(${ultimaOT?.id});navJefe('detalle')"
+            style="background:white;border:1.5px solid ${borde};border-radius:8px;padding:9px 11px;cursor:pointer;transition:box-shadow .15s,border-color .15s;min-width:0"
+            onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow='none'">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:4px">
+              <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:800;color:var(--texto);letter-spacing:.05em">${escapeHtml(info.placa||'—')}</span>
+              <span style="font-size:9px;font-weight:700;color:${col};background:${col}15;padding:1px 5px;border-radius:3px">${ots.length} OT${ots.length!==1?'s':''}</span>
+            </div>
+            <div style="font-size:10.5px;color:var(--gris-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${vehiculo || '—'}</div>
+            ${info.propietario ? `<div style="font-size:10.5px;font-weight:600;color:var(--gris-texto);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(info.propietario)}</div>` : ''}
+          </div>`;
         }).join('');
 
-        const vehiculo = [info.marca, info.linea, info.modelo].filter(Boolean).map(escapeHtml).join(' ');
-        const isLast = idx === lista.length - 1;
-
-        return `<div style="display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:0;padding:11px 16px;border-bottom:${isLast ? 'none' : '1px solid var(--gris-borde)'};background:white;transition:background .12s" onmouseover="this.style.background='#FAFBFD'" onmouseout="this.style.background='white'">
-
-          <!-- Placa + vehículo -->
-          <div>
-            <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:800;color:var(--texto);letter-spacing:.04em">${escapeHtml(info.placa||'—')}</div>
-            <div style="font-size:11px;color:var(--gris-mid);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px">${vehiculo || '—'}${info.color ? ` · ${escapeHtml(info.color)}` : ''}</div>
+        return `<div style="margin-bottom:20px">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gris-mid);font-family:'DM Mono',monospace;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--gris-borde)">
+            ${escapeHtml(periodo.charAt(0).toUpperCase()+periodo.slice(1))}
+            <span style="opacity:.6">(${gVehiculos.length})</span>
           </div>
-
-          <!-- Propietario + OTs -->
-          <div style="padding:0 16px">
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-              ${info.propietario ? `<span style="font-size:12.5px;font-weight:600;color:var(--texto)">${escapeHtml(info.propietario)}</span>` : ''}
-              ${info.telefono ? `<a href="tel:${escapeHtml(info.telefono)}" style="font-size:11.5px;color:var(--azul-mid);text-decoration:none">${escapeHtml(info.telefono)}</a>` : ''}
-              ${info.cedula_cliente ? `<span style="font-size:11px;color:var(--gris-mid);font-family:'DM Mono',monospace">${escapeHtml(info.cedula_cliente)}</span>` : ''}
-            </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:5px">${otsHtml}</div>
-          </div>
-
-          <!-- Contador OTs -->
-          <div style="text-align:right;flex-shrink:0;padding-left:8px">
-            <span style="font-size:13px;font-weight:700;color:var(--azul)">${ots.length}</span>
-            <span style="font-size:10px;color:var(--gris-mid);margin-left:2px">OT${ots.length!==1?'s':''}</span>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px">
+            ${cuadros}
           </div>
         </div>`;
       }).join('');
     };
 
     cont.innerHTML = `
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
         <div style="flex:1;min-width:200px;position:relative">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gris-mid);pointer-events:none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gris-mid);pointer-events:none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input type="text" placeholder="Buscar por placa, propietario, marca..." id="veh-buscar"
-            style="width:100%;padding:8px 12px 8px 32px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;outline:none;box-sizing:border-box;background:white"
+            style="width:100%;padding:7px 12px 7px 30px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;outline:none;box-sizing:border-box;background:white"
             oninput="_vehiculosFiltrar(this.value)" value="${escapeHtml(_vehiculosBusqueda)}">
         </div>
-        <div style="font-size:12.5px;color:var(--gris-mid);flex-shrink:0">${vehiculos.length} vehículo${vehiculos.length!==1?'s':''} registrado${vehiculos.length!==1?'s':''}</div>
+        <div style="font-size:12px;color:var(--gris-mid);flex-shrink:0">${vehiculos.length} vehículo${vehiculos.length!==1?'s':''}</div>
       </div>
-      <div id="veh-grid" style="border:1.5px solid var(--gris-borde);border-radius:10px;overflow:hidden;background:white">
-        <!-- cabecera -->
-        <div style="display:grid;grid-template-columns:110px 1fr auto;gap:0;padding:8px 16px;background:#F8F9FB;border-bottom:1.5px solid var(--gris-borde)">
-          <span style="font-size:10.5px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:.07em">Placa</span>
-          <span style="font-size:10.5px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:.07em;padding-left:16px">Propietario / Órdenes</span>
-          <span style="font-size:10.5px;font-weight:700;color:var(--gris-mid);text-transform:uppercase;letter-spacing:.07em">OTs</span>
-        </div>
-        <div id="veh-list-inner">${_renderVehiculos(vehiculos)}</div>
-      </div>`;
+      <div id="veh-list-inner">${_renderVehiculos(vehiculos)}</div>`;
 
     // Guardar para filtrado en memoria
     window._vehiculosData = vehiculos;

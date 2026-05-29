@@ -522,7 +522,7 @@ function renderCotizaciones(data) {
         ${estado !== 'rechazada' ? `<button class="btn btn-ghost btn-sm" style="font-size:12px;color:var(--azul)" onclick="event.stopPropagation();editarCotizacion(${c.id})">✏️ Editar</button>` : ''}
         ${c.url_pdf
           ? `<a href="${c.url_pdf}" target="_blank" class="btn btn-outline btn-sm" style="font-size:12px" onclick="event.stopPropagation()">📄 Ver PDF</a>
-             <button class="btn btn-ghost btn-sm" style="font-size:11px;opacity:.7" onclick="event.stopPropagation();generarPdfCotizacion(${c.id})" data-pdf="${c.id}">↺ Regen.</button>`
+             <button class="btn btn-ghost btn-sm" style="font-size:11px" onclick="event.stopPropagation();generarPdfCotizacion(${c.id})" data-pdf="${c.id}">↺ Regen.</button>`
           : `<button class="btn btn-outline btn-sm" style="font-size:12px" onclick="event.stopPropagation();generarPdfCotizacion(${c.id})" data-pdf="${c.id}">📄 Generar PDF</button>`
         }
         ${estado === 'pendiente' ? `
