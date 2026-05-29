@@ -2627,7 +2627,7 @@ async function cargarMecanicosVista() {
 
     const ids = [...new Set(etapasActivas.map(e => e.orden_id))];
     const ordenes = ids.length
-      ? await api(`/ordenes?id=in.(${ids.join(',')})&select=id,placa,marca,linea`).catch(() => []) || []
+      ? await api(`/ordenes?id=in.(${ids.join(',')})&select=id,placa,marca,linea,propietario`).catch(() => []) || []
       : [];
 
     const srvColor = { latoneria:'#DC2626', pintura:'#D97706', mecanica:'#2563EB', adicionales:'#059669' };
@@ -2656,12 +2656,19 @@ async function cargarMecanicosVista() {
         : `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#D1D5DB;flex-shrink:0"></span>`;
 
       const estadoHtml = ocupado
-        ? `<div style="display:flex;align-items:center;gap:6px;min-width:0">
-            <div style="width:3px;height:16px;background:${color};border-radius:99px;flex-shrink:0"></div>
-            <span style="font-size:11.5px;color:var(--texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">${escapeHtml(primeraEtapa.etapa)||'—'}</span>
-            ${ord?.placa ? `<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--gris-mid);flex-shrink:0">${escapeHtml(ord.placa)}</span>` : ''}
-            ${etapas.length > 1 ? `<span style="font-size:10px;color:var(--gris-mid);flex-shrink:0">+${etapas.length-1}</span>` : ''}
-            <span style="font-size:10px;font-weight:700;color:${color};background:${color}18;padding:1px 5px;border-radius:3px;font-family:'DM Mono',monospace;flex-shrink:0">${dur}</span>
+        ? `<div style="display:flex;flex-direction:column;gap:3px;min-width:0;cursor:pointer" onclick="navJefe('ordenes');setTimeout(()=>abrirOrden(${ord?.id||'null'}),300)" title="Abrir orden">
+            <div style="display:flex;align-items:center;gap:6px;min-width:0">
+              <div style="width:3px;height:14px;background:${color};border-radius:99px;flex-shrink:0"></div>
+              <span style="font-size:12px;font-weight:600;color:var(--texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(primeraEtapa.etapa)||'—'}</span>
+              ${etapas.length > 1 ? `<span style="font-size:10px;color:var(--gris-mid);flex-shrink:0">+${etapas.length-1} más</span>` : ''}
+              <span style="font-size:10px;font-weight:700;color:${color};background:${color}18;padding:1px 5px;border-radius:3px;font-family:'DM Mono',monospace;flex-shrink:0">${dur}</span>
+            </div>
+            ${ord ? `<div style="display:flex;align-items:center;gap:5px;min-width:0">
+              <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--azul);flex-shrink:0">${escapeHtml(ord.placa)}</span>
+              <span style="font-size:9px;color:var(--gris-mid);font-family:'DM Mono',monospace;flex-shrink:0">OT-${String(ord.id).padStart(4,'0')}</span>
+              ${ord.marca||ord.linea ? `<span style="font-size:10px;color:var(--gris-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${[ord.marca,ord.linea].filter(Boolean).map(escapeHtml).join(' ')}</span>` : ''}
+            </div>` : ''}
+            ${ord?.propietario ? `<div style="font-size:10px;color:var(--gris-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${escapeHtml(ord.propietario)}</div>` : ''}
           </div>`
         : `<span style="font-size:11.5px;color:var(--gris-mid);font-style:italic">Libre</span>`;
 
