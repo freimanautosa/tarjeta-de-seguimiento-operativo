@@ -2323,33 +2323,86 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 }
 
 /* ══════════════════════════════════════════════════════════
-   OPERARIOS — MOBILE
+   OPERARIOS — tabla (desktop + mobile)
 ══════════════════════════════════════════════════════════ */
+
+/* Cabecera */
+.op-header {
+  display: grid;
+  grid-template-columns: 20px 1fr 110px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  background: #F8F9FB;
+  border-bottom: 1.5px solid var(--gris-borde);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gris-mid);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+
+/* Fila */
+.op-row {
+  display: grid;
+  grid-template-columns: 20px 1fr 110px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--gris-borde);
+  background: white;
+  transition: background .1s;
+}
+
+/* Nombre con avatar */
+.op-col-nombre {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Rol */
+.op-col-rol {
+  font-size: 10.5px;
+  color: var(--gris-mid);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Estado */
+.op-col-estado { min-width: 0; }
+
+/* Acciones */
+.op-col-acc { display: flex; gap: 3px; flex-shrink: 0; }
+
+/* Rol inline debajo del nombre (solo móvil) */
+.op-rol-mobile {
+  display: none;
+  font-size: 10px;
+  color: var(--gris-mid);
+  margin-top: 1px;
+}
+
+/* ── MOBILE ≤ 768px ── */
 @media (max-width: 768px) {
-  /* Cabecera de la tabla: ocultar columnas Rol y Estado */
-  #pag-mecanicos [style*="grid-template-columns:20px 160px 90px"] {
-    grid-template-columns: 16px 1fr auto !important;
-    gap: 8px !important;
-    padding: 6px 10px !important;
-  }
-  /* Filas de operarios: misma simplificación */
+  .op-header,
   .op-row {
-    grid-template-columns: 16px 1fr auto !important;
-    gap: 8px !important;
-    padding: 8px 10px !important;
+    grid-template-columns: 14px 1fr auto;
+    gap: 8px;
+    padding: 8px 10px;
   }
-  /* Ocultar columnas Rol y Estado en móvil */
-  .op-col-rol    { display: none !important; }
-  .op-col-estado { display: none !important; }
-  /* Mostrar rol debajo del nombre */
-  .op-rol-mobile { display: block !important; }
-  /* Ajustar nombre para que no desborde */
-  .op-col-nombre { min-width: 0; overflow: hidden; }
+  .op-col-rol    { display: none; }
+  .op-col-estado { display: none; }
+  .op-rol-mobile { display: block; }
 }
 
 @media (max-width: 480px) {
-  .op-row { padding: 7px 8px !important; }
-  /* Calendariodías: solo abreviar más */
+  .op-row        { padding: 7px 8px; }
+  .op-header     { padding: 5px 8px; }
+  /* Calendario días: abreviar más */
   .cal-head { font-size: 8px !important; padding: 4px 1px !important; }
 }
 
