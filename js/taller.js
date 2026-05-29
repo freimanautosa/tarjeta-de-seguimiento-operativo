@@ -439,6 +439,10 @@ function _mostrarPantallaActivacion() {
       <button class="tv-activate-btn" onclick="_activarPantallaTaller()">
         ▶ &nbsp; Iniciar pantalla del taller
       </button>
+      <button class="tv-activate-btn" style="background:#374151;font-size:.75vw;padding:.8vh 2vw;margin-top:.5vh" onclick="_testVozTV()">
+        🔊 &nbsp; Probar voz
+      </button>
+      <div id="tv-voz-status" style="font-size:.65vw;color:#9CA3AF;margin-top:.5vh"></div>
       <div class="tv-activate-sub">Presiona una vez para activar el audio y comenzar</div>
     </div>`;
 }
@@ -486,6 +490,32 @@ function _tvSonar() {
     const audio = new Audio('motor.mp3');
     audio.play().catch(()=>{});
   } catch(e) { console.warn('Sound error:', e); }
+}
+
+// ── Test de voz desde pantalla de activación ─────────────
+function _testVozTV() {
+  const status = document.getElementById('tv-voz-status');
+  if (!window.speechSynthesis) {
+    if (status) status.textContent = '✗ speechSynthesis no disponible en este dispositivo';
+    return;
+  }
+  const voces = window.speechSynthesis.getVoices();
+  const u = new SpeechSynthesisUtterance('Prueba de voz. Sistema operativo Freimanautos.');
+  u.lang = 'es';
+  u.rate = 0.88;
+  u.volume = 1;
+  u.onstart  = () => { if (status) status.textContent = `✓ Voz funcionando · ${voces.length} voces disponibles`; };
+  u.onend    = () => { if (status) status.textContent += ' · Listo'; };
+  u.onerror  = (e) => { if (status) status.textContent = `✗ Error: ${e.error} · Voces: ${voces.length}`; };
+  if (status) status.textContent = `Intentando... (${voces.length} voces cargadas)`;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+  // Si en 3s no arrancó, reportar
+  setTimeout(() => {
+    if (status && status.textContent.startsWith('Intentando')) {
+      status.textContent = `✗ No inició en 3s · Voces: ${voces.length} · speaking: ${window.speechSynthesis.speaking}`;
+    }
+  }, 3000);
 }
 
 // ── Anuncio de voz con Web Speech API ────────────────────
