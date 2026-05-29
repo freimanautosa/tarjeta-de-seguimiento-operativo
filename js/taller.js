@@ -762,6 +762,7 @@ async function cargarPantallaTaller() {
     // En primera carga: pre-poblar caché para no disparar sonidos por órdenes ya existentes
     if (_primeraLlamada) {
       entregadasHoy.forEach(o => _tallerOrdenesNotificadas.add('ent_'+o.id));
+      ordenesListas.forEach(o => _tallerOrdenesNotificadas.add('lst_'+o.id));
     }
 
     // ── Sonido para nuevas entregas ──────────────────────────
@@ -777,7 +778,7 @@ async function cargarPantallaTaller() {
     // ── Sonido + voz para nuevas listas ─────────────────────
     const nuevasListas = ordenesListas.filter(o =>
       !_tallerOrdenesNotificadas.has('lst_'+o.id) &&
-      (_tallerGridSnapshot.size === 0 || _tallerGridSnapshot.has(o.id))
+      _tallerGridSnapshot.has(o.id)
     );
     if (nuevasListas.length && !nuevasEntregadas.length) {
       nuevasListas.forEach(o => _tallerOrdenesNotificadas.add('lst_'+o.id));
@@ -1081,31 +1082,21 @@ async function cargarPantallaTaller() {
       upd('tv-kpi-programadas',ordenesProgramadas.length);
       upd('tv-prog-title',     `Programadas · ${ordenesProgramadas.length}`);
 
-      // Diff de filas de tabla
+      // Actualizar tabla: re-render completo del tbody, animando solo filas nuevas
       const tbody = cont.querySelector('.tv-tbody');
       if (tbody) {
-        const deseadasIds = new Set(ordenesOrdenadas.map(o => o.id));
-
-        // Eliminar filas obsoletas
-        [...tbody.querySelectorAll('tr[id^="tv-row-"]')].forEach(tr => {
-          if (!deseadasIds.has(parseInt(tr.id.replace('tv-row-','')))) tr.remove();
-        });
-
-        // Insertar nuevas filas con animación slide-in
-        ordenesOrdenadas.forEach((orden, idx) => {
-          if (!document.getElementById(`tv-row-${orden.id}`)) {
-            const tmp = document.createElement('tbody');
-            tmp.innerHTML = renderFila(orden);
-            const newTr = tmp.firstElementChild;
-            newTr.classList.add('tv-row-new');
-            tbody.insertBefore(newTr, tbody.children[idx] || null);
-            setTimeout(() => newTr.classList.remove('tv-row-new'), 500);
+        const existingIds = new Set(
+          [...tbody.querySelectorAll('tr[id^="tv-row-"]')].map(tr => parseInt(tr.id.replace('tv-row-','')))
+        );
+        const filasHtml = ordenesOrdenadas.map(renderFila).join('');
+        tbody.innerHTML = filasHtml || `<tr><td colspan="6" style="text-align:center;padding:3vh;color:#D1D5DB;font-size:.8vw;letter-spacing:.1em">SIN ÓRDENES ACTIVAS</td></tr>`;
+        // Animar solo las filas genuinamente nuevas
+        ordenesOrdenadas.forEach(orden => {
+          if (!existingIds.has(orden.id)) {
+            const tr = document.getElementById(`tv-row-${orden.id}`);
+            if (tr) { tr.classList.add('tv-row-new'); setTimeout(() => tr.classList.remove('tv-row-new'), 500); }
           }
         });
-
-        if (tbody.children.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:3vh;color:#D1D5DB;font-size:.8vw;letter-spacing:.1em">SIN ÓRDENES ACTIVAS</td></tr>`;
-        }
       }
 
       // Diff del panel Listos hoy

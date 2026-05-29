@@ -588,13 +588,8 @@ async function abrirOrden(id) {
                        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},true)">💰 Con precios</button>
                      </div>
                    </div>`
-                : (todasCalidadAprobada || (comp === total && total > 0))
-                ? `${todasCalidadAprobada
-                    ? `<div style="font-size:11px;color:var(--verde);font-weight:600;margin-bottom:8px;text-align:center">✓ Calidad aprobada en todas las etapas</div>`
-                    : `<div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400E;margin-bottom:8px">
-                         ⚠️ Calidad pendiente de aprobar en algunas etapas.
-                       </div>`
-                  }
+                : todasCalidadAprobada
+                ? `<div style="font-size:11px;color:var(--verde);font-weight:600;margin-bottom:8px;text-align:center">✓ Calidad aprobada en todas las etapas</div>
                    <button class="btn btn-success" style="width:100%" onclick="cambiarEstado('Entregada')">
                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
                      Marcar como Finalizada
@@ -604,10 +599,15 @@ async function abrirOrden(id) {
                      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},true)">💰 Con precios</button>
                    </div>`
                 : `<div style="display:flex;flex-direction:column;gap:8px">
-                     <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:var(--azul-light);border-radius:20px">
-                       <span style="width:8px;height:8px;border-radius:50%;background:var(--azul-mid);display:inline-block"></span>
-                       <span style="font-size:13px;font-weight:700;color:var(--azul)">Activa</span>
-                     </div>
+                     ${comp === total && total > 0
+                       ? `<div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:10px 12px;font-size:12px;color:#92400E;font-weight:600;text-align:center">
+                            ⏳ Esperando aprobación de calidad para poder finalizar
+                          </div>`
+                       : `<div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:var(--azul-light);border-radius:20px">
+                            <span style="width:8px;height:8px;border-radius:50%;background:var(--azul-mid);display:inline-block"></span>
+                            <span style="font-size:13px;font-weight:700;color:var(--azul)">Activa</span>
+                          </div>`
+                     }
                      <div style="display:flex;gap:6px;width:100%">
                        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},false)">📋 Sin precios</button>
                        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="generarPreliquidacion(${orden.id},true)">💰 Con precios</button>
