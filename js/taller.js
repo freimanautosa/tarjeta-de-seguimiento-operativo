@@ -497,45 +497,30 @@ function _tvAnunciarPlaca(orden) {
   const msg = `Atención. El vehículo con placa ${placaLetra}, está listo para ser entregado al cliente.`;
 
   const _speak = () => {
-    window.speechSynthesis.cancel();
+    try {
+      window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(msg);
-    utterance.lang   = 'es-CO';
-    utterance.rate   = 0.88;
-    utterance.pitch  = 1;
-    utterance.volume = 1;
+      const utterance = new SpeechSynthesisUtterance(msg);
+      utterance.lang   = 'es';   // genérico — compatible con Android/Google TV
+      utterance.rate   = 0.88;
+      utterance.pitch  = 1;
+      utterance.volume = 1;
+      // Sin forzar voz específica: el sistema Android elige la más compatible
 
-    // Seleccionar voz en español; si no hay, usar la primera disponible
-    const voces = window.speechSynthesis.getVoices();
-    const vozEs = voces.find(v => v.lang.startsWith('es') && !v.name.toLowerCase().includes('google'))
-               || voces.find(v => v.lang.startsWith('es'))
-               || voces[0];
-    if (vozEs) utterance.voice = vozEs;
+      // Workaround Chrome/Android TV: speechSynthesis se pausa sola
+      const resumeHack = setInterval(() => {
+        if (!window.speechSynthesis.speaking) { clearInterval(resumeHack); return; }
+        window.speechSynthesis.pause();
+        window.speechSynthesis.resume();
+      }, 5000);
+      utterance.onend = utterance.onerror = () => clearInterval(resumeHack);
 
-    // Workaround bug Chrome/Android TV: speechSynthesis se pausa sola
-    const resumeHack = setInterval(() => {
-      if (!window.speechSynthesis.speaking) { clearInterval(resumeHack); return; }
-      window.speechSynthesis.pause();
-      window.speechSynthesis.resume();
-    }, 5000);
-    utterance.onend = utterance.onerror = () => clearInterval(resumeHack);
-
-    window.speechSynthesis.speak(utterance);
+      window.speechSynthesis.speak(utterance);
+    } catch(e) { console.warn('TTS error:', e); }
   };
 
-  const voces = window.speechSynthesis.getVoices();
-  if (!voces.length) {
-    // Voces no cargaron aún: esperar evento, con timeout de seguridad
-    let fired = false;
-    window.speechSynthesis.onvoiceschanged = () => {
-      if (fired) return; fired = true;
-      window.speechSynthesis.onvoiceschanged = null;
-      _speak();
-    };
-    setTimeout(() => { if (!fired) { fired = true; _speak(); } }, 1500);
-  } else {
-    _speak();
-  }
+  // Pequeña pausa para que no compita con el sonido motor.mp3
+  setTimeout(_speak, 600);
 }
 
 function iniciarRelojTaller() {
