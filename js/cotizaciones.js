@@ -938,23 +938,45 @@ async function crearOrdenDesdeCotizacion(cot) {
     vehiculoId = vh[0]?.id || null;
   }
 
+  // Construir descripción general desde los ítems de la cotización
+  let repItems = [], moItems = [];
+  try { repItems = typeof cot.repuestos       === 'string' ? JSON.parse(cot.repuestos)       : (cot.repuestos       || []); } catch(e) { repItems = []; }
+  try { moItems  = typeof cot.mano_obra_items === 'string' ? JSON.parse(cot.mano_obra_items) : (cot.mano_obra_items || []); } catch(e) { moItems  = []; }
+
+  const lineasDesc = [];
+  if (moItems.length) {
+    const mo = moItems.filter(i => i.descripcion?.trim()).map(i => `${i.descripcion}${i.cantidad > 1 ? ` (x${i.cantidad})` : ''}`).join(', ');
+    if (mo) lineasDesc.push(`Mano de obra: ${mo}`);
+  }
+  if (repItems.length) {
+    const rp = repItems.filter(i => i.descripcion?.trim()).map(i => `${i.descripcion}${i.cantidad > 1 ? ` (x${i.cantidad})` : ''}`).join(', ');
+    if (rp) lineasDesc.push(`Repuestos: ${rp}`);
+  }
+  const descripcionGeneral = lineasDesc.join('\n') || null;
+
   // Construir body con todos los campos disponibles en la cotización
   const body = {
-    placa:           cot.placa           || null,
-    marca:           cot.marca           || null,
-    linea:           cot.modelo          || null,
-    modelo:          cot.año             || null,
-    color:           cot.color           || null,
-    propietario:     cot.nombre_cliente  || null,
-    telefono:        cot.telefono_cliente || null,
-    aseguradora:     cot.aseguradora     || null,
-    tipo_cliente:    (cot.tipo_cliente === 'persona' ? 'particular' : cot.tipo_cliente) || null,
-    nivel_dano:      cot.nivel_dano      || null,
-    cotizacion_url:  cot.url_pdf         || null,
-    cotizacion_id:   cot.id,
-    cliente_id:      clienteId,
-    vehiculo_id:     vehiculoId,
-    estado:          'Activa'
+    placa:              cot.placa              || null,
+    marca:              cot.marca              || null,
+    linea:              cot.modelo             || null,
+    modelo:             cot.año                || null,
+    color:              cot.color              || null,
+    vin:                cot.vin                || null,
+    km:                 cot.kilometraje        ? parseInt(cot.kilometraje) || null : null,
+    propietario:        cot.nombre_cliente     || null,
+    telefono:           cot.telefono_cliente   || null,
+    correo_cliente:     cot.correo_cliente     || null,
+    cedula_cliente:     cot.cedula_cliente     || null,
+    aseguradora:        cot.aseguradora        || null,
+    empresa_id:         cot.empresa_id         || null,
+    tipo_cliente:       (cot.tipo_cliente === 'persona' ? 'particular' : cot.tipo_cliente) || null,
+    nivel_dano:         cot.nivel_dano         || null,
+    descripcion_general: descripcionGeneral,
+    cotizacion_url:     cot.url_pdf            || null,
+    cotizacion_id:      cot.id,
+    cliente_id:         clienteId,
+    vehiculo_id:        vehiculoId,
+    estado:             'Activa'
   };
 
   const res = await api('/ordenes?select=id', 'POST', body, { Prefer: 'return=representation' });
