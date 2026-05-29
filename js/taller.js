@@ -704,7 +704,7 @@ async function cargarPantallaTaller() {
   const cont = document.getElementById('taller-contenido');
   if (!cont || document.getElementById('tv-activate-screen')) return;
 
-  const _primeraLlamada = _tallerGridSnapshot.size === 0;
+  const _primeraLlamada = !document.querySelector('.tv-shell');
 
   try {
     const hoy    = new Date(); hoy.setHours(0,0,0,0);
