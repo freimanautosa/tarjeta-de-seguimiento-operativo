@@ -1100,25 +1100,29 @@ async function cargarPantallaTaller() {
         });
       }
 
-      // Panel Listos hoy: reemplazar completo preservando posición de scroll
+      // Panel Listos hoy: solo reemplazar si el contenido cambió (evita parpadeo)
       const panelListos = document.getElementById('tv-panel-listos');
       if (panelListos) {
-        const scrollPos = panelListos.scrollTop;
-        panelListos.innerHTML = panelItems.length
-          ? panelItems.map(({orden, tipo}) => {
-              const hora = tipo==='entregado' ? _tvHoraStr(orden.entregada_en) : '';
-              const statusTxt = tipo==='listo' ? 'Listo para entrega' : '✓ Entregado';
-              return `<div class="tv-panel-item ${tipo}" data-orden-id="${orden.id}" onclick="_tvVerDetalle(${orden.id})">
-                <div class="tv-panel-dot ${tipo}"></div>
-                <div class="tv-panel-info">
-                  <div class="tv-panel-placa">${orden.placa}</div>
-                  <div class="tv-panel-status ${tipo}">${statusTxt}</div>
-                </div>
-                ${hora ? `<div class="tv-panel-time">${hora}</div>` : ''}
-              </div>`;
-            }).join('')
-          : '<div class="tv-panel-empty">Sin terminados hoy</div>';
-        panelListos.scrollTop = scrollPos;
+        const sig = panelItems.map(({orden,tipo}) => `${orden.id}:${tipo}`).join(',');
+        if (panelListos.dataset.sig !== sig) {
+          panelListos.dataset.sig = sig;
+          const scrollPos = panelListos.scrollTop;
+          panelListos.innerHTML = panelItems.length
+            ? panelItems.map(({orden, tipo}) => {
+                const hora = tipo==='entregado' ? _tvHoraStr(orden.entregada_en) : '';
+                const statusTxt = tipo==='listo' ? 'Listo para entrega' : '✓ Entregado';
+                return `<div class="tv-panel-item ${tipo}" data-orden-id="${orden.id}" onclick="_tvVerDetalle(${orden.id})">
+                  <div class="tv-panel-dot ${tipo}"></div>
+                  <div class="tv-panel-info">
+                    <div class="tv-panel-placa">${orden.placa}</div>
+                    <div class="tv-panel-status ${tipo}">${statusTxt}</div>
+                  </div>
+                  ${hora ? `<div class="tv-panel-time">${hora}</div>` : ''}
+                </div>`;
+              }).join('')
+            : '<div class="tv-panel-empty">Sin terminados hoy</div>';
+          panelListos.scrollTop = scrollPos;
+        }
       }
 
       // Panel programadas: reemplazar completo (pequeño, cambia poco)
