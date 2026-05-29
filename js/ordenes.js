@@ -2251,9 +2251,9 @@ function montarJefe() {
     window._navToggleGrupo = _toggleGrupo;
 
     const _grupoHeader = (id, label) => `
-      <button onclick="_navToggleGrupo('${id}')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px 4px;background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.35);font-family:'DM Mono',monospace;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;transition:color .15s" onmouseover="this.style.color='rgba(255,255,255,0.6)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">
-        <span class="nav-section-label" style="padding:0;margin:0;font-size:10px;letter-spacing:2px">${label}</span>
-        <svg id="nav-chevron-${id}" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="flex-shrink:0;transition:transform .2s;transform:rotate(${_grupAbiertos[id]?'0':'-90'}deg)"><polyline points="6 9 12 15 18 9"/></svg>
+      <button onclick="_navToggleGrupo('${id}')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 12px 5px;background:none;border:none;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
+        <span class="nav-section-label">${label}</span>
+        <svg id="nav-chevron-${id}" width="13" height="13" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24" style="flex-shrink:0;transition:transform .2s;transform:rotate(${_grupAbiertos[id]?'0':'-90'}deg);opacity:.8"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div id="nav-grupo-${id}" style="display:${_grupAbiertos[id]?'block':'none'};overflow:hidden">`;
 

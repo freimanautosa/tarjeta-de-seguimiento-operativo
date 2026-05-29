@@ -275,12 +275,12 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .nav-item svg { flex-shrink: 0; opacity: 0.6; }
 .nav-item.active svg, .nav-item:hover svg { opacity: 1; }
 .nav-section-label {
-  font-size: 11px;
-  letter-spacing: 0.8px;
+  font-size: 14px;
+  letter-spacing: 0.2px;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.35);
+  color: white;
   font-family: 'DM Sans', sans-serif;
-  font-weight: 600;
+  font-weight: 700;
   padding: 0;
   -webkit-font-smoothing: antialiased;
 }
