@@ -4,11 +4,160 @@
 
 // ─── NUEVA / EDITAR COTIZACIÓN ────────────────────────────
 
-let _cotEditandoId = null;   // null = nueva, number = editando
+let _cotEditandoId = null;         // null = nueva, number = editando
+let _cotEmpresasCache = [];        // cache de empresas cargadas
 
+// ── Tipo de cliente ──────────────────────────────────────
+function _cotSelTipo(tipo) {
+  const btnP  = document.getElementById('cntc-persona');
+  const btnE  = document.getElementById('cntc-empresa');
+  const wrapP = document.getElementById('cn-wrap-persona');
+  const wrapE = document.getElementById('cn-wrap-empresa');
+  const hid   = document.getElementById('cn-tipo-cliente');
+  if (!btnP || !btnE) return;
+
+  const activo   = 'border:1.5px solid var(--azul);background:var(--azul);color:white';
+  const inactivo = 'border:1.5px solid var(--gris-borde);background:white;color:var(--gris-texto)';
+
+  if (tipo === 'persona') {
+    btnP.setAttribute('style', btnP.getAttribute('style').replace(/border:[^;]+;background:[^;]+;color:[^;]+/, activo));
+    btnE.setAttribute('style', btnE.getAttribute('style').replace(/border:[^;]+;background:[^;]+;color:[^;]+/, inactivo));
+    if (wrapP) wrapP.style.display = '';
+    if (wrapE) wrapE.style.display = 'none';
+  } else {
+    btnP.setAttribute('style', btnP.getAttribute('style').replace(/border:[^;]+;background:[^;]+;color:[^;]+/, inactivo));
+    btnE.setAttribute('style', btnE.getAttribute('style').replace(/border:[^;]+;background:[^;]+;color:[^;]+/, activo));
+    if (wrapP) wrapP.style.display = 'none';
+    if (wrapE) wrapE.style.display = '';
+    _cotCargarEmpresas();
+  }
+  if (hid) hid.value = tipo;
+}
+
+// ── Cargar empresas en caché ─────────────────────────────
+async function _cotCargarEmpresas() {
+  try {
+    _cotEmpresasCache = await api('/empresas?activo=eq.true&order=nombre.asc').catch(() => []) || [];
+  } catch(e) { _cotEmpresasCache = []; }
+}
+
+// ── Filtrar empresas en tiempo real ──────────────────────
+function _cotFiltrarEmpresas(q) {
+  const lista = document.getElementById('cn-emp-lista');
+  if (!lista) return;
+  const term = q.toLowerCase().trim();
+  const filtradas = term
+    ? _cotEmpresasCache.filter(e =>
+        (e.nombre||'').toLowerCase().includes(term) ||
+        (e.nit||'').toLowerCase().includes(term)
+      )
+    : _cotEmpresasCache;
+
+  if (!filtradas.length && !term) { lista.style.display = 'none'; return; }
+
+  lista.style.display = 'block';
+  if (!filtradas.length) {
+    lista.innerHTML = `<div style="padding:10px 14px;font-size:13px;color:var(--gris-mid)">Sin resultados — haz clic en "Nueva empresa"</div>`;
+    return;
+  }
+  lista.innerHTML = filtradas.map(e => `
+    <div onclick="_cotSeleccionarEmpresa(${e.id})"
+      style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--gris-borde);transition:background .12s;font-size:13px"
+      onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
+      <div style="font-weight:600;color:var(--texto)">${escapeHtml(e.nombre)}</div>
+      <div style="font-size:11px;color:var(--gris-mid)">${e.nit ? 'NIT: '+escapeHtml(e.nit)+' · ' : ''}${e.telefono ? escapeHtml(e.telefono) : ''}${e.contacto_nombre ? ' · '+escapeHtml(e.contacto_nombre) : ''}</div>
+    </div>`).join('');
+}
+
+// ── Seleccionar empresa existente ────────────────────────
+function _cotSeleccionarEmpresa(empId) {
+  const emp = _cotEmpresasCache.find(e => e.id === empId);
+  if (!emp) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  set('cn-empresa-id', emp.id);
+  set('cn-emp-nombre', emp.nombre);
+  set('cn-emp-nit',    emp.nit);
+  set('cn-emp-tel',    emp.telefono);
+  set('cn-emp-correo', emp.correo);
+  set('cn-emp-dir',    emp.direccion);
+  set('cn-emp-cnom',   emp.contacto_nombre);
+  set('cn-emp-ctel',   emp.contacto_telefono);
+  set('cn-emp-ccorreo',emp.contacto_correo);
+  const tit = document.getElementById('cn-emp-datos-titulo');
+  if (tit) tit.textContent = 'Empresa seleccionada';
+  const datos = document.getElementById('cn-emp-datos');
+  if (datos) datos.style.display = 'block';
+  const lista = document.getElementById('cn-emp-lista');
+  if (lista) lista.style.display = 'none';
+  const buscar = document.getElementById('cn-emp-buscar');
+  if (buscar) buscar.value = emp.nombre;
+}
+
+// ── Nueva empresa (formulario en blanco) ─────────────────
+function _cotNuevaEmpresaInline() {
+  ['cn-empresa-id','cn-emp-nombre','cn-emp-nit','cn-emp-tel','cn-emp-correo',
+   'cn-emp-dir','cn-emp-cnom','cn-emp-ctel','cn-emp-ccorreo'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const tit = document.getElementById('cn-emp-datos-titulo');
+  if (tit) tit.textContent = 'Nueva empresa';
+  const datos = document.getElementById('cn-emp-datos');
+  if (datos) datos.style.display = 'block';
+  const lista = document.getElementById('cn-emp-lista');
+  if (lista) lista.style.display = 'none';
+  const buscar = document.getElementById('cn-emp-buscar');
+  if (buscar) buscar.value = '';
+  setTimeout(() => document.getElementById('cn-emp-nombre')?.focus(), 60);
+}
+
+function _cotCerrarEmpresaDatos() {
+  const datos = document.getElementById('cn-emp-datos');
+  if (datos) datos.style.display = 'none';
+  const buscar = document.getElementById('cn-emp-buscar');
+  if (buscar) buscar.value = '';
+}
+
+// ── Guardar empresa (nueva o actualizar existente) ───────
+async function _cotGuardarEmpresa() {
+  const nombre = document.getElementById('cn-emp-nombre')?.value.trim();
+  if (!nombre) { toast('El nombre de la empresa es obligatorio', 'err'); return null; }
+  const body = {
+    nombre,
+    nit:               document.getElementById('cn-emp-nit')?.value.trim()    || null,
+    telefono:          document.getElementById('cn-emp-tel')?.value.trim()    || null,
+    correo:            document.getElementById('cn-emp-correo')?.value.trim() || null,
+    direccion:         document.getElementById('cn-emp-dir')?.value.trim()    || null,
+    contacto_nombre:   document.getElementById('cn-emp-cnom')?.value.trim()   || null,
+    contacto_telefono: document.getElementById('cn-emp-ctel')?.value.trim()   || null,
+    contacto_correo:   document.getElementById('cn-emp-ccorreo')?.value.trim()|| null,
+    activo: true,
+  };
+  const empId = document.getElementById('cn-empresa-id')?.value;
+  try {
+    if (empId) {
+      await api(`/empresas?id=eq.${empId}`, 'PATCH', body);
+      return parseInt(empId);
+    } else {
+      const res = await api('/empresas', 'POST', body, { Prefer: 'return=representation' });
+      const id = res?.[0]?.id || null;
+      if (id) {
+        const idEl = document.getElementById('cn-empresa-id');
+        if (idEl) idEl.value = id;
+      }
+      return id;
+    }
+  } catch(e) {
+    toast('Error guardando empresa: ' + e.message, 'err');
+    return null;
+  }
+}
+
+// ── Limpiar formulario ────────────────────────────────────
 function _cotLimpiarFormulario() {
   ['cn-placa','cn-marca','cn-linea','cn-ano','cn-color','cn-vin','cn-km',
-   'cn-nombre','cn-cedula','cn-celular','cn-correo'].forEach(id => {
+   'cn-nombre','cn-cedula','cn-celular','cn-correo',
+   'cn-emp-buscar','cn-empresa-id','cn-emp-nombre','cn-emp-nit','cn-emp-tel',
+   'cn-emp-correo','cn-emp-dir','cn-emp-cnom','cn-emp-ctel','cn-emp-ccorreo'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -20,6 +169,12 @@ function _cotLimpiarFormulario() {
   const moTbody  = document.getElementById('cot-mo-tbody');
   if (repTbody) repTbody.innerHTML = '';
   if (moTbody)  moTbody.innerHTML  = '';
+  // Resetear a persona natural
+  _cotSelTipo('persona');
+  const datos = document.getElementById('cn-emp-datos');
+  if (datos) datos.style.display = 'none';
+  const lista = document.getElementById('cn-emp-lista');
+  if (lista) lista.style.display = 'none';
   _cotActualizarTotales();
 }
 
@@ -53,19 +208,45 @@ async function editarCotizacion(cotId) {
   _cotEditandoId = cotId;
   _cotLimpiarFormulario();
 
-  // Rellenar campos
+  // Rellenar campos vehículo
   const set = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.value = val; };
   set('cn-placa',  cot.placa);
   set('cn-marca',  cot.marca);
-  set('cn-linea',  cot.modelo);   // campo linea/modelo
+  set('cn-linea',  cot.modelo);
   set('cn-ano',    cot.año);
   set('cn-color',  cot.color);
   set('cn-vin',    cot.vin);
   set('cn-km',     cot.kilometraje);
-  set('cn-nombre', cot.nombre_cliente);
-  set('cn-cedula', cot.cedula_cliente);
-  set('cn-celular',cot.telefono_cliente);
-  set('cn-correo', cot.correo_cliente);
+
+  // Tipo de cliente
+  const tipo = cot.tipo_cliente || 'persona';
+  _cotSelTipo(tipo);
+
+  if (tipo === 'empresa' && cot.empresa_id) {
+    // Cargar empresa desde DB
+    const emps = await api(`/empresas?id=eq.${cot.empresa_id}&limit=1`).catch(() => []) || [];
+    const emp  = emps[0];
+    if (emp) {
+      set('cn-empresa-id',   emp.id);
+      set('cn-emp-nombre',   emp.nombre);
+      set('cn-emp-nit',      emp.nit);
+      set('cn-emp-tel',      emp.telefono);
+      set('cn-emp-correo',   emp.correo);
+      set('cn-emp-dir',      emp.direccion);
+      set('cn-emp-cnom',     emp.contacto_nombre);
+      set('cn-emp-ctel',     emp.contacto_telefono);
+      set('cn-emp-ccorreo',  emp.contacto_correo);
+      const tit = document.getElementById('cn-emp-datos-titulo');
+      if (tit) tit.textContent = 'Empresa seleccionada';
+      const datos = document.getElementById('cn-emp-datos');
+      if (datos) datos.style.display = 'block';
+    }
+  } else {
+    set('cn-nombre', cot.nombre_cliente);
+    set('cn-cedula', cot.cedula_cliente);
+    set('cn-celular',cot.telefono_cliente);
+    set('cn-correo', cot.correo_cliente);
+  }
 
   // IVA
   const ivaCheck = document.getElementById('cn-iva-check');
@@ -374,8 +555,33 @@ async function generarPdfCotizacion(cotId) {
 }
 
 async function guardarNuevaCotizacion(conPdf = false) {
-  const nombre = document.getElementById('cn-nombre')?.value.trim();
-  if (!nombre) { toast('El nombre del cliente es obligatorio', 'err'); document.getElementById('cn-nombre')?.focus(); return; }
+  const tipoCliente = document.getElementById('cn-tipo-cliente')?.value || 'persona';
+
+  // Validación según tipo
+  let nombreCliente, cedulaCliente, telefonoCliente, correoCliente, empresaId = null;
+
+  if (tipoCliente === 'empresa') {
+    const empNombre = document.getElementById('cn-emp-nombre')?.value.trim();
+    if (!empNombre) {
+      toast('El nombre de la empresa es obligatorio', 'err');
+      document.getElementById('cn-emp-nombre')?.focus();
+      return;
+    }
+    // Guardar/actualizar empresa
+    empresaId = await _cotGuardarEmpresa();
+    if (!empresaId) return; // _cotGuardarEmpresa ya muestra el toast de error
+    nombreCliente   = empNombre;
+    cedulaCliente   = document.getElementById('cn-emp-nit')?.value.trim()    || '';
+    telefonoCliente = document.getElementById('cn-emp-tel')?.value.trim()    || '';
+    correoCliente   = document.getElementById('cn-emp-correo')?.value.trim() || '';
+  } else {
+    const nombre = document.getElementById('cn-nombre')?.value.trim();
+    if (!nombre) { toast('El nombre del cliente es obligatorio', 'err'); document.getElementById('cn-nombre')?.focus(); return; }
+    nombreCliente   = nombre;
+    cedulaCliente   = document.getElementById('cn-cedula')?.value.trim()   || '';
+    telefonoCliente = document.getElementById('cn-celular')?.value.trim()  || '';
+    correoCliente   = document.getElementById('cn-correo')?.value.trim()   || '';
+  }
 
   const btnGuardar = document.getElementById('btn-guardar-cot');
   const btnPdf     = document.getElementById('btn-guardar-pdf-cot');
@@ -401,10 +607,12 @@ async function guardarNuevaCotizacion(conPdf = false) {
       color:             document.getElementById('cn-color')?.value.trim() || '',
       vin:               document.getElementById('cn-vin')?.value.trim().toUpperCase() || '',
       kilometraje:       document.getElementById('cn-km')?.value.trim() || '',
-      nombre_cliente:    nombre,
-      cedula_cliente:    document.getElementById('cn-cedula')?.value.trim() || '',
-      telefono_cliente:  document.getElementById('cn-celular')?.value.trim() || '',
-      correo_cliente:    document.getElementById('cn-correo')?.value.trim() || '',
+      nombre_cliente:    nombreCliente,
+      cedula_cliente:    cedulaCliente,
+      telefono_cliente:  telefonoCliente,
+      correo_cliente:    correoCliente,
+      tipo_cliente:      tipoCliente,
+      empresa_id:        empresaId,
       repuestos:         JSON.stringify(repItems),
       mano_obra_items:   JSON.stringify(moItems),
       total_repuestos:   totalRep,
