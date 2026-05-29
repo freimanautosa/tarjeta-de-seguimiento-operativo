@@ -4153,24 +4153,114 @@ async function generarPreliquidacion(ordenId, conPrecios = false) {
         </table>
       </div>` : '';
 
-    // ── SVGs línea-limpia para bocetos de vehículo ──────────────────────────────
-    const _st = 'fill="none" stroke="#111"';
-    // Sedan frontal
-    const _svgSF = `<svg viewBox="0 0 116 80" width="108" height="74" xmlns="http://www.w3.org/2000/svg"><path ${_st} stroke-width="1.3" d="M20,26 Q58,14 96,26 L100,38 L100,56 L16,56 L16,38 Z"/><path ${_st} stroke-width="1" d="M26,26 Q58,18 90,26"/><line ${_st} stroke-width="0.8" x1="58" y1="14" x2="58" y2="26"/><path ${_st} stroke-width="1.1" d="M6,34 L6,54 Q6,58 12,58 L20,58 L20,34 Q18,28 13,27 Z"/><path ${_st} stroke-width="1.1" d="M110,34 L110,54 Q110,58 104,58 L96,58 L96,34 Q98,28 103,27 Z"/><rect ${_st} stroke-width="0.9" x="34" y="40" width="48" height="14" rx="2"/><line ${_st} stroke-width="0.5" x1="42" y1="40" x2="42" y2="54"/><line ${_st} stroke-width="0.5" x1="50" y1="40" x2="50" y2="54"/><line ${_st} stroke-width="0.5" x1="58" y1="40" x2="58" y2="54"/><line ${_st} stroke-width="0.5" x1="66" y1="40" x2="66" y2="54"/><line ${_st} stroke-width="0.5" x1="74" y1="40" x2="74" y2="54"/><path ${_st} stroke-width="1.2" d="M6,56 L6,64 Q6,70 12,70 L104,70 Q110,70 110,64 L110,56"/><rect ${_st} stroke-width="0.8" x="42" y="60" width="32" height="7" rx="0.5"/><path ${_st} stroke-width="1.2" d="M6,64 Q6,80 17,80 Q28,80 28,64"/><path ${_st} stroke-width="1.2" d="M110,64 Q110,80 99,80 Q88,80 88,64"/><circle ${_st} stroke-width="0.8" cx="58" cy="43" r="5"/></svg>`;
-    // Sedan trasera
-    const _svgST = `<svg viewBox="0 0 116 80" width="108" height="74" xmlns="http://www.w3.org/2000/svg"><path ${_st} stroke-width="1.3" d="M20,26 Q58,14 96,26 L100,38 L100,56 L16,56 L16,38 Z"/><path ${_st} stroke-width="1" d="M26,26 Q58,18 90,26"/><line ${_st} stroke-width="0.8" x1="58" y1="14" x2="58" y2="26"/><rect ${_st} stroke-width="1.1" x="7" y="26" width="14" height="28" rx="1"/><rect ${_st} stroke-width="1.1" x="95" y="26" width="14" height="28" rx="1"/><line ${_st} stroke-width="0.8" x1="21" y1="36" x2="95" y2="36"/><path ${_st} stroke-width="1.2" d="M6,56 L6,64 Q6,70 12,70 L104,70 Q110,70 110,64 L110,56"/><rect ${_st} stroke-width="0.9" x="40" y="57" width="36" height="9" rx="0.5"/><path ${_st} stroke-width="1.2" d="M6,64 Q6,80 17,80 Q28,80 28,64"/><path ${_st} stroke-width="1.2" d="M110,64 Q110,80 99,80 Q88,80 88,64"/></svg>`;
-    // Sedan lateral izq (facing right)
-    const _svgSL = `<svg viewBox="0 0 180 70" width="168" height="65" xmlns="http://www.w3.org/2000/svg"><circle ${_st} stroke-width="1.3" cx="40" cy="58" r="11"/><circle ${_st} stroke-width="1" cx="40" cy="58" r="4"/><circle ${_st} stroke-width="1.3" cx="140" cy="58" r="11"/><circle ${_st} stroke-width="1" cx="140" cy="58" r="4"/><path ${_st} stroke-width="1.3" d="M22,47 Q22,36 40,36 Q58,36 58,47"/><path ${_st} stroke-width="1.3" d="M122,47 Q122,36 140,36 Q158,36 158,47"/><path ${_st} stroke-width="1.5" d="M18,47 L16,38 Q16,28 25,23 L50,15 Q66,10 83,10 Q100,10 116,13 L146,21 Q158,26 160,36 L162,47"/><line ${_st} stroke-width="1.2" x1="22" y1="47" x2="58" y2="47"/><line ${_st} stroke-width="0.8" x1="58" y1="47" x2="122" y2="47"/><line ${_st} stroke-width="1.2" x1="122" y1="47" x2="158" y2="47"/><path ${_st} stroke-width="1" d="M50,15 Q83,8 116,13"/><line ${_st} stroke-width="1.1" x1="83" y1="10" x2="83" y2="46"/><line ${_st} stroke-width="1" x1="50" y1="15" x2="44" y2="42"/><line ${_st} stroke-width="1" x1="116" y1="13" x2="122" y2="42"/><path ${_st} stroke-width="0.8" d="M46,17 L40,42 L81,42 L83,11"/><path ${_st} stroke-width="0.8" d="M85,11 L83,42 L120,42 L116,14"/><line ${_st} stroke-width="1.2" x1="60" y1="32" x2="70" y2="32"/><line ${_st} stroke-width="1.2" x1="97" y1="32" x2="107" y2="32"/><path ${_st} stroke-width="1" d="M158,28 L165,28 L165,44 L160,46"/><rect ${_st} stroke-width="1" x="11" y="25" width="6" height="18" rx="1"/><path ${_st} stroke-width="1" d="M162,38 L167,40 L167,52 Q167,55 162,55 L158,55 L158,47"/><path ${_st} stroke-width="1" d="M18,40 L13,42 L13,54 Q13,57 18,57 L22,57 L22,47"/></svg>`;
-    // Sedan lateral der (mirror)
-    const _svgSD = `<svg viewBox="0 0 180 70" width="168" height="65" xmlns="http://www.w3.org/2000/svg"><g transform="scale(-1,1) translate(-180,0)">${_svgSL.replace(/<svg[^>]*>/,'').replace('</svg>','')}</g></svg>`;
-    // Camioneta frontal (más boxy)
-    const _svgCF = `<svg viewBox="0 0 116 80" width="108" height="74" xmlns="http://www.w3.org/2000/svg"><path ${_st} stroke-width="1.3" d="M14,22 Q58,14 102,22 L106,34 L106,58 L10,58 L10,34 Z"/><path ${_st} stroke-width="1" d="M18,22 Q58,16 98,22"/><line ${_st} stroke-width="0.8" x1="58" y1="14" x2="58" y2="22"/><path ${_st} stroke-width="1.1" d="M4,32 L4,56 Q4,60 10,60 L10,32 Q8,24 6,24 Z"/><path ${_st} stroke-width="1.1" d="M112,32 L112,56 Q112,60 106,60 L106,32 Q108,24 110,24 Z"/><rect ${_st} stroke-width="1" x="28" y="38" width="60" height="18" rx="1"/><line ${_st} stroke-width="0.5" x1="38" y1="38" x2="38" y2="56"/><line ${_st} stroke-width="0.5" x1="48" y1="38" x2="48" y2="56"/><line ${_st} stroke-width="0.5" x1="58" y1="38" x2="58" y2="56"/><line ${_st} stroke-width="0.5" x1="68" y1="38" x2="68" y2="56"/><line ${_st} stroke-width="0.5" x1="78" y1="38" x2="78" y2="56"/><path ${_st} stroke-width="1.2" d="M4,58 L4,66 Q4,74 11,74 L105,74 Q112,74 112,66 L112,58"/><rect ${_st} stroke-width="0.8" x="40" y="62" width="36" height="8" rx="0.5"/><path ${_st} stroke-width="1.3" d="M4,66 Q4,80 16,80 Q28,80 28,66"/><path ${_st} stroke-width="1.3" d="M112,66 Q112,80 100,80 Q88,80 88,66"/></svg>`;
-    // Camioneta trasera
-    const _svgCT = `<svg viewBox="0 0 116 80" width="108" height="74" xmlns="http://www.w3.org/2000/svg"><path ${_st} stroke-width="1.3" d="M14,22 Q58,14 102,22 L106,34 L106,58 L10,58 L10,34 Z"/><path ${_st} stroke-width="1" d="M18,22 Q58,16 98,22"/><rect ${_st} stroke-width="1.1" x="4" y="22" width="14" height="34" rx="0.5"/><rect ${_st} stroke-width="1.1" x="98" y="22" width="14" height="34" rx="0.5"/><line ${_st} stroke-width="1.2" x1="18" y1="22" x2="98" y2="22"/><line ${_st} stroke-width="0.8" x1="18" y1="34" x2="98" y2="34"/><path ${_st} stroke-width="1.2" d="M4,58 L4,68 Q4,74 11,74 L105,74 Q112,74 112,68 L112,58"/><rect ${_st} stroke-width="0.9" x="40" y="60" width="36" height="10" rx="0.5"/><path ${_st} stroke-width="1.3" d="M4,68 Q4,80 16,80 Q28,80 28,68"/><path ${_st} stroke-width="1.3" d="M112,68 Q112,80 100,80 Q88,80 88,68"/></svg>`;
-    // Camioneta lateral izq (pickup)
-    const _svgCL = `<svg viewBox="0 0 200 70" width="186" height="65" xmlns="http://www.w3.org/2000/svg"><circle ${_st} stroke-width="1.3" cx="42" cy="58" r="11"/><circle ${_st} stroke-width="1" cx="42" cy="58" r="4"/><circle ${_st} stroke-width="1.3" cx="158" cy="58" r="11"/><circle ${_st} stroke-width="1" cx="158" cy="58" r="4"/><path ${_st} stroke-width="1.3" d="M24,47 Q24,36 42,36 Q60,36 60,47"/><path ${_st} stroke-width="1.3" d="M140,47 Q140,36 158,36 Q176,36 176,47"/><path ${_st} stroke-width="1.5" d="M20,47 L18,38 Q18,28 27,24 L52,16 Q66,12 84,12 L100,12 L100,47"/><path ${_st} stroke-width="1.5" d="M100,12 L100,6 L175,6 L178,10 L178,47"/><line ${_st} stroke-width="0.8" x1="100" y1="6" x2="100" y2="47"/><line ${_st} stroke-width="1.2" x1="24" y1="47" x2="60" y2="47"/><line ${_st} stroke-width="0.8" x1="60" y1="47" x2="140" y2="47"/><line ${_st} stroke-width="1.2" x1="140" y1="47" x2="176" y2="47"/><line ${_st} stroke-width="1" x1="52" y1="16" x2="48" y2="42"/><line ${_st} stroke-width="1.1" x1="84" y1="12" x2="84" y2="46"/><path ${_st} stroke-width="0.8" d="M50,18 L44,42 L82,42 L84,13"/><line ${_st} stroke-width="1.2" x1="60" y1="30" x2="70" y2="30"/><path ${_st} stroke-width="1" d="M176,22 L183,22 L183,44 L178,46"/><rect ${_st} stroke-width="1" x="12" y="26" width="6" height="16" rx="1"/></svg>`;
-    // Camioneta lateral der (mirror)
-    const _svgCD = `<svg viewBox="0 0 200 70" width="186" height="65" xmlns="http://www.w3.org/2000/svg"><g transform="scale(-1,1) translate(-200,0)">${_svgCL.replace(/<svg[^>]*>/,'').replace('</svg>','')}</g></svg>`;
+    // ── SVGs bocetos de vehículo — siluetas reconocibles ─────────────────────
+    const S = 'fill="none" stroke="#333"';
+
+    // ── SEDAN LATERAL IZQ (carro de frente a la derecha) ──
+    const _svgSL = `<svg viewBox="0 0 200 72" width="190" height="68" xmlns="http://www.w3.org/2000/svg">
+      <path ${S} stroke-width="1.6" stroke-linejoin="round"
+        d="M 14,54 Q 8,54 8,50 L 8,44 Q 10,38 22,34 Q 34,28 54,22 L 68,12 Q 78,8 96,8 L 124,8 Q 148,8 160,16 L 176,28 Q 184,34 186,44 L 188,50 Q 188,54 184,54 L 163,54 Q 162,68 150,68 Q 138,68 137,54 L 63,54 Q 62,68 50,68 Q 38,68 37,54 Z"/>
+      <circle ${S} stroke-width="1.4" cx="50" cy="60" r="10"/>
+      <circle ${S} stroke-width="0.9" cx="50" cy="60" r="4"/>
+      <circle ${S} stroke-width="1.4" cx="150" cy="60" r="10"/>
+      <circle ${S} stroke-width="0.9" cx="150" cy="60" r="4"/>
+      <path ${S} stroke-width="1" d="M 68,12 L 62,44 L 97,44 L 102,9"/>
+      <path ${S} stroke-width="1" d="M 104,9 L 99,44 L 138,44 L 152,18"/>
+      <line ${S} stroke-width="0.7" x1="97" y1="44" x2="102" y2="9"/>
+      <rect ${S} stroke-width="1" x="9" y="40" width="10" height="9" rx="1.5"/>
+      <rect ${S} stroke-width="1" x="182" y="38" width="10" height="10" rx="1.5"/>
+      <line ${S} stroke-width="1" x1="76" y1="30" x2="86" y2="30"/>
+      <line ${S} stroke-width="1" x1="112" y1="30" x2="122" y2="30"/>
+    </svg>`;
+
+    // ── SEDAN LATERAL DER (espejo) ──
+    const _svgSD = `<svg viewBox="0 0 200 72" width="190" height="68" xmlns="http://www.w3.org/2000/svg"><g transform="scale(-1,1) translate(-200,0)">${_svgSL.replace(/<svg[^>]*>/,'').replace('</svg>','')}</g></svg>`;
+
+    // ── SEDAN FRONTAL ──
+    const _svgSF = `<svg viewBox="0 0 130 90" width="120" height="83" xmlns="http://www.w3.org/2000/svg">
+      <path ${S} stroke-width="1.6" stroke-linejoin="round"
+        d="M 8,80 Q 4,80 4,76 L 4,58 Q 4,52 10,50 L 10,26 Q 10,20 16,16 L 30,6 Q 38,2 52,2 L 78,2 Q 92,2 100,6 L 114,16 Q 120,20 120,26 L 120,50 Q 126,52 126,58 L 126,76 Q 126,80 122,80 Z"/>
+      <path ${S} stroke-width="1" d="M 30,4 L 26,30 L 104,30 L 100,4 Z"/>
+      <path ${S} stroke-width="1" d="M 10,26 L 10,50 Q 11,54 18,54 L 30,54 Q 36,54 38,48 L 38,26 Z"/>
+      <path ${S} stroke-width="1" d="M 92,26 L 92,48 Q 94,54 100,54 L 112,54 Q 119,54 120,50 L 120,26 Z"/>
+      <rect ${S} stroke-width="1" x="38" y="52" width="54" height="20" rx="2"/>
+      <line ${S} stroke-width="0.6" x1="38" y1="59" x2="92" y2="59"/>
+      <line ${S} stroke-width="0.6" x1="38" y1="66" x2="92" y2="66"/>
+      <line ${S} stroke-width="0.6" x1="57" y1="52" x2="57" y2="72"/>
+      <line ${S} stroke-width="0.6" x1="73" y1="52" x2="73" y2="72"/>
+      <path ${S} stroke-width="1.2" d="M 4,76 Q 4,88 10,88 L 120,88 Q 126,88 126,76"/>
+      <rect ${S} stroke-width="0.8" x="48" y="74" width="34" height="10" rx="1"/>
+    </svg>`;
+
+    // ── SEDAN TRASERA ──
+    const _svgST = `<svg viewBox="0 0 130 90" width="120" height="83" xmlns="http://www.w3.org/2000/svg">
+      <path ${S} stroke-width="1.6" stroke-linejoin="round"
+        d="M 8,80 Q 4,80 4,76 L 4,58 Q 4,52 10,50 L 10,26 Q 10,20 16,16 L 30,6 Q 38,2 52,2 L 78,2 Q 92,2 100,6 L 114,16 Q 120,20 120,26 L 120,50 Q 126,52 126,58 L 126,76 Q 126,80 122,80 Z"/>
+      <path ${S} stroke-width="1" d="M 34,4 L 30,28 L 100,28 L 96,4 Z"/>
+      <rect ${S} stroke-width="1.1" x="6" y="28" width="26" height="22" rx="1"/>
+      <line ${S} stroke-width="0.6" x1="19" y1="28" x2="19" y2="50"/>
+      <rect ${S} stroke-width="1.1" x="98" y="28" width="26" height="22" rx="1"/>
+      <line ${S} stroke-width="0.6" x1="111" y1="28" x2="111" y2="50"/>
+      <line ${S} stroke-width="1" x1="32" y1="28" x2="98" y2="28"/>
+      <line ${S} stroke-width="0.8" x1="32" y1="50" x2="98" y2="50"/>
+      <path ${S} stroke-width="1.2" d="M 4,76 Q 4,88 10,88 L 120,88 Q 126,88 126,76"/>
+      <rect ${S} stroke-width="0.8" x="46" y="54" width="38" height="14" rx="1"/>
+    </svg>`;
+
+    // ── CAMIONETA / SUV LATERAL IZQ ──
+    const _svgCL = `<svg viewBox="0 0 210 75" width="200" height="71" xmlns="http://www.w3.org/2000/svg">
+      <path ${S} stroke-width="1.6" stroke-linejoin="round"
+        d="M 14,56 Q 8,56 8,52 L 8,44 Q 8,38 14,36 Q 22,32 40,28 L 54,16 Q 62,10 78,8 L 108,8 Q 112,8 112,14 L 112,56 L 67,56 Q 66,70 54,70 Q 42,70 41,56 Z"/>
+      <path ${S} stroke-width="1.6" stroke-linejoin="round"
+        d="M 112,14 L 112,8 L 192,8 L 196,14 L 196,56 L 171,56 Q 170,70 158,70 Q 146,70 145,56 L 112,56"/>
+      <circle ${S} stroke-width="1.4" cx="54" cy="62" r="11"/>
+      <circle ${S} stroke-width="0.9" cx="54" cy="62" r="4.5"/>
+      <circle ${S} stroke-width="1.4" cx="158" cy="62" r="11"/>
+      <circle ${S} stroke-width="0.9" cx="158" cy="62" r="4.5"/>
+      <path ${S} stroke-width="1" d="M 54,16 L 48,44 L 90,44 L 94,10"/>
+      <path ${S} stroke-width="1" d="M 96,10 L 92,44 L 110,44 L 112,8"/>
+      <line ${S} stroke-width="0.7" x1="90" y1="44" x2="94" y2="10"/>
+      <line ${S} stroke-width="1" x1="112" y1="8" x2="112" y2="56"/>
+      <rect ${S} stroke-width="1" x="9" y="40" width="10" height="10" rx="1.5"/>
+      <rect ${S} stroke-width="1" x="193" y="26" width="10" height="22" rx="1.5"/>
+      <line ${S} stroke-width="1" x1="72" y1="30" x2="82" y2="30"/>
+    </svg>`;
+
+    // ── CAMIONETA LATERAL DER (espejo) ──
+    const _svgCD = `<svg viewBox="0 0 210 75" width="200" height="71" xmlns="http://www.w3.org/2000/svg"><g transform="scale(-1,1) translate(-210,0)">${_svgCL.replace(/<svg[^>]*>/,'').replace('</svg>','')}</g></svg>`;
+
+    // ── CAMIONETA FRONTAL ──
+    const _svgCF = `<svg viewBox="0 0 130 90" width="120" height="83" xmlns="http://www.w3.org/2000/svg">
+      <path ${S} stroke-width="1.6" stroke-linejoin="round"
+        d="M 6,82 Q 4,82 4,78 L 4,58 Q 4,52 8,50 L 8,22 Q 8,16 14,14 L 22,6 Q 28,2 40,2 L 90,2 Q 102,2 108,6 L 116,14 Q 122,16 122,22 L 122,50 Q 126,52 126,58 L 126,78 Q 126,82 124,82 Z"/>
+      <path ${S} stroke-width="1" d="M 22,4 L 18,28 L 112,28 L 108,4 Z"/>
+      <rect ${S} stroke-width="1.1" x="6" y="28" width="28" height="22" rx="1"/>
+      <line ${S} stroke-width="0.6" x1="20" y1="28" x2="20" y2="50"/>
+      <rect ${S} stroke-width="1.1" x="96" y="28" width="28" height="22" rx="1"/>
+      <line ${S} stroke-width="0.6" x1="110" y1="28" x2="110" y2="50"/>
+      <rect ${S} stroke-width="1" x="34" y="50" width="62" height="22" rx="2"/>
+      <line ${S} stroke-width="0.6" x1="34" y1="58" x2="96" y2="58"/>
+      <line ${S} stroke-width="0.6" x1="34" y1="65" x2="96" y2="65"/>
+      <line ${S} stroke-width="0.6" x1="55" y1="50" x2="55" y2="72"/>
+      <line ${S} stroke-width="0.6" x1="75" y1="50" x2="75" y2="72"/>
+      <path ${S} stroke-width="1.2" d="M 4,78 Q 4,88 10,88 L 120,88 Q 126,88 126,78"/>
+      <rect ${S} stroke-width="0.8" x="46" y="74" width="38" height="10" rx="1"/>
+    </svg>`;
+
+    // ── CAMIONETA TRASERA ──
+    const _svgCT = `<svg viewBox="0 0 130 90" width="120" height="83" xmlns="http://www.w3.org/2000/svg">
+      <path ${S} stroke-width="1.6" stroke-linejoin="round"
+        d="M 6,82 Q 4,82 4,78 L 4,58 Q 4,52 8,50 L 8,22 Q 8,16 14,14 L 22,6 Q 28,2 40,2 L 90,2 Q 102,2 108,6 L 116,14 Q 122,16 122,22 L 122,50 Q 126,52 126,58 L 126,78 Q 126,82 124,82 Z"/>
+      <path ${S} stroke-width="1" d="M 30,4 L 26,26 L 104,26 L 100,4 Z"/>
+      <rect ${S} stroke-width="1.1" x="6" y="26" width="28" height="24" rx="1"/>
+      <line ${S} stroke-width="0.6" x1="20" y1="26" x2="20" y2="50"/>
+      <rect ${S} stroke-width="1.1" x="96" y="26" width="28" height="24" rx="1"/>
+      <line ${S} stroke-width="0.6" x1="110" y1="26" x2="110" y2="50"/>
+      <line ${S} stroke-width="1" x1="34" y1="26" x2="96" y2="26"/>
+      <line ${S} stroke-width="0.8" x1="34" y1="50" x2="96" y2="50"/>
+      <path ${S} stroke-width="1.2" d="M 4,78 Q 4,88 10,88 L 120,88 Q 126,88 126,78"/>
+      <rect ${S} stroke-width="0.8" x="44" y="54" width="42" height="16" rx="1"/>
+    </svg>`;
 
     const html = `<!DOCTYPE html>
 <html lang="es">
