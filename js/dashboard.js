@@ -908,21 +908,21 @@ async function cargarGraficoFinanciero(periodo = 'mensual') {
           <stop offset="100%" stop-color="#2563EB" stop-opacity="0"/>
         </linearGradient></defs>
         ${yT.filter((_,i)=>i>0).map(t=>`<line x1="${PL}" y1="${t.y}" x2="${W-PR}" y2="${t.y}" stroke="#E1E5EC" stroke-width="1"/>`).join('')}
-        ${yT.map(t=>`<text x="${PL-5}" y="${(+t.y+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#8A94A6" font-family="'DM Mono',monospace">${t.l}</text>`).join('')}
+        ${yT.map(t=>`<text x="${PL-5}" y="${(+t.y+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#8A94A6" font-family="'DM Sans',sans-serif">${t.l}</text>`).join('')}
         ${areaPath?`<path d="${areaPath}" fill="url(#finGrad)"/>`:''}
         ${linePath?`<path d="${linePath}" fill="none" stroke="#2563EB" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`:''}
         ${pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="2.5" fill="white" stroke="#2563EB" stroke-width="1.5"/>`).join('')}
-        ${pts.filter((_,i)=>i%xStep===0||i===n-1).map(p=>`<text x="${p.x}" y="${H-2}" text-anchor="middle" font-size="9" fill="#8A94A6" font-family="'DM Mono',monospace">${p.lbl}</text>`).join('')}
+        ${pts.filter((_,i)=>i%xStep===0||i===n-1).map(p=>`<text x="${p.x}" y="${H-2}" text-anchor="middle" font-size="9" fill="#8A94A6" font-family="'DM Sans',sans-serif">${p.lbl}</text>`).join('')}
         <line x1="${PL}" y1="${PT+cH}" x2="${W-PR}" y2="${PT+cH}" stroke="#E1E5EC" stroke-width="1"/>
       </svg>
       <div style="display:flex;gap:20px;margin-top:8px;padding-top:8px;border-top:1px solid var(--gris-borde)">
         <div>
-          <div style="font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--gris-mid);margin-bottom:2px">Total período</div>
-          <div style="font-size:13px;font-weight:800;color:var(--texto);font-family:'DM Mono',monospace">${fmtF(total)}</div>
+          <div style="font-size:10px;font-weight:600;color:var(--gris-mid);margin-bottom:2px">Total período</div>
+          <div style="font-size:13px;font-weight:800;color:var(--texto);font-family:'DM Sans',sans-serif">${fmtF(total)}</div>
         </div>
         <div>
-          <div style="font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--gris-mid);margin-bottom:2px">Promedio</div>
-          <div style="font-size:13px;font-weight:800;color:var(--texto);font-family:'DM Mono',monospace">${fmtF(Math.round(total/n))}</div>
+          <div style="font-size:10px;font-weight:600;color:var(--gris-mid);margin-bottom:2px">Promedio</div>
+          <div style="font-size:13px;font-weight:800;color:var(--texto);font-family:'DM Sans',sans-serif">${fmtF(Math.round(total/n))}</div>
         </div>
       </div>`;
 
