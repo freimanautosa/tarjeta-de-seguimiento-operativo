@@ -37,6 +37,23 @@ function montarTaller() {
         0%,100%{background:transparent}
         30%,70%{background:rgba(245,158,11,.07)}
       }
+      @keyframes tv-row-shake {
+        0%  { transform:translateX(0);    outline:3px solid transparent; background:transparent; }
+        5%  { transform:translateX(-4px); outline:3px solid #F59E0B; background:rgba(251,191,36,.12); }
+        10% { transform:translateX( 4px); outline:3px solid #F59E0B; background:rgba(251,191,36,.18); }
+        15% { transform:translateX(-3px); outline:3px solid #2563EB; background:rgba(37,99,235,.12); }
+        20% { transform:translateX( 3px); outline:3px solid #2563EB; background:rgba(37,99,235,.12); }
+        25% { transform:translateX(-2px); outline:3px solid #2563EB; background:rgba(37,99,235,.10); }
+        30% { transform:translateX( 2px); outline:3px solid #2563EB; background:rgba(37,99,235,.08); }
+        40% { transform:translateX(0);    outline:3px solid #2563EB; background:rgba(37,99,235,.06); }
+        65% { transform:translateX(0);    outline:3px solid rgba(37,99,235,.4); background:rgba(37,99,235,.04); }
+        100%{ transform:translateX(0);    outline:3px solid transparent; background:transparent; }
+      }
+      .tv-row-alert {
+        animation: tv-row-shake 2.4s ease-out forwards !important;
+        position: relative;
+        z-index: 2;
+      }
       @keyframes overlay-in {
         from{opacity:0;transform:scale(.95)}
         to{opacity:1;transform:scale(1)}
@@ -749,8 +766,11 @@ async function cargarPantallaTaller() {
 
     const panelHtml = panelListosHtml; // alias para compatibilidad
 
-    // ── Ordenar: activas primero (con etapa en curso), luego el resto por entrega ──
+    // ── Ordenar: orden cambiada AL TOP primero, luego activas, luego por entrega ──
+    const changedId = ordenCambiada?.id || null;
     const ordenesOrdenadas = [...ordenesEnGrid].sort((a, b) => {
+      if (a.id === changedId) return -1;
+      if (b.id === changedId) return  1;
       const aActiva = etapasActivas.some(e => e.orden_id === a.id) ? 0 : 1;
       const bActiva = etapasActivas.some(e => e.orden_id === b.id) ? 0 : 1;
       if (aActiva !== bActiva) return aActiva - bActiva;
@@ -903,12 +923,25 @@ async function cargarPantallaTaller() {
       }, PAUSE_TOP);
     }
 
-    // Overlay por cambio de etapa
-    if (ordenCambiada && !nuevasEntregadas.length && !nuevasListas.length) {
-      const ets = etapasTodas.filter(e => e.orden_id === ordenCambiada.id);
-      setTimeout(() => _tvMostrarOverlay(ordenCambiada, ets, 'ETAPA ACTUALIZADA', false, aprobadas), 400);
+    // Animación + scroll al top para orden cambiada
+    if (ordenCambiada) {
+      // Scroll al top para asegurar que se vea
+      const tw = cont.querySelector('.tv-table-wrap');
+      if (tw) { tw.scrollTop = 0; }
+
+      // Aplicar animación shake+highlight a la fila
       const rowEl = document.getElementById(`tv-row-${ordenCambiada.id}`);
-      if (rowEl) { rowEl.classList.remove('flash'); void rowEl.offsetWidth; rowEl.classList.add('flash'); }
+      if (rowEl) {
+        rowEl.classList.remove('tv-row-alert');
+        void rowEl.offsetWidth; // force reflow para reiniciar animación
+        rowEl.classList.add('tv-row-alert');
+      }
+
+      // Overlay solo si no hay entregadas/listas
+      if (!nuevasEntregadas.length && !nuevasListas.length) {
+        const ets = etapasTodas.filter(e => e.orden_id === ordenCambiada.id);
+        setTimeout(() => _tvMostrarOverlay(ordenCambiada, ets, 'ETAPA ACTUALIZADA', false, aprobadas), 400);
+      }
     }
 
   } catch(e) {
