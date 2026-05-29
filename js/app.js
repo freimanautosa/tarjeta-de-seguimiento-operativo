@@ -41,6 +41,59 @@ function montarApp() {
   }
 }
 
+// ── PWA Install prompt ──────────────────────────────────────
+let _pwaInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _pwaInstallPrompt = e;
+  // Mostrar banner de instalación si no está instalada
+  _mostrarBannerInstalar();
+});
+
+window.addEventListener('appinstalled', () => {
+  _pwaInstallPrompt = null;
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.remove();
+});
+
+function _mostrarBannerInstalar() {
+  if (document.getElementById('pwa-install-banner')) return;
+  // Solo mostrar si la app NO está en modo standalone (ya instalada)
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  if (window.navigator.standalone === true) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'pwa-install-banner';
+  banner.style.cssText = `
+    position:fixed;bottom:76px;left:50%;transform:translateX(-50%);
+    background:#1E3A5F;color:white;border-radius:12px;
+    padding:10px 16px;display:flex;align-items:center;gap:10px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:9000;
+    font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
+    white-space:nowrap;animation:slideUp .3s ease-out;
+  `;
+  banner.innerHTML = `
+    <svg width="16" height="16" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v13M5 9l7 7 7-7"/><path d="M3 19h18"/></svg>
+    <span>Instalar app — oculta la barra de URL</span>
+    <button onclick="_instalarPWA()" style="background:white;color:#1E3A5F;border:none;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">Instalar</button>
+    <button onclick="document.getElementById('pwa-install-banner').remove()" style="background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:18px;line-height:1;padding:0 4px">×</button>
+  `;
+  document.body.appendChild(banner);
+
+  // Auto-ocultar tras 12 segundos
+  setTimeout(() => { if (banner.parentNode) banner.remove(); }, 12000);
+}
+
+async function _instalarPWA() {
+  if (!_pwaInstallPrompt) return;
+  _pwaInstallPrompt.prompt();
+  const { outcome } = await _pwaInstallPrompt.userChoice;
+  _pwaInstallPrompt = null;
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.remove();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   // Si la URL tiene ?view=monitor, montar el monitor sin login
   if (typeof esVistaMonitor === 'function' && esVistaMonitor()) {
