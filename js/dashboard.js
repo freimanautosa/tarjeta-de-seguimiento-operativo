@@ -889,7 +889,7 @@ async function cargarGraficoFinanciero(periodo = 'mensual') {
 
     if (total === 0) { cont.innerHTML='<div style="text-align:center;padding:28px 0;font-size:12px;color:var(--gris-mid)">Sin datos para este período.</div>'; return; }
 
-    const W=560, H=150, PL=54, PR=10, PT=8, PB=26;
+    const W=800, H=160, PL=62, PR=14, PT=10, PB=28;
     const cW=W-PL-PR, cH=H-PT-PB, n=arr.length;
     const yT = [0,.33,.67,1].map(f=>({ y:(PT+cH*(1-f)).toFixed(1), l:f===0?'0':fmtS(maxVal*f) }));
     const pts = arr.map((b,i)=>({
@@ -902,18 +902,18 @@ async function cargarGraficoFinanciero(periodo = 'mensual') {
     const xStep = Math.max(1, Math.ceil(n/7));
 
     cont.innerHTML = `
-      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:auto;display:block" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:160px;display:block" xmlns="http://www.w3.org/2000/svg">
         <defs><linearGradient id="finGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#2563EB" stop-opacity=".12"/>
+          <stop offset="0%" stop-color="#2563EB" stop-opacity=".15"/>
           <stop offset="100%" stop-color="#2563EB" stop-opacity="0"/>
         </linearGradient></defs>
-        ${yT.filter((_,i)=>i>0).map(t=>`<line x1="${PL}" y1="${t.y}" x2="${W-PR}" y2="${t.y}" stroke="#E1E5EC" stroke-width="1"/>`).join('')}
-        ${yT.map(t=>`<text x="${PL-5}" y="${(+t.y+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#8A94A6" font-family="'DM Sans',sans-serif">${t.l}</text>`).join('')}
+        ${yT.filter((_,i)=>i>0).map(t=>`<line x1="${PL}" y1="${t.y}" x2="${W-PR}" y2="${t.y}" stroke="#E8EBF0" stroke-width="1"/>`).join('')}
+        ${yT.map(t=>`<text x="${PL-6}" y="${(+t.y+4).toFixed(1)}" text-anchor="end" font-size="11" font-weight="500" fill="#94A3B8" font-family="'DM Sans',sans-serif">${t.l}</text>`).join('')}
         ${areaPath?`<path d="${areaPath}" fill="url(#finGrad)"/>`:''}
-        ${linePath?`<path d="${linePath}" fill="none" stroke="#2563EB" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`:''}
-        ${pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="2.5" fill="white" stroke="#2563EB" stroke-width="1.5"/>`).join('')}
-        ${pts.filter((_,i)=>i%xStep===0||i===n-1).map(p=>`<text x="${p.x}" y="${H-2}" text-anchor="middle" font-size="9" fill="#8A94A6" font-family="'DM Sans',sans-serif">${p.lbl}</text>`).join('')}
-        <line x1="${PL}" y1="${PT+cH}" x2="${W-PR}" y2="${PT+cH}" stroke="#E1E5EC" stroke-width="1"/>
+        ${linePath?`<path d="${linePath}" fill="none" stroke="#2563EB" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`:''}
+        ${pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="3" fill="white" stroke="#2563EB" stroke-width="2"/>`).join('')}
+        ${pts.filter((_,i)=>i%xStep===0||i===n-1).map(p=>`<text x="${p.x}" y="${H-4}" text-anchor="middle" font-size="11" font-weight="500" fill="#94A3B8" font-family="'DM Sans',sans-serif">${p.lbl}</text>`).join('')}
+        <line x1="${PL}" y1="${PT+cH}" x2="${W-PR}" y2="${PT+cH}" stroke="#E8EBF0" stroke-width="1"/>
       </svg>
       <div style="display:flex;gap:20px;margin-top:8px;padding-top:8px;border-top:1px solid var(--gris-borde)">
         <div>
