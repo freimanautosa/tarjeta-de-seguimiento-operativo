@@ -2969,7 +2969,8 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
    REDUCCIÓN GLOBAL DE TAMAÑOS — formularios y tarjetas
 ══════════════════════════════════════════════════════════ */
 
-/* ── Formulario cotización: compacto ── */
+/* ── Formulario cotización: compacto y ancho limitado ── */
+#pag-cotizacion-nueva                    { max-width: 720px; }
 #pag-cotizacion-nueva .card              { padding: 14px 16px !important; }
 #pag-cotizacion-nueva .form-section      { padding-bottom: 10px !important; margin-bottom: 10px !important; border-bottom: 1px solid var(--gris-borde); }
 #pag-cotizacion-nueva .form-section:last-of-type { border-bottom: none; }
