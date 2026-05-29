@@ -275,12 +275,14 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .nav-item svg { flex-shrink: 0; opacity: 0.6; }
 .nav-item.active svg, .nav-item:hover svg { opacity: 1; }
 .nav-section-label {
-  font-size: 10px;
-  letter-spacing: 2px;
+  font-size: 11px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.25);
-  font-family: 'DM Mono', monospace;
-  padding: 14px 12px 6px;
+  color: rgba(255,255,255,0.35);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
 }
 .sidebar-footer {
   padding: 16px 12px;
