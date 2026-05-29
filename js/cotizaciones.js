@@ -982,5 +982,30 @@ async function crearOrdenDesdeCotizacion(cot) {
   const res = await api('/ordenes?select=id', 'POST', body, { Prefer: 'return=representation' });
   const ordenId = res[0].id;
   await api(`/cotizaciones?id=eq.${cot.id}`, 'PATCH', { orden_id: ordenId });
+
+  // Notificar por Telegram (mismo evento que crearOrden normal)
+  fetch(N8N_WEBHOOK, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      evento: 'orden_creada',
+      orden: {
+        id:           ordenId,
+        placa:        body.placa,
+        propietario:  body.propietario,
+        marca:        body.marca,
+        linea:        body.linea,
+        modelo:       body.modelo,
+        color:        body.color,
+        tipo_cliente: body.tipo_cliente,
+        aseguradora:  body.aseguradora,
+        fecha_entrega_1: null,
+        desde_cotizacion: true
+      },
+      etapas: [],   // el jefe las asigna después
+      link: (typeof window !== 'undefined') ? `${window.location.origin}${window.location.pathname}` : ''
+    })
+  }).catch(() => {});
+
   return ordenId;
 }
