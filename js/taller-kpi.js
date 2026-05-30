@@ -280,16 +280,10 @@ async function cargarKPITaller() {
             <div style="font-weight:700;font-size:16px;color:var(--texto)">Gestión Operativa</div>
             <div style="font-size:11px;color:var(--gris-mid);background:var(--gris-bg);padding:3px 10px;border-radius:99px;border:1px solid var(--gris-borde)">Actualizado ${hora}</div>
           </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-ghost btn-sm" onclick="cargarKPITaller()">
-              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-              Actualizar
-            </button>
-            <button class="btn btn-primary btn-sm" onclick="montarTaller()">
-              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-              Pantalla TV
-            </button>
-          </div>
+          <button class="btn btn-ghost btn-sm" onclick="cargarKPITaller()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            Actualizar
+          </button>
         </div>
 
         <div class="kpi-resumen">
