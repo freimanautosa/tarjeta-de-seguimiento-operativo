@@ -502,62 +502,31 @@ function _testVozTV() {
 }
 
 // ── Anuncio de voz ───────────────────────────────────────
-// Estrategia dual:
-//   1. Web Speech API (funciona en PC/Chrome desktop)
-//   2. Fallback StreamElements TTS via Audio element
-//      (funciona en Google TV / Android TV donde speechSynthesis falla)
+// Voz masculina grave consistente en PC y Google TV.
+// Primario: StreamElements Enrique (Audio element, igual que motor.mp3)
+// Respaldo: Web Speech API si el audio falla
 function _tvAnunciarPlaca(orden) {
   const placa = (orden.placa || '').toUpperCase();
   const placaLetra = placa.split('').join(' ');
   const msg = `Atención. Vehículo con placa ${placaLetra} listo para entrega al cliente.`;
-
-  setTimeout(() => {
-    let arrancó = false;
-
-    // ── Intento 1: Web Speech API (PC / Chrome desktop) ──
-    if (window.speechSynthesis) {
-      try {
-        const u = new SpeechSynthesisUtterance(msg);
-        u.lang   = 'es';
-        u.rate   = 0.80;
-        u.pitch  = 0.6;   // grave/masculino
-        u.volume = 1;
-        u.onstart = () => { arrancó = true; };
-        u.onerror = () => { if (!arrancó) _tvTTSAudio(msg); };
-
-        // Resume hack para Chrome/Android que pausa solo
-        const hack = setInterval(() => {
-          if (!window.speechSynthesis.speaking) { clearInterval(hack); return; }
-          window.speechSynthesis.pause();
-          window.speechSynthesis.resume();
-        }, 5000);
-        u.onend = () => clearInterval(hack);
-
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(u);
-
-        // Si en 2.5s no arrancó → usar fallback de audio
-        setTimeout(() => { if (!arrancó) _tvTTSAudio(msg); }, 2500);
-      } catch(e) {
-        _tvTTSAudio(msg);
-      }
-    } else {
-      // Sin speechSynthesis → directo al audio
-      _tvTTSAudio(msg);
-    }
-  }, 800);
+  setTimeout(() => _tvTTSAudio(msg), 800);
 }
 
-// ── Fallback TTS via Audio element (Google TV / Android TV) ──
-// Usa StreamElements TTS — voz española, sin API key, funciona como Audio
+// ── TTS via Audio element — voz masculina Enrique ────────
 function _tvTTSAudio(texto) {
   try {
-    const voz = 'Enrique'; // es-ES masculino, grave
-    const url = `https://api.streamelements.com/kappa/v2/speech?voice=${voz}&text=${encodeURIComponent(texto)}`;
+    const url = `https://api.streamelements.com/kappa/v2/speech?voice=Enrique&text=${encodeURIComponent(texto)}`;
     const audio = new Audio(url);
     audio.volume = 1;
-    audio.play().catch(err => console.warn('TTS audio fallback error:', err));
-  } catch(e) { console.warn('TTS fallback error:', e); }
+    audio.play().catch(() => {
+      // Si falla el audio (sin internet o bloqueado) → Web Speech API
+      if (!window.speechSynthesis) return;
+      const u = new SpeechSynthesisUtterance(texto);
+      u.lang = 'es'; u.rate = 0.80; u.pitch = 0.5; u.volume = 1;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    });
+  } catch(e) { console.warn('TTS error:', e); }
 }
 
 function iniciarRelojTaller() {
