@@ -495,62 +495,94 @@ function _tvSonar() {
 // ── Test de voz desde pantalla de activación ─────────────
 function _testVozTV() {
   const status = document.getElementById('tv-voz-status');
-  if (!window.speechSynthesis) {
-    if (status) status.textContent = '✗ speechSynthesis no disponible en este dispositivo';
-    return;
+  if (status) status.textContent = 'Probando voz...';
+
+  const msg = 'Prueba de voz. Vehículo A B C 1 2 3 listo para entrega.';
+  let arrancó = false;
+
+  // Probar speechSynthesis primero
+  if (window.speechSynthesis) {
+    const voces = window.speechSynthesis.getVoices();
+    const u = new SpeechSynthesisUtterance(msg);
+    u.lang = 'es'; u.rate = 0.85; u.volume = 1;
+    u.onstart = () => {
+      arrancó = true;
+      if (status) status.textContent = `✓ Web Speech API funcionando · ${voces.length} voces`;
+    };
+    u.onerror = (e) => {
+      if (status) status.textContent = `⚠ Speech API falló (${e.error}) → usando audio fallback`;
+      _tvTTSAudio(msg);
+    };
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+    setTimeout(() => {
+      if (!arrancó) {
+        if (status) status.textContent = `⚠ Speech API no respondió → usando audio fallback`;
+        _tvTTSAudio(msg);
+      }
+    }, 2500);
+  } else {
+    if (status) status.textContent = '⚠ Speech API no disponible → usando audio fallback';
+    _tvTTSAudio(msg);
   }
-  const voces = window.speechSynthesis.getVoices();
-  const u = new SpeechSynthesisUtterance('Prueba de voz. Sistema operativo Freimanautos.');
-  u.lang = 'es';
-  u.rate = 0.88;
-  u.volume = 1;
-  u.onstart  = () => { if (status) status.textContent = `✓ Voz funcionando · ${voces.length} voces disponibles`; };
-  u.onend    = () => { if (status) status.textContent += ' · Listo'; };
-  u.onerror  = (e) => { if (status) status.textContent = `✗ Error: ${e.error} · Voces: ${voces.length}`; };
-  if (status) status.textContent = `Intentando... (${voces.length} voces cargadas)`;
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(u);
-  // Si en 3s no arrancó, reportar
-  setTimeout(() => {
-    if (status && status.textContent.startsWith('Intentando')) {
-      status.textContent = `✗ No inició en 3s · Voces: ${voces.length} · speaking: ${window.speechSynthesis.speaking}`;
-    }
-  }, 3000);
 }
 
-// ── Anuncio de voz con Web Speech API ────────────────────
+// ── Anuncio de voz ───────────────────────────────────────
+// Estrategia dual:
+//   1. Web Speech API (funciona en PC/Chrome desktop)
+//   2. Fallback StreamElements TTS via Audio element
+//      (funciona en Google TV / Android TV donde speechSynthesis falla)
 function _tvAnunciarPlaca(orden) {
-  if (!window.speechSynthesis) return;
-
   const placa = (orden.placa || '').toUpperCase();
-  const placaLetra = placa.split('').join(', ');
-  const msg = `Atención. El vehículo con placa ${placaLetra}, está listo para ser entregado al cliente.`;
+  const placaLetra = placa.split('').join(' ');
+  const msg = `Atención. Vehículo con placa ${placaLetra} listo para entrega al cliente.`;
 
-  const _speak = () => {
-    try {
-      window.speechSynthesis.cancel();
+  setTimeout(() => {
+    let arrancó = false;
 
-      const utterance = new SpeechSynthesisUtterance(msg);
-      utterance.lang   = 'es';   // genérico — compatible con Android/Google TV
-      utterance.rate   = 0.88;
-      utterance.pitch  = 1;
-      utterance.volume = 1;
-      // Sin forzar voz específica: el sistema Android elige la más compatible
+    // ── Intento 1: Web Speech API (PC / Chrome desktop) ──
+    if (window.speechSynthesis) {
+      try {
+        const u = new SpeechSynthesisUtterance(msg);
+        u.lang   = 'es';
+        u.rate   = 0.85;
+        u.volume = 1;
+        u.onstart = () => { arrancó = true; };
+        u.onerror = () => { if (!arrancó) _tvTTSAudio(msg); };
 
-      // Workaround Chrome/Android TV: speechSynthesis se pausa sola
-      const resumeHack = setInterval(() => {
-        if (!window.speechSynthesis.speaking) { clearInterval(resumeHack); return; }
-        window.speechSynthesis.pause();
-        window.speechSynthesis.resume();
-      }, 5000);
-      utterance.onend = utterance.onerror = () => clearInterval(resumeHack);
+        // Resume hack para Chrome/Android que pausa solo
+        const hack = setInterval(() => {
+          if (!window.speechSynthesis.speaking) { clearInterval(hack); return; }
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        }, 5000);
+        u.onend = () => clearInterval(hack);
 
-      window.speechSynthesis.speak(utterance);
-    } catch(e) { console.warn('TTS error:', e); }
-  };
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(u);
 
-  // Pequeña pausa para que no compita con el sonido motor.mp3
-  setTimeout(_speak, 600);
+        // Si en 2.5s no arrancó → usar fallback de audio
+        setTimeout(() => { if (!arrancó) _tvTTSAudio(msg); }, 2500);
+      } catch(e) {
+        _tvTTSAudio(msg);
+      }
+    } else {
+      // Sin speechSynthesis → directo al audio
+      _tvTTSAudio(msg);
+    }
+  }, 800);
+}
+
+// ── Fallback TTS via Audio element (Google TV / Android TV) ──
+// Usa StreamElements TTS — voz española, sin API key, funciona como Audio
+function _tvTTSAudio(texto) {
+  try {
+    const voz = 'Conchita'; // es-ES femenino. Alternativa: 'Enrique' (masculino)
+    const url = `https://api.streamelements.com/kappa/v2/speech?voice=${voz}&text=${encodeURIComponent(texto)}`;
+    const audio = new Audio(url);
+    audio.volume = 1;
+    audio.play().catch(err => console.warn('TTS audio fallback error:', err));
+  } catch(e) { console.warn('TTS fallback error:', e); }
 }
 
 function iniciarRelojTaller() {
