@@ -495,36 +495,10 @@ function _tvSonar() {
 // ── Test de voz desde pantalla de activación ─────────────
 function _testVozTV() {
   const status = document.getElementById('tv-voz-status');
-  if (status) status.textContent = 'Probando voz...';
-
-  const msg = 'Prueba de voz. Vehículo A B C 1 2 3 listo para entrega.';
-  let arrancó = false;
-
-  // Probar speechSynthesis primero
-  if (window.speechSynthesis) {
-    const voces = window.speechSynthesis.getVoices();
-    const u = new SpeechSynthesisUtterance(msg);
-    u.lang = 'es'; u.rate = 0.85; u.volume = 1;
-    u.onstart = () => {
-      arrancó = true;
-      if (status) status.textContent = `✓ Web Speech API funcionando · ${voces.length} voces`;
-    };
-    u.onerror = (e) => {
-      if (status) status.textContent = `⚠ Speech API falló (${e.error}) → usando audio fallback`;
-      _tvTTSAudio(msg);
-    };
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
-    setTimeout(() => {
-      if (!arrancó) {
-        if (status) status.textContent = `⚠ Speech API no respondió → usando audio fallback`;
-        _tvTTSAudio(msg);
-      }
-    }, 2500);
-  } else {
-    if (status) status.textContent = '⚠ Speech API no disponible → usando audio fallback';
-    _tvTTSAudio(msg);
-  }
+  if (status) status.textContent = 'Reproduciendo prueba...';
+  // Usa exactamente la misma función que el anuncio real
+  _tvAnunciarPlaca({ placa: 'ABC123' });
+  setTimeout(() => { if (status) status.textContent = ''; }, 8000);
 }
 
 // ── Anuncio de voz ───────────────────────────────────────
