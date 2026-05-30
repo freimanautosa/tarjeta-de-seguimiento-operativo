@@ -2307,6 +2307,10 @@ function montarJefe() {
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
           <span class="nav-label">Estado del taller</span>
         </button>
+        <button class="nav-item" id="nav-taller-kpi" onclick="navJefe('taller-kpi')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <span class="nav-label">Gestión Operativa</span>
+        </button>
         <button class="nav-item active" id="nav-ordenes" onclick="navJefe('ordenes')">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
           <span class="nav-label">Órdenes</span>
@@ -2404,7 +2408,9 @@ function montarJefe() {
 
 function navJefe(pag) {
   // Actualizar clases active en sidebar y bottom nav
-  const pages = ['ordenes', 'nueva', 'dashboard', 'cotizaciones', 'calendario', 'mecanicos', 'repuestos', 'reportes', 'flotillas', 'aseguradoras', 'vehiculos'];
+  // Detener polling KPI al salir de esa pantalla
+  if (pag !== 'taller-kpi' && window._kpiInterval) { clearInterval(window._kpiInterval); window._kpiInterval = null; }
+  const pages = ['ordenes', 'nueva', 'dashboard', 'taller-kpi', 'cotizaciones', 'calendario', 'mecanicos', 'repuestos', 'reportes', 'flotillas', 'aseguradoras', 'vehiculos'];
   pages.forEach(p => {
     const navBtn = document.getElementById('nav-' + p);
     const bnavBtn = document.getElementById('bnav-' + p);
@@ -2450,6 +2456,13 @@ function navJefe(pag) {
       pagId = 'pag-calendario';
       titulo = 'Calendario de Entregas';
       cargarCalendario();
+      break;
+    case 'taller-kpi':
+      pagId = 'pag-taller-kpi';
+      titulo = 'Gestión Operativa';
+      if (window._kpiInterval) clearInterval(window._kpiInterval);
+      setTimeout(() => { if (typeof cargarKPITaller === 'function') cargarKPITaller(); }, 50);
+      window._kpiInterval = setInterval(() => { if (typeof cargarKPITaller === 'function') cargarKPITaller(); }, 60000);
       break;
     case 'mecanicos':
       pagId = 'pag-mecanicos';
