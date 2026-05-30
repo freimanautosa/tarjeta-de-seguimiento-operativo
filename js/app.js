@@ -35,7 +35,7 @@ function montarApp() {
       else montarMecanico();
       break;
     }
-    case 'taller':    montarTaller();    break;
+    case 'taller':    esJefe() ? montarTallerKPI() : montarTaller(); break;
     case 'repuestos': montarRepuestos(); break;
     default:          montarCliente();   break;
   }

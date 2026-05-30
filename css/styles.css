@@ -2408,6 +2408,108 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 }
 
 /* ═══════════════════════════════════════════════════════════
+   KPI — GESTIÓN OPERATIVA TALLER
+═══════════════════════════════════════════════════════════ */
+.kpi-shell { padding: 20px; max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+/* Header */
+.kpi-header {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  padding-bottom: 16px; border-bottom: 1.5px solid var(--gris-borde);
+}
+
+/* Resumen rápido */
+.kpi-resumen {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+}
+.kpi-res-item {
+  background: white; border: 1.5px solid var(--gris-borde); border-radius: var(--radio);
+  padding: 14px 16px; text-align: center;
+}
+.kpi-res-num { font-size: 28px; font-weight: 800; font-family: 'DM Mono', monospace; color: var(--texto); line-height: 1; }
+.kpi-res-lbl { font-size: 11px; color: var(--gris-mid); margin-top: 4px; text-transform: uppercase; letter-spacing: .5px; }
+
+/* Grid KPIs */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+
+/* Card */
+.kpi-card {
+  background: white; border: 1.5px solid var(--gris-borde); border-radius: 12px;
+  padding: 18px 16px; cursor: pointer; transition: transform .15s, box-shadow .15s;
+  display: flex; flex-direction: column; gap: 4px; position: relative; overflow: hidden;
+}
+.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.09); }
+.kpi-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; border-radius: 12px 12px 0 0;
+}
+.kpi-verde::before  { background: var(--verde); }
+.kpi-amarillo::before { background: var(--amarillo); }
+.kpi-rojo::before   { background: var(--rojo); }
+.kpi-verde  { border-color: #DCFCE7; }
+.kpi-amarillo { border-color: #FDE68A; }
+.kpi-rojo   { border-color: #FECACA; }
+
+.kpi-card-ico { font-size: 22px; margin-bottom: 4px; }
+.kpi-card-num { font-size: 32px; font-weight: 800; font-family: 'DM Mono', monospace; line-height: 1; color: var(--texto); }
+.kpi-verde  .kpi-card-num { color: #15803D; }
+.kpi-amarillo .kpi-card-num { color: #B45309; }
+.kpi-rojo   .kpi-card-num { color: #DC2626; }
+.kpi-card-lbl { font-size: 12px; font-weight: 700; color: var(--texto); margin-top: 2px; }
+.kpi-card-sub { font-size: 11px; color: var(--gris-mid); }
+.kpi-card-link { font-size: 11px; font-weight: 600; color: var(--azul-mid); margin-top: 6px; }
+
+/* Drilldown */
+.kpi-drill-fila {
+  display: grid; grid-template-columns: 56px 1fr auto auto; align-items: center; gap: 10px;
+  padding: 10px 8px; border-radius: 8px; cursor: pointer; transition: background .1s;
+  border-bottom: 1px solid var(--gris-borde);
+}
+.kpi-drill-fila:last-child { border-bottom: none; }
+.kpi-drill-fila:hover { background: var(--gris-bg); }
+.kpi-drill-main { display: flex; flex-direction: column; gap: 1px; }
+.kpi-drill-placa { font-family: 'DM Mono', monospace; font-weight: 800; font-size: 13px; color: var(--texto); }
+.kpi-drill-ot    { font-size: 10px; color: var(--gris-mid); }
+.kpi-drill-info  { min-width: 0; }
+.kpi-drill-titulo { font-size: 12px; font-weight: 600; color: var(--texto); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi-drill-sub   { font-size: 11px; color: var(--gris-mid); }
+.kpi-drill-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
+.kpi-drill-badge.kpi-verde    { background: #DCFCE7; color: #15803D; }
+.kpi-drill-badge.kpi-amarillo { background: #FEF3C7; color: #B45309; }
+.kpi-drill-badge.kpi-rojo     { background: #FEE2E2; color: #DC2626; }
+.kpi-drill-arrow { font-size: 14px; color: var(--azul-mid); flex-shrink: 0; }
+
+/* Badge inline */
+.kpi-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; display: inline-block; }
+.kpi-badge.rojo    { background: #FEE2E2; color: #DC2626; }
+.kpi-badge.amarillo { background: #FEF3C7; color: #B45309; }
+.kpi-badge.verde   { background: #DCFCE7; color: #15803D; }
+
+/* Tabla órdenes */
+.kpi-tabla-wrap { background: white; border: 1.5px solid var(--gris-borde); border-radius: 12px; overflow: hidden; }
+.kpi-tabla-titulo { padding: 14px 18px; font-weight: 700; font-size: 13px; border-bottom: 1.5px solid var(--gris-borde); background: #F8F9FB; }
+.kpi-tabla { width: 100%; border-collapse: collapse; }
+.kpi-tabla thead th { padding: 8px 14px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--gris-mid); text-align: left; background: #F8F9FB; border-bottom: 1.5px solid var(--gris-borde); }
+.kpi-tabla-fila td { padding: 10px 14px; border-bottom: 1px solid var(--gris-borde); vertical-align: middle; }
+.kpi-tabla-fila:last-child td { border-bottom: none; }
+.kpi-tabla-fila:hover td { background: #F8FAFC; }
+
+/* Mobile */
+@media (max-width: 768px) {
+  .kpi-shell { padding: 12px; gap: 14px; }
+  .kpi-resumen { grid-template-columns: repeat(2, 1fr); }
+  .kpi-grid    { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi-card    { padding: 14px 12px; }
+  .kpi-card-num { font-size: 26px; }
+  .kpi-tabla thead th:nth-child(3),
+  .kpi-tabla thead th:nth-child(4),
+  .kpi-tabla-fila td:nth-child(3),
+  .kpi-tabla-fila td:nth-child(4) { display: none; }
+}
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ═══════════════════════════════════════════════════════════
    PANTALLA TALLER
 ═══════════════════════════════════════════════════════════ */
 .taller-grid {
