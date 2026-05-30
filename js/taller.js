@@ -206,15 +206,15 @@ function montarTaller() {
         padding:.2vh .5vw;border-radius:.3vw;
         font-size:.62vw;font-weight:700;white-space:nowrap;border:1px solid transparent;
       }
-      .chip-approved  { background:#DCFCE7;color:#15803D;border-color:#BBF7D0; }
-      .chip-done      { background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE; } /* azul = espera calidad */
+      .chip-approved  { background:#DCFCE7;color:#15803D;border-color:#86EFAC; } /* verde oscuro = calidad aprobada */
+      .chip-done      { background:#F0FDF4;color:#16A34A;border-color:#BBF7D0; } /* verde claro = terminado, espera calidad */
       .chip-reproceso { background:#FEF2F2;color:#DC2626;border-color:#FECACA; }
       .chip-active    { background:#FEF3C7;color:#B45309;border-color:#FDE68A; }
       .chip-waiting   { background:#FFFBEB;color:#D97706;border-color:#FDE68A; }
       .chip-pending   { background:#F3F4F6;color:#6B7280;border-color:#E5E7EB; }
       .chip-dot { width:.45vw;height:.45vw;border-radius:50%;flex-shrink:0; }
-      .chip-dot.approved  { background:#22C55E; }
-      .chip-dot.done      { background:#3B82F6; }
+      .chip-dot.approved  { background:#16A34A; }
+      .chip-dot.done      { background:#4ADE80; }
       .chip-dot.reproceso { background:#EF4444; }
       .chip-dot.active    { background:#F59E0B; }
       .chip-dot.waiting   { background:transparent;border:.8px solid #F59E0B; }
@@ -352,19 +352,19 @@ function montarTaller() {
       }
       .tv-overlay-row:last-child { border-bottom:none; }
       .tv-odot        { width:.7vw;height:.7vw;border-radius:50%;flex-shrink:0; }
-      .tv-odot.approved{ background:#22C55E; }
-      .tv-odot.done   { background:#BBF7D0;border:1px solid #4ADE80; }
+      .tv-odot.approved{ background:#16A34A; }
+      .tv-odot.done   { background:#4ADE80;border:1px solid #16A34A; }
       .tv-odot.active { background:#F59E0B; }
       .tv-odot.pending{ background:transparent;border:1px solid #D1D5DB; }
       .tv-oname       { font-size:.9vw;flex:1; }
-      .tv-oname.approved{ color:#15803D; }
-      .tv-oname.done  { color:#9CA3AF; }
+      .tv-oname.approved{ color:#15803D;font-weight:700; }
+      .tv-oname.done  { color:#16A34A; }
       .tv-oname.active{ color:#B45309;font-weight:700; }
       .tv-oname.pending{ color:#D1D5DB; }
       .tv-otime       { font-family:'DM Mono',monospace;font-size:.8vw;font-weight:700; }
-      .tv-otime.approved{ color:#16A34A; }
+      .tv-otime.approved{ color:#15803D; }
       .tv-otime.active{ color:#B45309; }
-      .tv-otime.done  { color:#9CA3AF; }
+      .tv-otime.done  { color:#16A34A; }
       .tv-overlay-foot {
         padding:.8vh 1.5vw;border-top:1px solid rgba(0,0,0,.07);
         display:flex;justify-content:space-between;align-items:center;
