@@ -545,7 +545,8 @@ function _tvAnunciarPlaca(orden) {
       try {
         const u = new SpeechSynthesisUtterance(msg);
         u.lang   = 'es';
-        u.rate   = 0.85;
+        u.rate   = 0.80;
+        u.pitch  = 0.6;   // grave/masculino
         u.volume = 1;
         u.onstart = () => { arrancó = true; };
         u.onerror = () => { if (!arrancó) _tvTTSAudio(msg); };
@@ -577,7 +578,7 @@ function _tvAnunciarPlaca(orden) {
 // Usa StreamElements TTS — voz española, sin API key, funciona como Audio
 function _tvTTSAudio(texto) {
   try {
-    const voz = 'Conchita'; // es-ES femenino. Alternativa: 'Enrique' (masculino)
+    const voz = 'Enrique'; // es-ES masculino, grave
     const url = `https://api.streamelements.com/kappa/v2/speech?voice=${voz}&text=${encodeURIComponent(texto)}`;
     const audio = new Audio(url);
     audio.volume = 1;
