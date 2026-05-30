@@ -2410,37 +2410,35 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 /* ═══════════════════════════════════════════════════════════
    KPI — GESTIÓN OPERATIVA TALLER
 ═══════════════════════════════════════════════════════════ */
-.kpi-shell { padding: 20px; max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+.kpi-shell { padding: 14px 18px; max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
 
 /* Header */
 .kpi-header {
-  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
-  padding-bottom: 16px; border-bottom: 1.5px solid var(--gris-borde);
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  padding-bottom: 10px; border-bottom: 1.5px solid var(--gris-borde);
 }
 
 /* Resumen rápido */
-.kpi-resumen {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
-}
+.kpi-resumen { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .kpi-res-item {
   background: white; border: 1.5px solid var(--gris-borde); border-radius: var(--radio);
-  padding: 14px 16px; text-align: center;
+  padding: 8px 12px; text-align: center;
 }
-.kpi-res-num { font-size: 28px; font-weight: 800; font-family: 'DM Mono', monospace; color: var(--texto); line-height: 1; }
-.kpi-res-lbl { font-size: 11px; color: var(--gris-mid); margin-top: 4px; text-transform: uppercase; letter-spacing: .5px; }
+.kpi-res-num { font-size: 20px; font-weight: 800; font-family: 'DM Mono', monospace; color: var(--texto); line-height: 1; }
+.kpi-res-lbl { font-size: 10px; color: var(--gris-mid); margin-top: 2px; text-transform: uppercase; letter-spacing: .5px; }
 
 /* Grid KPIs */
-.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 
 /* Card */
 .kpi-card {
-  background: white; border: 1.5px solid var(--gris-borde); border-radius: 12px;
-  padding: 18px 16px; cursor: pointer; transition: transform .15s, box-shadow .15s;
-  display: flex; flex-direction: column; gap: 4px; position: relative; overflow: hidden;
+  background: white; border: 1.5px solid var(--gris-borde); border-radius: 10px;
+  padding: 11px 13px; cursor: pointer; transition: transform .15s, box-shadow .15s;
+  display: flex; flex-direction: column; gap: 2px; position: relative; overflow: hidden;
 }
-.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.09); }
+.kpi-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
 .kpi-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; border-radius: 12px 12px 0 0;
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 10px 10px 0 0;
 }
 .kpi-verde::before  { background: var(--verde); }
 .kpi-amarillo::before { background: var(--amarillo); }
@@ -2449,14 +2447,14 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; }
 .kpi-amarillo { border-color: #FDE68A; }
 .kpi-rojo   { border-color: #FECACA; }
 
-.kpi-card-ico { font-size: 22px; margin-bottom: 4px; }
-.kpi-card-num { font-size: 32px; font-weight: 800; font-family: 'DM Mono', monospace; line-height: 1; color: var(--texto); }
+.kpi-card-ico { font-size: 16px; margin-bottom: 2px; }
+.kpi-card-num { font-size: 24px; font-weight: 800; font-family: 'DM Mono', monospace; line-height: 1; color: var(--texto); }
 .kpi-verde  .kpi-card-num { color: #15803D; }
 .kpi-amarillo .kpi-card-num { color: #B45309; }
 .kpi-rojo   .kpi-card-num { color: #DC2626; }
-.kpi-card-lbl { font-size: 12px; font-weight: 700; color: var(--texto); margin-top: 2px; }
-.kpi-card-sub { font-size: 11px; color: var(--gris-mid); }
-.kpi-card-link { font-size: 11px; font-weight: 600; color: var(--azul-mid); margin-top: 6px; }
+.kpi-card-lbl { font-size: 11px; font-weight: 700; color: var(--texto); margin-top: 1px; }
+.kpi-card-sub { font-size: 10px; color: var(--gris-mid); }
+.kpi-card-link { font-size: 10px; font-weight: 600; color: var(--azul-mid); margin-top: 4px; }
 
 /* Drilldown */
 .kpi-drill-fila {

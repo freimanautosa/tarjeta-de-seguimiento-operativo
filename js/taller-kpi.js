@@ -261,12 +261,16 @@ async function cargarKPITaller() {
         </td>
         <td style="font-size:12px">${escapeHtml([o.marca, o.linea].filter(Boolean).join(' ') || '—')}</td>
         <td>
-          <div style="font-size:11px;color:var(--gris-mid);margin-bottom:3px">${comp}/${total} etapas</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+            ${etAct ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#22C55E;box-shadow:0 0 0 2px #DCFCE7;flex-shrink:0"></span>' : ''}
+            <span style="font-size:11px;color:${etAct ? 'var(--verde)' : 'var(--gris-mid)'};font-weight:${etAct ? '700' : '400'}">${etAct ? 'En proceso' : (comp === total && total > 0 ? 'Completada' : 'Pendiente')}</span>
+            <span style="font-size:10px;color:var(--gris-mid)">${comp}/${total}</span>
+          </div>
           <div style="height:4px;background:var(--gris-borde);border-radius:99px;width:80px">
-            <div style="height:4px;background:${pct === 100 ? 'var(--verde)' : 'var(--azul)'};border-radius:99px;width:${Math.round(pct * 0.8)}px"></div>
+            <div style="height:4px;background:${pct === 100 ? 'var(--verde)' : etAct ? '#22C55E' : 'var(--azul)'};border-radius:99px;width:${Math.round(pct * 0.8)}px"></div>
           </div>
         </td>
-        <td style="font-size:12px">${escapeHtml(etAct?.tecnico || '—')}</td>
+        <td style="font-size:12px;font-weight:${etAct ? '600' : '400'};color:${etAct ? 'var(--texto)' : 'var(--gris-mid)'}">${escapeHtml(etAct?.tecnico || '—')}</td>
         <td>${entHtml}</td>
         <td>${alertas || '<span style="color:var(--verde);font-size:12px">✓ OK</span>'}</td>
       </tr>`;
