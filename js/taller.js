@@ -512,21 +512,58 @@ function _tvAnunciarPlaca(orden) {
   setTimeout(() => _tvTTSAudio(msg), 800);
 }
 
-// ── TTS via Audio element — voz masculina Enrique ────────
+// ── TTS masculino via Web Speech API ─────────────────────
+// Nombres de voces masculinas españolas según navegador/OS
+const _TTS_VOCES_MASC = [
+  'Microsoft Pablo',        // Windows Chrome/Edge — es-ES masculino
+  'Microsoft Raul',         // Windows antiguo
+  'Diego',                  // macOS — es-AR masculino
+  'Andrés',                 // macOS — es-CL masculino
+  'Jorge',                  // macOS — es-ES masculino
+  'Carlos',                 // macOS — es-MX
+  'Google español de Estados Unidos', // Chrome — a veces masculino
+  'Enrique',                // si está disponible en el sistema
+  'Pablo',
+  'Juan',
+  'Miguel',
+];
+
 function _tvTTSAudio(texto) {
-  try {
-    const url = `https://api.streamelements.com/kappa/v2/speech?voice=Enrique&text=${encodeURIComponent(texto)}`;
-    const audio = new Audio(url);
-    audio.volume = 1;
-    audio.play().catch(() => {
-      // Si falla el audio (sin internet o bloqueado) → Web Speech API
-      if (!window.speechSynthesis) return;
-      const u = new SpeechSynthesisUtterance(texto);
-      u.lang = 'es'; u.rate = 0.80; u.pitch = 0.5; u.volume = 1;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-    });
-  } catch(e) { console.warn('TTS error:', e); }
+  if (!window.speechSynthesis) return;
+
+  const _hablar = () => {
+    const voces = window.speechSynthesis.getVoices();
+    const u = new SpeechSynthesisUtterance(texto);
+    u.lang   = 'es';
+    u.rate   = 0.80;
+    u.volume = 1;
+
+    // Buscar voz masculina por nombre
+    const vozMasc = voces.find(v =>
+      _TTS_VOCES_MASC.some(n => v.name.toLowerCase().startsWith(n.toLowerCase()))
+    ) || voces.find(v =>
+      v.lang.startsWith('es') && /male|masc/i.test(v.name)
+    );
+
+    if (vozMasc) {
+      u.voice = vozMasc;
+      u.pitch = 0.7;
+    } else {
+      // No hay voz masculina instalada → pitch mínimo para sonar lo más grave posible
+      u.pitch = 0.0;
+    }
+
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  };
+
+  // Las voces pueden no estar cargadas aún al primer uso
+  const voces = window.speechSynthesis.getVoices();
+  if (voces.length > 0) {
+    _hablar();
+  } else {
+    window.speechSynthesis.addEventListener('voiceschanged', _hablar, { once: true });
+  }
 }
 
 function iniciarRelojTaller() {
