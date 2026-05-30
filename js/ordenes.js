@@ -761,9 +761,14 @@ function renderEtapa(e, fotos, novedades, hayActiva, aprobaciones = []) {
                 const _srvRoles = { latoneria:['latonero','tot'], pintura:['pintor','tot'], mecanica:['mecanico','tot'], adicionales:['detailing','mecanico','latonero','pintor','tot'] };
                 const _rolesValidos = _srvRoles[e.servicio] || null;
                 return mecanicos
-                  .filter(m => !['taller','repuestos','Asesor Previsora'].includes(m.rol))
-                  .filter(m => !_rolesValidos || _rolesValidos.includes(m.rol))
-                  .map(m=>`<option value="${m.id}" ${e.mecanico_id===m.id?'selected':''}>${escapeHtml(m.nombre)}</option>`)
+                  .filter(m => {
+                    // Si ya está asignado, siempre mostrarlo aunque el rol no coincida
+                    if (e.mecanico_id && Number(e.mecanico_id) === Number(m.id)) return true;
+                    if (['taller','repuestos','Asesor Previsora'].includes(m.rol)) return false;
+                    if (_rolesValidos && !_rolesValidos.map(r=>r.toLowerCase()).includes((m.rol||'').toLowerCase())) return false;
+                    return true;
+                  })
+                  .map(m=>`<option value="${m.id}" ${Number(e.mecanico_id)===Number(m.id)?'selected':''}>${escapeHtml(m.nombre)}</option>`)
                   .join('');
               })()}
             </select>
